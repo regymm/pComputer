@@ -40,13 +40,14 @@ module top_simu();
 
     initial begin
         sw = 2'b11;
+        btn = 4'b0000;
         #10
         sw = 2'b00;
 
-        #10
-        //btn = 4'b1010;
+        //#10
+        //btn = 4'b0000;
 
-        #1000
+        //#1000
         //btn = 4'b0010;
 
         #1000

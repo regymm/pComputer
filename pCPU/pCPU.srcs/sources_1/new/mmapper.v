@@ -74,7 +74,7 @@ module mmapper
         mainm_we = 0;
         gpio_we = 0;
         uart_we = 0;
-        case (a[15:12])
+        case (a[31:28])
             0: begin spo = bootm_spo; bootm_we = we; end
             1: begin spo = mainm_spo; mainm_we = we; end
             2: begin spo = gpio_spo; gpio_we = we; end

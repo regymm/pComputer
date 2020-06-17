@@ -7,7 +7,7 @@ A simple "computer" from scratch, running on FPGA-based hardware. Currently deve
 **Processor**
 
 - [x] Multiple-cycle MIPS-like CPU @ 125MHz
-- [x] Current supported commands: `add, addi, lw, sw, beq, j`
+- [x] Current supported commands: `add, addi, lui, lw, sw, beq, j, jr`
 - [ ] Interrupt support
 - [ ] 
 
