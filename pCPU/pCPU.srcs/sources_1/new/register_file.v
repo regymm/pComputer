@@ -17,7 +17,7 @@ module register_file
     );
 
     reg [WIDTH-1:0]regfile[31:0];
-    initial $readmemh("/home/petergu/MyHome/pComputer/asm/regfile.dat", regfile);
+    initial $readmemh("/home/petergu/MyHome/pComputer/pCPU/regfile.dat", regfile);
 
     always @ (*) begin
         if (ra0 == 5'b0) rd0 = 0;

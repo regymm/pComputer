@@ -41,7 +41,7 @@ module top_simu();
     initial begin
         sw = 2'b11;
         btn = 4'b0000;
-        #10
+        #200
         sw = 2'b00;
 
         //#10
@@ -50,7 +50,7 @@ module top_simu();
         //#1000
         //btn = 4'b0010;
 
-        #1000
+        #30000
         $finish;
     end
     

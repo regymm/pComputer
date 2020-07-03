@@ -12,8 +12,6 @@ module mmapper
 
         // 1024*32(4KB) boot rom: 0x00000000 to 0x00000ffc
         output reg [9:0]bootm_a,
-        output reg [31:0]bootm_d,
-        output reg bootm_we,
         input [31:0]bootm_spo,
 
         // main memory: 0x10000000 to 0x10000000
@@ -29,10 +27,8 @@ module mmapper
         input [31:0]gpio_spo,
 
         // fifo uart: 
-        // write 0x30000000
-        // full 0x30000004
-        // empty 0x30000008
-        output reg [1:0]uart_a,
+        // 0x30000000
+        output reg [2:0]uart_a,
         output reg [31:0]uart_d,
         output reg uart_we,
         input [31:0]uart_spo,
@@ -44,42 +40,51 @@ module mmapper
         output reg video_we,
         input [31:0]video_spo,
 
-
         // special devices:
-        // counter 0x80000000
-        // RNG 0x80000004
+        // counter 0x50000000
+        // RNG 0x50000004
         // TODO
         output reg [1:0]special_a,
         output reg [31:0]special_d,
         output reg special_we,
         input [31:0]special_spo,
 
-        output reg error
+        // interrupt service routine: 0x80000000
+        // there's another mapper inside the ISR unit
+        // so pass the full address
+        output reg [31:0]isr_a,
+        output reg [31:0]isr_d,
+        output reg isr_we,
+        input [31:0]isr_spo,
+
+        output reg irq
     );
 
     always @ (*) begin 
         bootm_a = a[11:2];
-        bootm_d = d;
         mainm_a = a[15:2];
         mainm_d = d;
         gpio_a = a[5:2];
         gpio_d = d;
-        uart_a = a[3:2];
+        uart_a = a[4:2];
         uart_d = d;
+        isr_a = a;
+        isr_d = d;
     end
 
     always @ (*) begin
-        error = 0;
-        bootm_we = 0;
+        irq = 0;
         mainm_we = 0;
         gpio_we = 0;
         uart_we = 0;
+        isr_we = 0;
         case (a[31:28])
-            0: begin spo = bootm_spo; bootm_we = we; end
+            0: begin spo = bootm_spo; end
             1: begin spo = mainm_spo; mainm_we = we; end
             2: begin spo = gpio_spo; gpio_we = we; end
             3: begin spo = uart_spo; uart_we = we; end
-            default: error = 1;
+            8: begin spo = isr_spo; isr_we = we; end
+            default: irq = 1;
         endcase
     end
 endmodule

@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-// copied&modified from https://github.com/jamieiles/uart, GPLv2
+// copied & modified from https://github.com/jamieiles/uart, GPLv2
 
 /*
  * Hacky baud rate generator to divide a 50MHz clock into a 115200 baud
@@ -7,7 +7,7 @@
  */
 module baud_rate_gen
     (
-        input wire clk_50m,
+        input wire clk,
         input rst,
         output wire rxclk_en,
         output wire txclk_en
@@ -25,7 +25,7 @@ module baud_rate_gen
     assign rxclk_en = (rx_acc == 0);
     assign txclk_en = (tx_acc == 0);
 
-    always @(posedge clk_50m) begin
+    always @(posedge clk) begin
         if (rst) rx_acc <= 1;
         else if (rx_acc == RX_ACC_MAX[RX_ACC_WIDTH - 1:0])
             rx_acc <= 0;
@@ -33,7 +33,7 @@ module baud_rate_gen
             rx_acc <= rx_acc + 1;
     end
 
-    always @(posedge clk_50m) begin
+    always @(posedge clk) begin
         if (rst) tx_acc <= 1;
         else if (tx_acc == TX_ACC_MAX[TX_ACC_WIDTH - 1:0])
             tx_acc <= 0;

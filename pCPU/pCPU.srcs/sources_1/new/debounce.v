@@ -2,17 +2,19 @@
 // input button debounce
 // https://timetoexplore.net/blog/arty-fpga-verilog-03
 
-module debounce(
-    input clk,
-    input i_btn,
-    output reg o_state = 0
-    //output o_ondn,
-    //output o_onup
+module debounce
+    #(parameter N = 2)
+    (
+        input clk,
+        input [N-1:0]i_btn,
+        output reg [N-1:0]o_state = 0
+        //output o_ondn,
+        //output o_onup
     );
 
     // sync with clock and combat metastability
-    reg sync_0 = 0;
-    reg sync_1 = 0;
+    reg [N-1:0]sync_0 = 0;
+    reg [N-1:0]sync_1 = 0;
     always @(posedge clk) sync_0 <= i_btn;
     always @(posedge clk) sync_1 <= sync_0;
 

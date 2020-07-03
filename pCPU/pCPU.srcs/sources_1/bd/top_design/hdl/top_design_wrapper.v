@@ -1,7 +1,7 @@
 //Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
 //--------------------------------------------------------------------------------
 //Tool Version: Vivado v.2019.1 (lin64) Build 2552052 Fri May 24 14:47:09 MDT 2019
-//Date        : Wed Jun 17 22:38:07 2020
+//Date        : Fri Jul  3 20:16:30 2020
 //Host        : petergu-dell running 64-bit Arch Linux
 //Command     : generate_target top_design_wrapper.bd
 //Design      : top_design_wrapper
