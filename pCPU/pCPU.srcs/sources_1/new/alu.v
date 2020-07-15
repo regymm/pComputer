@@ -11,7 +11,8 @@ module alu
         output [WIDTH-1:0]y, // result
         output zf, // zero flag
         output cf, // carry out flag: WIDTH bit
-        output of // overflow flag: WIDTH-1 sign bit
+        output of, // overflow flag
+        output sf // sign flag: WIDTH-1 sign bit
     );
 
     reg [WIDTH-1:0]regy;
@@ -22,6 +23,7 @@ module alu
     assign cf = regcf;
     assign of = regof;
     assign zf = regzf;
+    assign sf = regy[WIDTH-1];
     // assign zf = (regy == 0);
 
     always @ (a, b, m) begin

@@ -21,6 +21,9 @@ module cpu_multi_cycle
     reg [31:0]current_pc = 0;
     reg [31:0]mdr = 0;
     reg [31:0]ALUOut = 0;
+    reg ALUCf = 0;
+    reg ALUOf = 0;
+    reg ALUSf = 0;
     reg [31:0]A = 0;
     reg [31:0]B = 0;
 
@@ -44,6 +47,7 @@ module cpu_multi_cycle
     wire [1:0]ALUSrcB;
     wire RegWrite;
     wire [1:0]RegDst;
+    wire Cmp;
     wire EPCWrite;
     wire EPCSrc;
     wire CauseWrite;
@@ -57,6 +61,9 @@ module cpu_multi_cycle
         .rst(rst),
         .instruction(instruction),
         .ALUZero(ALUZero),
+        .ALUCf(ALUCf),
+        .ALUOf(ALUOf),
+        .ALUSf(ALUSf),
         .status(status),
         .irq(irq),
         .iack(iack),
@@ -74,6 +81,7 @@ module cpu_multi_cycle
         .ALUSrcB(ALUSrcB),
         .RegWrite(RegWrite),
         .RegDst(RegDst),
+        .Cmp(Cmp),
 
         .EPCSrc(EPCSrc),
         .EPCWrite(EPCWrite),
@@ -115,15 +123,19 @@ module cpu_multi_cycle
     reg [31:0]ALUIn1;
     reg [31:0]ALUIn2;
     wire [31:0]ALUResult;
+    wire ALUCf_wire;
+    wire ALUOf_wire;
+    wire ALUSf_wire;
     alu alu_inst
     (
         .m(ALUm),
         .a(ALUIn1),
         .b(ALUIn2),
         .y(ALUResult),
-        .zf(ALUZero)
-        //.cf(),
-        //.of()
+        .zf(ALUZero),
+        .cf(ALUCf_wire),
+        .of(ALUOf_wire),
+        .sf(ALUSf_wire)
     );
 
     // coprocessor0
@@ -167,6 +179,7 @@ module cpu_multi_cycle
             2: WriteData = {instruction[15:0], 16'b0};
             3: WriteData = pc;
             4: WriteData = mfc0out;
+            5: WriteData = {31'b0, Cmp};
         endcase
         case (ALUSrcB)
             0: ALUIn2 = B;
@@ -193,6 +206,8 @@ module cpu_multi_cycle
             instruction <= 0;
             mdr <= 0;
             ALUOut <= 0;
+            ALUCf <= 0;
+            ALUOf <= 0;
             A <= 0;
             B <= 0;
         end
@@ -200,6 +215,9 @@ module cpu_multi_cycle
             A <= ReadData1;
             B <= ReadData2;
             ALUOut <= ALUResult;
+            ALUCf <= ALUCf_wire;
+            ALUOf <= ALUOf_wire;
+            ALUSf <= ALUSf_wire;
             mdr <= MemData;
             if (PCWrite) pc <= newpc;
             if (NewInstr) current_pc <= pc;

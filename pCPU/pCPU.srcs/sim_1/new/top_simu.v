@@ -8,6 +8,8 @@ module top_simu();
     wire [3:0]led;
     wire [2:0]led4;
     wire [2:0]led5;
+    wire sd_dat0 = 0;
+    //wire sd_dat0 = 1;
 
     top_design_wrapper top_design_wrapper_inst
     (
@@ -16,7 +18,8 @@ module top_simu();
         .led(led),
         .led4(led4),
         .led5(led5),
-        .sw(sw)
+        .sw(sw),
+        .sd_dat0(sd_dat0)
     );
     
     //top top_inst
@@ -39,8 +42,11 @@ module top_simu();
     end
 
     initial begin
-        sw = 2'b11;
-        btn = 4'b0000;
+        //#400
+        //sw = 2'b10;
+        //btn = 4'b0000;
+        //#200
+        sw = 2'b01;
         #200
         sw = 2'b00;
 
@@ -50,7 +56,7 @@ module top_simu();
         //#1000
         //btn = 4'b0010;
 
-        #30000
+        #12000
         $finish;
     end
     

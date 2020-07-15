@@ -5,19 +5,19 @@ through SPI mode. */
 `timescale 1ns / 1ps
 
 module sd_controller(
-    output reg cs, // Connect to SD_DAT[3].
-    output mosi, // Connect to SD_CMD.
-    input miso, // Connect to SD_DAT[0].
+    (*mark_debug = "true"*) output reg cs, // Connect to SD_DAT[3].
+    (*mark_debug = "true"*) output mosi, // Connect to SD_CMD.
+    (*mark_debug = "true"*) input miso, // Connect to SD_DAT[0].
     output sclk, // Connect to SD_SCK.
                 // For SPI mode, SD_DAT[2] and SD_DAT[1] should be held HIGH. 
                 // SD_RESET should be held LOW.
 
-    input rd,   // Read-enable. When [ready] is HIGH, asseting [rd] will 
+    (*mark_debug = "true"*) input rd,   // Read-enable. When [ready] is HIGH, asseting [rd] will 
                 // begin a 512-byte READ operation at [address]. 
                 // [byte_available] will transition HIGH as a new byte has been
                 // read from the SD card. The byte is presented on [dout].
-    output reg [7:0] dout, // Data output for READ operation.
-    output reg byte_available, // A new byte has been presented on [dout].
+    (*mark_debug = "true"*) output reg [7:0] dout, // Data output for READ operation.
+    (*mark_debug = "true"*) output reg byte_available, // A new byte has been presented on [dout].
 
     input wr,   // Write-enable. When [ready] is HIGH, asserting [wr] will
                 // begin a 512-byte WRITE operation at [address].
@@ -27,11 +27,12 @@ module sd_controller(
     output reg ready_for_next_byte, // A new byte should be presented on [din].
 
     input reset, // Resets controller on assertion.
-    output ready, // HIGH if the SD card is ready for a read or write operation.
+    (*mark_debug = "true"*) output ready, // HIGH if the SD card is ready for a read or write operation.
     input [31:0] address,   // Memory address for read/write operation. This MUST 
                             // be a multiple of 512 bytes, due to SD sectoring.
     input clk,  // 25 MHz clock.
-    output [4:0] status // For debug purposes: Current state of controller.
+    (*mark_debug = "true"*) output [4:0] status, // For debug purposes: Current state of controller.
+    (*mark_debug = "true"*) output reg [7:0] recv_data
 );
 
     parameter RST = 0;
@@ -62,19 +63,22 @@ module sd_controller(
     reg [4:0] return_state;
     reg sclk_sig = 0;
     reg [55:0] cmd_out;
-    reg [7:0] recv_data;
     reg cmd_mode = 1;
     reg [7:0] data_sig = 8'hFF;
     
     reg [9:0] byte_counter;
     reg [9:0] bit_counter;
     
-    reg [26:0] boot_counter = 27'd100_000_000;
+    reg [26:0] boot_counter = 27'd010_000_000;
     always @(posedge clk) begin
         if(reset == 1) begin
             state <= RST;
             sclk_sig <= 0;
-            boot_counter <= 27'd100_000_000;
+            //boot_counter <= 27'd100_000_000;
+            //boot_counter <= 27'd050_000_000;
+            boot_counter <= 27'd010_000_000;
+            cs <= 1;
+            data_sig <= 8'hFF;
         end
         else begin
             case(state)
@@ -92,6 +96,7 @@ module sd_controller(
                     end
                     else begin
                         boot_counter <= boot_counter - 1;
+                        //sclk_sig <= ~sclk_sig; // I added this
                     end
                 end
                 INIT: begin
@@ -216,7 +221,7 @@ module sd_controller(
                     bit_counter <= 55;
                     return_state <= WRITE_BLOCK_INIT;
                     state <= SEND_CMD;
-		    ready_for_next_byte <= 1;
+                    ready_for_next_byte <= 1;
                 end
                 WRITE_BLOCK_INIT: begin
                     cmd_mode <= 0;

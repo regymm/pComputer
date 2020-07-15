@@ -3,38 +3,61 @@
 .section .text.boot
 
 _start:
+    addi $a0, $zero, 1
+    jal led_ctrl
+    addi $a0, $zero, 'O'
+    jal uart_putchar
+    addi $a0, $zero, 'K'
+    jal uart_putchar
+
     jal setupstack
-    #addi $a0, $zero, 'O'
-    #jal uart_putchar
-    #addi $a0, $zero, 'K'
-    #jal uart_putchar
-    addi $a0, $zero, isa_handler
-    jal isa_set_addr
-    ##lw $s0, mem_addr
-    addi $t0, $zero, 0
+
+    addi $a0, $zero, 0x200
+    jal sd_read_sector
+    jal sd_print_block
+
+    addi $a0, $zero, '\r'
+    jal uart_putchar
+    addi $a0, $zero, '\n'
+    jal uart_putchar
+
+    addi $a0, $zero, 0x200
+    jal sd_read_sector
+    jal sd_print_block
+
+    addi $a0, $zero, '\r'
+    jal uart_putchar
+    addi $a0, $zero, '\n'
+    jal uart_putchar
+
+    addi $a0, $zero, 0x400
+    jal sd_read_sector
+    jal sd_print_block
+    #addi $a0, $zero, isa_timer_handler
+    #jal isa_timer_set_addr
+    #addi $a0, $zero, isa_keyboard_handler
+    #jal isa_keyboard_set_addr
 _end:
-    addi $t0, $t0, 1
-    addi $a0, $zero, 0
+    addi $a0, $zero, 1
     jal led_ctrl
     j _end
 
-# the real interrupt/exception handler
-isa_handler:
-    #addi $t0, $zero, 0
-    #addi $t1, $zero, 0
-    #addi $t2, $zero, 0
-    addi $a0, $zero, 1
-    push $ra
-    jal led_ctrl
-    pop $ra
+#isa_timer_handler:
+    #addi $a0, $zero, 1
+    #push $ra
+    #jal led_ctrl
     #addi $a0, $zero, 'I'
     #jal uart_putchar
     #addi $a0, $zero, 'S'
     #jal uart_putchar
     #addi $a0, $zero, 'A'
     #jal uart_putchar
-    jr $ra
-    #eret
+    #pop $ra
+    #jr $ra
+    ##eret
 
-.data 
-    mem_addr: .word 0x10000000
+#isa_keyboard_handler:
+    ##push $ra
+    ##jal uart_putchar
+    ##pop $ra
+    #jr $ra
