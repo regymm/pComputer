@@ -8,61 +8,49 @@ module alu
     (
         input [2:0]m, // selection
         input [WIDTH-1:0]a, b, // input
-        output [WIDTH-1:0]y, // result
-        output zf, // zero flag
-        output cf, // carry out flag: WIDTH bit
-        output of, // overflow flag
-        output sf // sign flag: WIDTH-1 sign bit
+        output reg [WIDTH-1:0]y, // result
+        output reg zf, // zero flag
+        output reg cf, // carry out flag: WIDTH bit
+        output reg of, // overflow flag
+        output wire sf // sign flag: WIDTH-1 sign bit
     );
 
-    reg [WIDTH-1:0]regy;
-    reg regcf;
-    reg regof;
-    reg regzf;
-    assign y = regy;
-    assign cf = regcf;
-    assign of = regof;
-    assign zf = regzf;
-    assign sf = regy[WIDTH-1];
-    // assign zf = (regy == 0);
+    assign sf = y[WIDTH-1];
 
-    always @ (a, b, m) begin
+    always @ (*) begin
+        y = 0; zf = 0; cf = 0; of = 0;
         case(m)
             3'b000: begin // add
-                {regcf, regy} = a + b;
-                regof = (!a[WIDTH-1] & !b[WIDTH-1] & regy[WIDTH-1]) |
-                 (a[WIDTH-1] & b[WIDTH-1] & !regy[WIDTH-1]);
-                regzf = (regy == 0);
+                {cf, y} = a + b;
+                of = (!a[WIDTH-1] & !b[WIDTH-1] & y[WIDTH-1]) |
+                 (a[WIDTH-1] & b[WIDTH-1] & !y[WIDTH-1]);
+                zf = (y == 0);
             end
             3'b001: begin // sub
-                {regcf, regy} = a - b;
-                regof = (!a[WIDTH-1] & b[WIDTH-1] & regy[WIDTH-1]) |
-                 (a[WIDTH-1] & !b[WIDTH-1] & !regy[WIDTH-1]);
-                regzf = (regy == 0);
+                {cf, y} = a - b;
+                of = (!a[WIDTH-1] & b[WIDTH-1] & y[WIDTH-1]) |
+                 (a[WIDTH-1] & !b[WIDTH-1] & !y[WIDTH-1]);
+                zf = (y == 0);
             end
             3'b010: begin // and
-                regy = a & b;
-                regzf = (regy == 0);
-                regcf = 0;
-                regof = 0;
+                y = a & b;
+                zf = (y == 0);
             end
             3'b011: begin // or
-                regy = a | b;
-                regzf = (regy == 0);
-                regcf = 0;
-                regof = 0;
+                y = a | b;
+                zf = (y == 0);
             end
             3'b100: begin // xor
-                regy = a ^ b;
-                regzf = (regy == 0);
-                regcf = 0;
-                regof = 0;
+                y = a ^ b;
+                zf = (y == 0);
+            end
+            3'b101: begin // sll
+                y = b << a;
+            end
+            3'b110: begin // srl
+                y = b >> a;
             end
             default: begin // error
-                regy = 0;
-                regzf = 0;
-                regcf = 0;
-                regof = 0;
             end
         endcase
     end

@@ -117,9 +117,3 @@ module labkit(input CLK100MHZ, input SD_CD, output SD_RESET, output SD_SCK, outp
         end
     end
 endmodule
-
-module clock_divider(input clk_in, output reg clk_out = 0);
-	always @(posedge clk_in) begin
-		clk_out <= ~clk_out;
-	end
-endmodule

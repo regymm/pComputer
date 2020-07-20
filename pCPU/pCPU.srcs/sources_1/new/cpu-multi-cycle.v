@@ -21,15 +21,19 @@ module cpu_multi_cycle
     reg [31:0]current_pc = 0;
     reg [31:0]mdr = 0;
     reg [31:0]ALUOut = 0;
+    reg [31:0]BAddr = 0;
+    reg ALUZero = 0;
     reg ALUCf = 0;
     reg ALUOf = 0;
     reg ALUSf = 0;
     reg [31:0]A = 0;
     reg [31:0]B = 0;
+    reg [31:0]Hi = 0;
+    reg [31:0]Lo = 0;
 
     // some signals
-    wire ALUZero;
     reg [31:0]newpc;
+    reg [63:0]newHiLo;
     wire [31:0]imm = {{16{instruction[15]}}, instruction[15:0]};
     wire [31:0]status;
 
@@ -43,7 +47,7 @@ module cpu_multi_cycle
     wire IRWrite;
     wire [2:0]PCSource;
     wire [2:0]ALUm;
-    wire ALUSrcA;
+    wire [1:0]ALUSrcA;
     wire [1:0]ALUSrcB;
     wire RegWrite;
     wire [1:0]RegDst;
@@ -55,6 +59,8 @@ module cpu_multi_cycle
     wire StatusWrite;
     wire StatusSrc;
     wire [1:0]Mfc0Src;
+    wire HiLoSrc;
+    wire HiLoWrite;
     control_unit control_unit_inst
     (
         .clk(clk),
@@ -82,6 +88,8 @@ module cpu_multi_cycle
         .RegWrite(RegWrite),
         .RegDst(RegDst),
         .Cmp(Cmp),
+        .HiLoSrc(HiLoSrc),
+        .HiLoWrite(HiLoWrite),
 
         .EPCSrc(EPCSrc),
         .EPCWrite(EPCWrite),
@@ -123,6 +131,7 @@ module cpu_multi_cycle
     reg [31:0]ALUIn1;
     reg [31:0]ALUIn2;
     wire [31:0]ALUResult;
+    wire ALUZero_wire;
     wire ALUCf_wire;
     wire ALUOf_wire;
     wire ALUSf_wire;
@@ -132,10 +141,32 @@ module cpu_multi_cycle
         .a(ALUIn1),
         .b(ALUIn2),
         .y(ALUResult),
-        .zf(ALUZero),
+        .zf(ALUZero_wire),
         .cf(ALUCf_wire),
         .of(ALUOf_wire),
         .sf(ALUSf_wire)
+    );
+
+    wire [63:0]MultResult;
+    mult_gen_0 mult_gen_0_inst
+    (
+        .clk(clk),
+        .A(ALUIn1),
+        .B(ALUIn2),
+        .P(MultResult)
+    );
+
+    wire [63:0]DivResult;
+    wire DivReady;
+    div_gen_0 div_gen_0_inst
+    (
+        .aclk(clk),
+        .s_axis_divisor_tdata(ALUIn2),
+        .s_axis_divisor_tvalid(1),
+        .s_axis_dividend_tdata(ALUIn1),
+        .s_axis_dividend_tvalid(1),
+        .m_axis_dout_tdata(DivResult),
+        .m_axis_dout_tvalid(DivReady)
     );
 
     // coprocessor0
@@ -165,63 +196,76 @@ module cpu_multi_cycle
     // datapath -- main
     always @ (*) begin
         case (IorD)
-            0: mem_addr = pc;
-            1: mem_addr = ALUOut;
+            0: mem_addr = pc;                           // IF
+            1: mem_addr = ALUOut;                       // MEM
         endcase
         case (RegDst)
-            0: WriteRegister = instruction[20:16];
-            1: WriteRegister = instruction[15:11];
-            2: WriteRegister = 5'b11111;
+            0: WriteRegister = instruction[20:16];      // I-type
+            1: WriteRegister = instruction[15:11];      // R-type
+            2: WriteRegister = 5'b11111;                // jal
+            default: WriteRegister = 0;
         endcase
         case (RegSrc)
-            0: WriteData = ALUOut;
-            1: WriteData = mdr;
-            2: WriteData = {instruction[15:0], 16'b0};
-            3: WriteData = pc;
-            4: WriteData = mfc0out;
-            5: WriteData = {31'b0, Cmp};
+            0: WriteData = ALUOut;                      // 
+            1: WriteData = mdr;                         // lw
+            2: WriteData = {instruction[15:0], 16'b0};  // lui
+            3: WriteData = pc;                          // jal
+            4: WriteData = mfc0out;                     // mfc0
+            5: WriteData = {31'b0, Cmp};                // slt,...
+            6: WriteData = Hi;                          // mfhi
+            7: WriteData = Lo;                          // mflo
         endcase
         case (ALUSrcB)
-            0: ALUIn2 = B;
-            1: ALUIn2 = 4;
-            2: ALUIn2 = imm;
-            3: ALUIn2 = imm << 2;
+            0: ALUIn2 = B;                              //
+            1: ALUIn2 = 4;                              // IF
+            2: ALUIn2 = imm;                            // addi,...
+            3: ALUIn2 = imm << 2;                       // ID
         endcase
         case (ALUSrcA)
-            0: ALUIn1 = pc;
-            1: ALUIn1 = A;
+            0: ALUIn1 = pc;                             // IF, ID
+            1: ALUIn1 = A;                              // 
+            2: ALUIn1 = {27'b0, instruction[10:6]};              // sll,srl
+            default: ALUIn1 = 0;
         endcase
         case (PCSource)
-            0: newpc = ALUResult;
-            1: newpc = ALUOut;
-            2: newpc = {pc[31:28], instruction[25:0], 2'b0};
-            3: newpc = A;
-            4: newpc = epc;
-            5: newpc = 32'h80000000;
+            0: newpc = ALUResult;                               // IF
+            1: newpc = BAddr;                                   // beq, bne
+            2: newpc = {pc[31:28], instruction[25:0], 2'b0};    // j, jal
+            3: newpc = A;                                       // jr
+            4: newpc = epc;                                     // eret
+            5: newpc = 32'h80000000;                            // syscall/int
+            default: newpc = 0;
+        endcase
+        case (HiLoSrc)
+            1'b0: newHiLo <= MultResult;                        // mult
+            1'b1: newHiLo <= DivResult;                         // div
         endcase
     end
     always @ (posedge clk) begin
         if (rst) begin
             pc <= 32'b0;
-            instruction <= 0;
-            mdr <= 0;
-            ALUOut <= 0;
-            ALUCf <= 0;
-            ALUOf <= 0;
-            A <= 0;
-            B <= 0;
+            //instruction <= 0;
+            //mdr <= 0;
+            //ALUOut <= 0;
+            //ALUCf <= 0;
+            //ALUOf <= 0;
+            //A <= 0;
+            //B <= 0;
         end
         else begin
             A <= ReadData1;
             B <= ReadData2;
             ALUOut <= ALUResult;
+            BAddr <= ALUOut;
             ALUCf <= ALUCf_wire;
             ALUOf <= ALUOf_wire;
             ALUSf <= ALUSf_wire;
+            ALUZero <= ALUZero_wire;
             mdr <= MemData;
             if (PCWrite) pc <= newpc;
             if (NewInstr) current_pc <= pc;
             if (IRWrite) instruction <= MemData;
+            if (HiLoWrite) {Hi, Lo} <= newHiLo;
         end
     end
 endmodule

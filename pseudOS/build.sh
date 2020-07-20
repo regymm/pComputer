@@ -6,27 +6,50 @@ set -e
 
 #}
 
-mipsel-linux-gnu-as exception.asm -o exception.o -EB -O0 -mips4
+name=exception
+mipsel-linux-gnu-as $name.asm -o $name.o -EB -O0 -mips4
 #mipsel-linux-gnu-ld -nostdlib --script linker_exception.ld exception.o -o exception.elf -EB
-mipsel-linux-gnu-ld -nostdlib --script linker_exception.ld exception.o -o exception.elf -EB
-mipsel-linux-gnu-objcopy -O binary exception.elf exception.bin
-cat > coe/result_exception.coe << EOF
+mipsel-linux-gnu-ld -nostdlib --script linker_$name.ld $name.o -o $name.elf -EB
+mipsel-linux-gnu-objcopy -O binary $name.elf $name.bin
+cat > coe/result_$name.coe << EOF
 memory_initialization_radix  = 16;
 memory_initialization_vector =
 EOF
-xxd -c 4 -p exception.bin >> coe/result_exception.coe
-rm exception.o exception.bin
-mipsel-linux-gnu-objdump -d exception.elf
+xxd -c 4 -p $name.bin >> coe/result_$name.coe
+rm $name.o $name.bin
+mipsel-linux-gnu-objdump -d $name.elf
 
 mipsel-linux-gnu-as ./mylib/mylib.asm -o mylib.o -EB -O0
 
-mipsel-linux-gnu-as bootrom.asm -o bootrom.o -EB -O0 -mips4
-mipsel-linux-gnu-ld -nostdlib --script linker.ld mylib.o bootrom.o -o bootrom.elf -EB
-mipsel-linux-gnu-objcopy -O binary bootrom.elf bootrom.bin
-cat > coe/result_bootrom.coe << EOF
+
+name=bootrom
+mipsel-linux-gnu-as $name.asm -o $name.o -EB -O0 -mips4
+#mipsel-linux-gnu-ld -nostdlib --script linker_exception.ld exception.o -o exception.elf -EB
+mipsel-linux-gnu-ld -nostdlib --script linker_$name.ld $name.o mylib.o -o $name.elf -EB
+mipsel-linux-gnu-objcopy -O binary $name.elf $name.bin
+cat > coe/result_$name.coe << EOF
 memory_initialization_radix  = 16;
 memory_initialization_vector =
 EOF
-xxd -c 4 -p bootrom.bin >> coe/result_bootrom.coe
-rm bootrom.o bootrom.bin
-mipsel-linux-gnu-objdump -d bootrom.elf
+xxd -c 4 -p $name.bin >> coe/result_$name.coe
+#rm $name.o $name.bin
+mipsel-linux-gnu-objdump -d $name.elf
+
+#name=test
+#mipsel-linux-gnu-as $name.asm -o $name.o -EB -O0 -mips4
+##mipsel-linux-gnu-ld -nostdlib --script linker_exception.ld exception.o -o exception.elf -EB
+#mipsel-linux-gnu-ld -nostdlib --script linker_$name.ld $name.o -o $name.elf -EB
+#mipsel-linux-gnu-objcopy -O binary $name.elf $name.bin
+#cat > coe/result_$name.coe << EOF
+#memory_initialization_radix  = 16;
+#memory_initialization_vector =
+#EOF
+#xxd -c 4 -p $name.bin >> coe/result_$name.coe
+#rm $name.o $name.bin
+#mipsel-linux-gnu-objdump -d $name.elf
+
+name=sdbootloader
+mipsel-linux-gnu-as $name.asm -o $name.o -EB -O0 -mips4
+#mipsel-linux-gnu-ld -nostdlib --script linker_exception.ld exception.o -o exception.elf -EB
+mipsel-linux-gnu-ld -nostdlib --script linker_$name.ld $name.o -o $name.elf -EB
+mipsel-linux-gnu-objcopy -O binary $name.elf $name.bin

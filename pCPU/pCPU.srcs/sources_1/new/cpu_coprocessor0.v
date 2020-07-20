@@ -41,6 +41,7 @@ module coprocessor0
             0: mfc0out = epc;
             1: mfc0out = cause;
             2: mfc0out = status;
+            default: mfc0out = 0;
         endcase
         case (CauseSrc)
             0: CauseData = {28'b0, causedata_outside};

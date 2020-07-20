@@ -23,11 +23,13 @@ module control_unit
         output reg IRWrite,
         output reg [2:0]PCSource,
         output reg [2:0]ALUm,
-        output reg ALUSrcA,
+        output reg [1:0]ALUSrcA,
         output reg [1:0]ALUSrcB,
         output reg RegWrite,
         output reg [1:0]RegDst,
         output reg Cmp,
+        output reg HiLoSrc,
+        output reg HiLoWrite,
 
         output reg EPCWrite,
         output reg EPCSrc,
@@ -39,13 +41,15 @@ module control_unit
     );
 
     // control unit FSM state names (values doesn't matter)
+    //(*mark_debug = "true"*) reg [7:0]phase = IF;
     reg [7:0]phase = IF;
     localparam IF = 0;
     localparam ID_RF = 1;
     localparam R_EX = 2;
     localparam R_END = 3;
-    localparam CMP_END = 4;
-    localparam LUI_END = 5;
+    localparam SHIFT_EX = 4;
+    localparam CMP_END = 5;
+    localparam LUI_END = 6;
     localparam MEM_ADDR_CALC = 10;
     localparam MEM_ACCESS_LW = 11;
     localparam WB = 12; 
@@ -53,17 +57,18 @@ module control_unit
     localparam CALCI_EX = 20;
     localparam CALCI_END = 21;
     localparam CMPI_END = 22;
-    localparam BEQ_END = 30;
-    localparam BNE_END = 31;
-    localparam J_END = 32;
-    localparam JAL_END = 33;
-    localparam JR_END = 34;
-    localparam I_MFC0_END = 35;
-    //localparam I_MTC0_END = 36;
-    localparam I_ERET_END = 37;
-    localparam I_SYSCALL_END = 38;
-    localparam I_INT_END = 39;
-    localparam I_EXCPTN_END = 40;
+    localparam B_EX = 30;
+    localparam BEQ_END = 31;
+    localparam BNE_END = 32;
+    localparam J_END = 40;
+    localparam JAL_END = 41;
+    localparam JR_END = 42;
+    localparam I_MFC0_END = 50;
+    //localparam I_MTC0_END = 51;
+    localparam I_ERET_END = 52;
+    localparam I_SYSCALL_END = 53;
+    localparam I_INT_END = 54;
+    localparam I_EXCPTN_END = 55;
     localparam BAD = 99;
 
     // instruction[31:26] instruction type
@@ -90,8 +95,20 @@ module control_unit
 
     // instruction[5:0] function
     wire [5:0]instr_funct = instruction[5:0];
+    localparam FUNCT_SLL = 6'b000000;
+    localparam FUNCT_SRL = 6'b000010;
+    localparam FUNCT_SLLV = 6'b000100;
+    localparam FUNCT_SRLV = 6'b000110;
     localparam FUNCT_JR = 6'b001000;
     localparam FUNCT_SYSCALL = 6'b001100;
+    localparam FUNCT_MFHI = 6'b010000;
+    localparam FUNCT_MTHI = 6'b010001; // not on todo list
+    localparam FUNCT_MFLO = 6'b010010;
+    localparam FUNCT_MTLO = 6'b010011; // not on todo list
+    localparam FUNCT_MULT = 6'b011000;
+    localparam FUNCT_MULTU = 6'b011001;
+    localparam FUNCT_DIV = 6'b011010;
+    localparam FUNCT_DIVU = 6'b011011;
     localparam FUNCT_ADD = 6'b100000;
     localparam FUNCT_ADDU = 6'b100001;
     localparam FUNCT_SUB = 6'b100010;
@@ -112,6 +129,11 @@ module control_unit
     localparam OP_XOR = 91005;
     localparam OP_SLT = 91006;
     localparam OP_SLTU = 91007;
+    localparam OP_MULT = 91008;
+    localparam OP_SLL = 91009;
+    localparam OP_SRL = 91010;
+    localparam OP_SLLV = 91011;
+    localparam OP_SRLV = 91012;
     //
     localparam OP_ADDI = 92001;
     localparam OP_ANDI = 92002;
@@ -136,10 +158,57 @@ module control_unit
     localparam OP_BAD = 99000;
 
     // instruction decoding
+    //always @ (posedge clk) begin
+        //case (instr_type)
+            //TYPE_REG: case (instr_funct)
+                //FUNCT_SLL: Op <= OP_SLL;
+                //FUNCT_SRL: Op <= OP_SRL;
+                //FUNCT_SLLV: Op <= OP_SLLV;
+                //FUNCT_SRLV: Op <= OP_SRLV;
+                //FUNCT_JR: Op <= OP_JR;
+                //FUNCT_SYSCALL: Op <= OP_SYSCALL;
+                //FUNCT_ADD: Op <= OP_ADD;
+                //FUNCT_ADDU: Op <= OP_ADD;
+                //FUNCT_SUB: Op <= OP_SUB;
+                //FUNCT_SUBU: Op <= OP_SUB;
+                //FUNCT_AND: Op <= OP_AND;
+                //FUNCT_OR: Op <= OP_OR;
+                //FUNCT_XOR: Op <= OP_XOR;
+                //FUNCT_SLT: Op <= OP_SLT;
+                //FUNCT_SLTU: Op <= OP_SLTU;
+                //default: if (instruction == 32'b0) Op <= OP_NOP;
+                //else Op <= OP_BAD;
+            //endcase
+            //TYPE_J: Op <= OP_J;
+            //TYPE_JAL: Op <= OP_JAL;
+            //TYPE_BEQ: Op <= OP_BEQ;
+            //TYPE_BNE: Op <= OP_BNE;
+            //TYPE_ADDI: Op <= OP_ADDI;
+            //TYPE_ADDIU: Op <= OP_ADDI;
+            //TYPE_SLTI: Op <= OP_SLTI;
+            //TYPE_SLTIU: Op <= OP_SLTIU;
+            //TYPE_ANDI: Op <= OP_ANDI;
+            //TYPE_ORI: Op <= OP_ORI;
+            //TYPE_XORI: Op <= OP_XORI;
+            //TYPE_LUI: Op <= OP_LUI;
+            //TYPE_LW: Op <= OP_LW;
+            //TYPE_SW: Op <= OP_SW;
+            //TYPE_INT: case (instruction[25:21])
+                //5'b10000: Op <= OP_ERET;
+                //5'b00000: Op <= OP_MFC0;
+                //5'b00100: Op <= OP_MTC0;
+                //default: Op <= OP_BAD;
+            //endcase
+            //default: Op <= OP_BAD;
+        //endcase
+    //end
     always @ (*) begin
-        Op = OP_BAD;
         case (instr_type)
             TYPE_REG: case (instr_funct)
+                FUNCT_SLL: Op = OP_SLL;
+                FUNCT_SRL: Op = OP_SRL;
+                FUNCT_SLLV: Op = OP_SLLV;
+                FUNCT_SRLV: Op = OP_SRLV;
                 FUNCT_JR: Op = OP_JR;
                 FUNCT_SYSCALL: Op = OP_SYSCALL;
                 FUNCT_ADD: Op = OP_ADD;
@@ -150,7 +219,9 @@ module control_unit
                 FUNCT_OR: Op = OP_OR;
                 FUNCT_XOR: Op = OP_XOR;
                 FUNCT_SLT: Op = OP_SLT;
-                default: ;
+                FUNCT_SLTU: Op = OP_SLTU;
+                default: if (instruction == 32'b0) Op = OP_NOP;
+                else Op = OP_BAD;
             endcase
             TYPE_J: Op = OP_J;
             TYPE_JAL: Op = OP_JAL;
@@ -170,11 +241,10 @@ module control_unit
                 5'b10000: Op = OP_ERET;
                 5'b00000: Op = OP_MFC0;
                 //5'b00100: Op = OP_MTC0;
-                default: ;
+                default: Op = OP_BAD;
             endcase
-            default: ;
+            default: Op = OP_BAD;
         endcase
-        if (instruction == 32'b0) Op = OP_NOP;
     end
 
     // control fsm
@@ -197,6 +267,10 @@ module control_unit
                         OP_XOR: phase <= R_EX;
                         OP_SLT: phase <= R_EX;
                         OP_SLTU: phase <= R_EX;
+                        OP_SLL: phase <= SHIFT_EX;
+                        OP_SRL: phase <= SHIFT_EX;
+                        OP_SLLV: phase <= R_EX;
+                        OP_SRLV: phase <= R_EX;
 
                         OP_LW: phase <= MEM_ADDR_CALC;
                         OP_SW: phase <= MEM_ADDR_CALC;
@@ -208,7 +282,8 @@ module control_unit
                         OP_SLTIU: phase <= CALCI_EX;
                         OP_LUI: phase <= LUI_END;
 
-                        OP_BEQ: phase <= BEQ_END;
+                        OP_BEQ: phase <= B_EX;
+                        OP_BNE: phase <= B_EX;
 
                         OP_J: phase <= J_END;
                         OP_JAL: phase <= JAL_END;
@@ -239,9 +314,16 @@ module control_unit
                     default: phase <= R_END;
                 endcase
                 R_END: phase <= IF;
+                SHIFT_EX: phase <= R_END;
+                CMP_END: phase <= IF;
                 JR_END: phase <= IF;
                 J_END: phase <= IF;
                 JAL_END: phase <= IF;
+                B_EX: case (Op)
+                    OP_BEQ: phase <= BEQ_END;
+                    OP_BNE: phase <= BNE_END;
+                    default: ;
+                endcase
                 BEQ_END: phase <= IF;
                 BNE_END: phase <= IF;
                 CALCI_EX: case (Op)
@@ -272,11 +354,13 @@ module control_unit
         IRWrite = 0;
         PCSource = 3'b000;
         ALUm = 3'b000;
-        ALUSrcA = 0;
+        ALUSrcA = 2'b0;
         ALUSrcB = 0;
         RegWrite = 0;
         RegDst = 2'b00;
         Cmp = 0;
+        HiLoSrc = 0;
+        HiLoWrite = 0;
         EPCWrite = 0;
         EPCSrc = 0;
         CauseWrite = 0;
@@ -297,13 +381,13 @@ module control_unit
                 ALUSrcB = 2'b11;
             end
             MEM_ADDR_CALC: begin
-                ALUSrcA = 1; ALUSrcB = 2'b10;
+                ALUSrcA = 2'b01; ALUSrcB = 2'b10;
             end
             MEM_ACCESS_LW: begin
                 MemRead = 1; IorD = 1;
             end
             CALCI_EX: begin
-                ALUSrcA = 1; ALUSrcB = 2'b10;
+                ALUSrcA = 2'b01; ALUSrcB = 2'b10;
                 case (Op)
                     OP_ADDI: ALUm = 3'b000;
                     OP_ANDI: ALUm = 3'b010;
@@ -317,7 +401,7 @@ module control_unit
                 RegWrite = 1;
             end
             CMPI_END: begin
-                RegWrite = 1; RegSrc = 3'b110;
+                RegWrite = 1; RegSrc = 3'b101;
                 case (Op)
                     OP_SLTI: Cmp = (ALUOf ^ ALUSf) & !ALUZero;
                     OP_SLTIU: Cmp = ALUCf;
@@ -334,7 +418,7 @@ module control_unit
                 MemWrite = 1; IorD = 1;
             end
             R_EX: begin
-                ALUSrcA = 1;
+                ALUSrcA = 2'b01;
                 case (Op)
                     OP_ADD: ALUm = 3'b000;
                     OP_SUB: ALUm = 3'b001;
@@ -343,25 +427,35 @@ module control_unit
                     OP_XOR: ALUm = 3'b100;
                     OP_SLT: ALUm = 3'b001;
                     OP_SLTU: ALUm = 3'b001;
+                    OP_SLLV: ALUm = 3'b101;
+                    OP_SRLV: ALUm = 3'b110;
+                endcase
+            end
+            SHIFT_EX: begin
+                ALUSrcA = 2'b10;
+                case (Op)
+                    OP_SLL: ALUm = 3'b101;
+                    OP_SRL: ALUm = 3'b110;
                 endcase
             end
             R_END: begin
                 RegWrite = 1; RegDst = 2'b01;
             end
             CMP_END: begin
-                RegWrite = 1; RegDst = 2'b01; RegSrc = 3'b110;
+                RegWrite = 1; RegDst = 2'b01; RegSrc = 3'b101;
                 case (Op) 
                     OP_SLT: Cmp = (ALUOf ^ ALUSf) & !ALUZero;
                     OP_SLTU: Cmp = ALUCf;
                     default: ;
                 endcase
             end
+            B_EX: begin
+                ALUSrcA = 2'b01; ALUm = 3'b001;
+            end
             BEQ_END: begin
-                ALUSrcA = 1; ALUm = 3'b001;
                 PCWrite = ALUZero; PCSource = 3'b001;
             end
             BNE_END: begin
-                ALUSrcA = 1; ALUm = 3'b001;
                 PCWrite = !ALUZero; PCSource = 3'b001;
             end
             J_END: begin
@@ -388,19 +482,19 @@ module control_unit
                 StatusWrite = 1; StatusSrc = 1;
             end
             I_SYSCALL_END: begin
-                PCWrite = 1; PCSource = 3'b101;
+                PCWrite = 1; PCSource = 3'b100;
                 CauseWrite = 1; CauseSrc = 1;
                 StatusWrite = 1; StatusSrc = 0;
                 EPCWrite = 1; EPCSrc = 0;
             end
             I_INT_END: begin
-                PCWrite = 1; PCSource = 3'b101;
+                PCWrite = 1; PCSource = 3'b100;
                 CauseWrite = 1; CauseSrc = 0;
                 StatusWrite = 1; StatusSrc = 0;
                 EPCWrite = 1; EPCSrc = 1;
                 iack = 1;
             //I_EXCPTN_END: begin
-                //EPCWrite = 1; PCWrite = 1; PCSource = 3'b101; CauseWrite = 1; CauseSrc = 2; StatusWrite = 1; StatusSrc = 0; iack = 1; 
+                //EPCWrite = 1; PCWrite = 1; PCSource = 3'b100; CauseWrite = 1; CauseSrc = 2; StatusWrite = 1; StatusSrc = 0; iack = 1; 
             end
         endcase
     end

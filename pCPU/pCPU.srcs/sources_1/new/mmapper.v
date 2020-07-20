@@ -10,12 +10,12 @@ module mmapper
         output reg [31:0]spo,
         //output reg [31:0]dpo = 0,
 
-        // 512*32(4KB) boot rom: 0x00000000 to 0x000007fc
-        output reg [8:0]bootm_a,
+        // 1024*32(8KB) boot rom: 0x00000000 to 0x000007fc
+        output reg [9:0]bootm_a,
         input [31:0]bootm_spo,
 
         // 512*32(4KB) main memory: 0x10000000 to 0x100007fc
-        output reg [13:0]mainm_a,
+        output reg [11:0]mainm_a,
         output reg [31:0]mainm_d,
         output reg mainm_we,
         input [31:0]mainm_spo,
@@ -35,18 +35,18 @@ module mmapper
 
         // 4800*8(80*30*2*8) vram: 0x40000000 to 0x4000
         // TODO
-        output reg [12:0]video_a,
-        output reg [31:0]video_d,
-        output reg video_we,
+        output reg [12:0]video_a = 0,
+        output reg [31:0]video_d = 0,
+        output reg video_we = 0,
         input [31:0]video_spo,
 
         // special devices:
         // counter 0x50000000
         // RNG 0x50000004
         // TODO
-        output reg [1:0]special_a,
-        output reg [31:0]special_d,
-        output reg special_we,
+        output reg [1:0]special_a = 0,
+        output reg [31:0]special_d = 0,
+        output reg special_we = 0,
         input [31:0]special_spo,
 
         // SD card 0
@@ -68,8 +68,8 @@ module mmapper
     );
 
     always @ (*) begin 
-        bootm_a = a[10:2];
-        mainm_a = a[15:2];
+        bootm_a = a[11:2];
+        mainm_a = a[13:2];
         mainm_d = d;
         gpio_a = a[5:2];
         gpio_d = d;
@@ -88,6 +88,7 @@ module mmapper
         uart_we = 0;
         sd_we = 0;
         isr_we = 0;
+        spo = 0;
         case (a[31:28])
             0: begin spo = bootm_spo; end
             1: begin spo = mainm_spo; mainm_we = we; end

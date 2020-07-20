@@ -19,6 +19,8 @@
 // write 0x1000: set <address> for R/W, auto 512 aligned (may lost changes)
 // write 0x1004: do a read at <address> (may lost changes)
 // write 0x1008: do a write to <address>
+// read 0x1014: reading?
+// read 0x1018: writing?
 // ~~write 0x1010: sync~~
 // read 0x2000: negative card detect
 // read 0x2004: write protected
@@ -79,7 +81,7 @@ module sdcard
     reg [7:0]block[511:0];
     reg dirty = 0;
 
-    reg sd_rd = 1; // tmp
+    reg sd_rd = 0;
     wire [7:0]sd_dout;
     wire sd_readnext;
     reg sd_wr = 0;
@@ -111,7 +113,10 @@ module sdcard
         .status(sd_status)
     );
 
+    wire sd_ready_real = sd_ready & !sd_rd & !sd_wr;
+
     // manual slow clock posedge detection
+    // TODO: remove duplicate
     reg sd_ready_old = 0;
     reg sd_readnext_old = 0;
     reg sd_writenext_old = 0;
@@ -143,7 +148,7 @@ module sdcard
             writing <= 0;
         end
         begin
-            if (sd_ready) begin
+            if (sd_ready_real) begin
                 if (we) begin
                     case (a)
                         16'h1000: sd_address <= d;
@@ -160,11 +165,11 @@ module sdcard
                 // sdcard has received signal and not IDLE
                 // so we can stop rd/wr signals
                 // and prepare to send/receive data
-                if (sd_rd) begin
+                if (sd_rd & !sd_ready) begin
                     sd_rd <= 0;
                     reading <= 1; counter <= 0;
                 end
-                if (sd_wr) begin
+                else if (sd_wr & !sd_ready) begin
                     sd_wr <= 0;
                     writing <= 1; counter <= 0;
                     dirty <= 0;
@@ -188,11 +193,12 @@ module sdcard
 
     // handle non-relevant reading
     always @ (*) begin
+        spo = 0;
         if (a[15:12] == 0) spo = block[a[10:2]];
         else case (a)
             16'h2000: spo = sd_ncd;
             16'h2004: spo = sd_wp;
-            16'h2010: spo = sd_ready;
+            16'h2010: spo = sd_ready_real;
             16'h2014: spo = dirty;
             default: ;
         endcase
