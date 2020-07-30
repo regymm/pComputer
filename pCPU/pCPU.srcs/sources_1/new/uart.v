@@ -41,15 +41,15 @@ module uart
         .txclk_en(txclk_en)
     );
 
-    localparam IDLE = 3'b000;
+    localparam IDLE = 2'b00;
     //localparam PREPARE1 = 3'b001;
     //localparam PREPARE2 = 3'b010;
-    localparam START = 3'b011;
-    localparam DATA = 3'b100;
-    localparam STOP = 3'b101;
-    (*mark_debug = "true"*) reg [2:0]state_tx = IDLE;
+    localparam START = 2'b01;
+    localparam DATA = 2'b10;
+    localparam STOP = 2'b11;
+    (*mark_debug = "true"*) reg [1:0]state_tx = IDLE;
     reg [7:0]data_tx = 8'h00;
-    reg [2:0]bitpos_tx = 0;
+    reg [2:0]bitpos_tx = 3'b0;
 
     localparam RX_STATE_START = 2'b01;
     localparam RX_STATE_DATA = 2'b10;
@@ -75,8 +75,8 @@ module uart
         if (rst) begin
             tx <= 1'b1;
             data_tx <= 0;
-            bitpos_tx <= 0;
             state_tx <= IDLE;
+            bitpos_tx <= 3'b0;
 
             data_rx <= 0;
             read_enabled <= 0;
@@ -101,26 +101,33 @@ module uart
                     //fifo_in <= 8'b0;
                 //end
             //end
-            case (state_tx) 
+            case (state_tx)
                 IDLE: if (we & (a == 3'b000)) begin
                     data_tx <= d[7:0];
                     state_tx <= START;
+                    bitpos_tx <= 3'b0;
                 end
+                //end else state_tx <= IDLE;
                 START: if (txclk_en) begin
-                    bitpos_tx <= 0;
                     tx <= 1'b0;
                     state_tx <= DATA;
                 end
+                //end else state_tx <= START;
                 DATA: if (txclk_en) begin
-                    if (bitpos_tx == 7) state_tx <= STOP;
+                    if (bitpos_tx == 3'h7) state_tx <= STOP;
                     else bitpos_tx <= bitpos_tx + 1;
                     tx <= data_tx[bitpos_tx];
                 end
+                //end else state_tx <= DATA;
                 STOP: if (txclk_en) begin
                     tx <= 1'b1;
                     state_tx <= IDLE;
                 end
-                default: ;
+                //end else state_tx <= STOP;
+                //default: begin
+                    //tx <= 1'b1;
+                    //state_tx <= IDLE;
+                //end
             endcase
 
             if (we & a == 3'b001) begin

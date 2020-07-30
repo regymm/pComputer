@@ -1,8 +1,8 @@
 SECTIONS
 {
-    . = 0x0;
-    .text : { *(.text.boot) }
+    . = 0x10000000;
     .text : { *(.text) }
+    /*. = 0x09000000;*/
     .data : { *(.data) }
 
     /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) *(.reginfo) *(.MIPS.abiflags) *(.pdr)}

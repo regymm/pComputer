@@ -241,6 +241,28 @@ connect_debug_port u_ila_0/probe1 [get_nets [list {top_design_i/cpu_multi_cycle_
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+connect_debug_port u_ila_0/probe3 [get_nets [list {top_design_i/mmapper_0/inst/d[0]} {top_design_i/mmapper_0/inst/d[1]} {top_design_i/mmapper_0/inst/d[2]} {top_design_i/mmapper_0/inst/d[3]} {top_design_i/mmapper_0/inst/d[4]} {top_design_i/mmapper_0/inst/d[5]} {top_design_i/mmapper_0/inst/d[6]} {top_design_i/mmapper_0/inst/d[7]} {top_design_i/mmapper_0/inst/d[8]} {top_design_i/mmapper_0/inst/d[9]} {top_design_i/mmapper_0/inst/d[10]} {top_design_i/mmapper_0/inst/d[11]} {top_design_i/mmapper_0/inst/d[12]} {top_design_i/mmapper_0/inst/d[13]} {top_design_i/mmapper_0/inst/d[14]} {top_design_i/mmapper_0/inst/d[15]} {top_design_i/mmapper_0/inst/d[16]} {top_design_i/mmapper_0/inst/d[17]} {top_design_i/mmapper_0/inst/d[18]} {top_design_i/mmapper_0/inst/d[19]} {top_design_i/mmapper_0/inst/d[20]} {top_design_i/mmapper_0/inst/d[21]} {top_design_i/mmapper_0/inst/d[22]} {top_design_i/mmapper_0/inst/d[23]} {top_design_i/mmapper_0/inst/d[24]} {top_design_i/mmapper_0/inst/d[25]} {top_design_i/mmapper_0/inst/d[26]} {top_design_i/mmapper_0/inst/d[27]} {top_design_i/mmapper_0/inst/d[28]} {top_design_i/mmapper_0/inst/d[29]} {top_design_i/mmapper_0/inst/d[30]} {top_design_i/mmapper_0/inst/d[31]}]]
+connect_debug_port u_ila_0/probe4 [get_nets [list {top_design_i/mmapper_0/inst/a[0]} {top_design_i/mmapper_0/inst/a[1]} {top_design_i/mmapper_0/inst/a[2]} {top_design_i/mmapper_0/inst/a[3]} {top_design_i/mmapper_0/inst/a[4]} {top_design_i/mmapper_0/inst/a[5]} {top_design_i/mmapper_0/inst/a[6]} {top_design_i/mmapper_0/inst/a[7]} {top_design_i/mmapper_0/inst/a[8]} {top_design_i/mmapper_0/inst/a[9]} {top_design_i/mmapper_0/inst/a[10]} {top_design_i/mmapper_0/inst/a[11]} {top_design_i/mmapper_0/inst/a[12]} {top_design_i/mmapper_0/inst/a[13]} {top_design_i/mmapper_0/inst/a[14]} {top_design_i/mmapper_0/inst/a[15]} {top_design_i/mmapper_0/inst/a[16]} {top_design_i/mmapper_0/inst/a[17]} {top_design_i/mmapper_0/inst/a[18]} {top_design_i/mmapper_0/inst/a[19]} {top_design_i/mmapper_0/inst/a[20]} {top_design_i/mmapper_0/inst/a[21]} {top_design_i/mmapper_0/inst/a[22]} {top_design_i/mmapper_0/inst/a[23]} {top_design_i/mmapper_0/inst/a[24]} {top_design_i/mmapper_0/inst/a[25]} {top_design_i/mmapper_0/inst/a[26]} {top_design_i/mmapper_0/inst/a[27]} {top_design_i/mmapper_0/inst/a[28]} {top_design_i/mmapper_0/inst/a[29]} {top_design_i/mmapper_0/inst/a[30]} {top_design_i/mmapper_0/inst/a[31]}]]
+connect_debug_port u_ila_0/probe7 [get_nets [list top_design_i/mmapper_0/inst/we]]
+
 create_debug_core u_ila_0 ila
 set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
 set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
@@ -253,8 +275,16 @@ set_property C_TRIGOUT_EN false [get_debug_cores u_ila_0]
 set_property port_width 1 [get_debug_ports u_ila_0/clk]
 connect_debug_port u_ila_0/clk [get_nets [list sysclk_IBUF]]
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe0]
-set_property port_width 32 [get_debug_ports u_ila_0/probe0]
-connect_debug_port u_ila_0/probe0 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/pc[0]} {top_design_i/cpu_multi_cycle_0/inst/pc[1]} {top_design_i/cpu_multi_cycle_0/inst/pc[2]} {top_design_i/cpu_multi_cycle_0/inst/pc[3]} {top_design_i/cpu_multi_cycle_0/inst/pc[4]} {top_design_i/cpu_multi_cycle_0/inst/pc[5]} {top_design_i/cpu_multi_cycle_0/inst/pc[6]} {top_design_i/cpu_multi_cycle_0/inst/pc[7]} {top_design_i/cpu_multi_cycle_0/inst/pc[8]} {top_design_i/cpu_multi_cycle_0/inst/pc[9]} {top_design_i/cpu_multi_cycle_0/inst/pc[10]} {top_design_i/cpu_multi_cycle_0/inst/pc[11]} {top_design_i/cpu_multi_cycle_0/inst/pc[12]} {top_design_i/cpu_multi_cycle_0/inst/pc[13]} {top_design_i/cpu_multi_cycle_0/inst/pc[14]} {top_design_i/cpu_multi_cycle_0/inst/pc[15]} {top_design_i/cpu_multi_cycle_0/inst/pc[16]} {top_design_i/cpu_multi_cycle_0/inst/pc[17]} {top_design_i/cpu_multi_cycle_0/inst/pc[18]} {top_design_i/cpu_multi_cycle_0/inst/pc[19]} {top_design_i/cpu_multi_cycle_0/inst/pc[20]} {top_design_i/cpu_multi_cycle_0/inst/pc[21]} {top_design_i/cpu_multi_cycle_0/inst/pc[22]} {top_design_i/cpu_multi_cycle_0/inst/pc[23]} {top_design_i/cpu_multi_cycle_0/inst/pc[24]} {top_design_i/cpu_multi_cycle_0/inst/pc[25]} {top_design_i/cpu_multi_cycle_0/inst/pc[26]} {top_design_i/cpu_multi_cycle_0/inst/pc[27]} {top_design_i/cpu_multi_cycle_0/inst/pc[28]} {top_design_i/cpu_multi_cycle_0/inst/pc[29]} {top_design_i/cpu_multi_cycle_0/inst/pc[30]} {top_design_i/cpu_multi_cycle_0/inst/pc[31]}]]
+set_property port_width 5 [get_debug_ports u_ila_0/probe0]
+connect_debug_port u_ila_0/probe0 [get_nets [list {top_design_i/sdcard_0/inst/sd_controller_inst/status[0]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[1]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[2]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[3]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[4]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe1]
+set_property port_width 8 [get_debug_ports u_ila_0/probe1]
+connect_debug_port u_ila_0/probe1 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[0]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[1]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[2]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[3]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[4]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[5]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[6]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[7]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
+set_property port_width 32 [get_debug_ports u_ila_0/probe2]
+connect_debug_port u_ila_0/probe2 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/pc[0]} {top_design_i/cpu_multi_cycle_0/inst/pc[1]} {top_design_i/cpu_multi_cycle_0/inst/pc[2]} {top_design_i/cpu_multi_cycle_0/inst/pc[3]} {top_design_i/cpu_multi_cycle_0/inst/pc[4]} {top_design_i/cpu_multi_cycle_0/inst/pc[5]} {top_design_i/cpu_multi_cycle_0/inst/pc[6]} {top_design_i/cpu_multi_cycle_0/inst/pc[7]} {top_design_i/cpu_multi_cycle_0/inst/pc[8]} {top_design_i/cpu_multi_cycle_0/inst/pc[9]} {top_design_i/cpu_multi_cycle_0/inst/pc[10]} {top_design_i/cpu_multi_cycle_0/inst/pc[11]} {top_design_i/cpu_multi_cycle_0/inst/pc[12]} {top_design_i/cpu_multi_cycle_0/inst/pc[13]} {top_design_i/cpu_multi_cycle_0/inst/pc[14]} {top_design_i/cpu_multi_cycle_0/inst/pc[15]} {top_design_i/cpu_multi_cycle_0/inst/pc[16]} {top_design_i/cpu_multi_cycle_0/inst/pc[17]} {top_design_i/cpu_multi_cycle_0/inst/pc[18]} {top_design_i/cpu_multi_cycle_0/inst/pc[19]} {top_design_i/cpu_multi_cycle_0/inst/pc[20]} {top_design_i/cpu_multi_cycle_0/inst/pc[21]} {top_design_i/cpu_multi_cycle_0/inst/pc[22]} {top_design_i/cpu_multi_cycle_0/inst/pc[23]} {top_design_i/cpu_multi_cycle_0/inst/pc[24]} {top_design_i/cpu_multi_cycle_0/inst/pc[25]} {top_design_i/cpu_multi_cycle_0/inst/pc[26]} {top_design_i/cpu_multi_cycle_0/inst/pc[27]} {top_design_i/cpu_multi_cycle_0/inst/pc[28]} {top_design_i/cpu_multi_cycle_0/inst/pc[29]} {top_design_i/cpu_multi_cycle_0/inst/pc[30]} {top_design_i/cpu_multi_cycle_0/inst/pc[31]}]]
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]

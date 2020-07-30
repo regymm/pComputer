@@ -31,7 +31,7 @@ module sd_controller(
     input [31:0] address,   // Memory address for read/write operation. This MUST 
                             // be a multiple of 512 bytes, due to SD sectoring.
     input clk,  // 25 MHz clock.
-    (*mark_debug = "true"*) output [4:0] status, // For debug purposes: Current state of controller.
+    output [4:0] status, // For debug purposes: Current state of controller.
     (*mark_debug = "true"*) output reg [7:0] recv_data
 );
 
@@ -58,26 +58,28 @@ module sd_controller(
     
     parameter WRITE_DATA_SIZE = 515;
     
-    reg [4:0] state = RST;
+    (*mark_debug = "true"*) reg [4:0] state = RST;
     assign status = state;
     reg [4:0] return_state;
     reg sclk_sig = 0;
-    reg [55:0] cmd_out;
+    reg [55:0] cmd_out = {56{1'b1}};
     reg cmd_mode = 1;
     reg [7:0] data_sig = 8'hFF;
     
     reg [9:0] byte_counter;
     reg [9:0] bit_counter;
     
-    reg [26:0] boot_counter = 27'd010_000_000;
+    reg [26:0] boot_counter = 27'd005_000;
     always @(posedge clk) begin
         if(reset == 1) begin
             state <= RST;
             sclk_sig <= 0;
             //boot_counter <= 27'd100_000_000;
-            //boot_counter <= 27'd050_000_000;
-            boot_counter <= 27'd010_000_000;
+            boot_counter <= 27'd005_000;
+            //boot_counter <= 27'd001_000;
+            cmd_mode <= 1;
             cs <= 1;
+            cmd_out <= {56{1'b1}};
             data_sig <= 8'hFF;
         end
         else begin
@@ -96,6 +98,7 @@ module sd_controller(
                     end
                     else begin
                         boot_counter <= boot_counter - 1;
+                        if (boot_counter[3]) sclk_sig <= ~sclk_sig;
                         //sclk_sig <= ~sclk_sig; // I added this
                     end
                 end

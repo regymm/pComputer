@@ -16,17 +16,14 @@
 //
 // *addresses have already x4
 // read/write 0x0000 to 0x07fc: 512*8 R/W block cache
+// read/write 0xf000 to 0xf1fc: 128*32 aligned cache R/W
 // write 0x1000: set <address> for R/W, auto 512 aligned (may lost changes)
 // write 0x1004: do a read at <address> (may lost changes)
 // write 0x1008: do a write to <address>
-// read 0x1014: reading?
-// read 0x1018: writing?
-// ~~write 0x1010: sync~~
 // read 0x2000: negative card detect
 // read 0x2004: write protected
 // read 0x2010: ready, used for polling
 // read 0x2014: dirty?
-// ~~read/write 0x2000: <auto sync>~~
 
 module sdcard
     (
@@ -68,10 +65,6 @@ module sdcard
     clock_divider div3(clk_4, clk_8);
     clock_divider div4(clk_8, clk_16);
     clock_divider div5(clk_16, clk_32);
-    clock_divider div6(clk_32, clk_64);
-    //clock_divider div7(clk_64, clk_128);
-    //clock_divider div8(clk_128, clk_256);
-    //clock_divider div9(clk_256, clk_512);
 
     assign sd_dat1 = 1;
     assign sd_dat2 = 1;
@@ -91,7 +84,7 @@ module sdcard
     wire [4:0]sd_status;
     sd_controller sd_controller_inst
     (
-        .clk(clk_64),
+        .clk(clk_32),
         .reset(rst),
 
         .cs(sd_dat3),
@@ -113,44 +106,46 @@ module sdcard
         .status(sd_status)
     );
 
-    wire sd_ready_real = sd_ready & !sd_rd & !sd_wr;
-
     // manual slow clock posedge detection
     // TODO: remove duplicate
     reg sd_ready_old = 0;
     reg sd_readnext_old = 0;
     reg sd_writenext_old = 0;
-    reg sd_ready_oold = 0;
-    reg sd_readnext_oold = 0;
-    reg sd_writenext_oold = 0;
+    //reg sd_ready_oold = 0;
+    //reg sd_readnext_oold = 0;
+    //reg sd_writenext_oold = 0;
     always @ (posedge clk) begin
         sd_ready_old <= sd_ready;
         sd_readnext_old <= sd_readnext;
         sd_writenext_old <= sd_writenext;
-        sd_ready_oold <= sd_ready_old;
-        sd_readnext_oold <= sd_readnext_old;
-        sd_writenext_oold <= sd_writenext_old;
+        //sd_ready_oold <= sd_ready_old;
+        //sd_readnext_oold <= sd_readnext_old;
+        //sd_writenext_oold <= sd_writenext_old;
     end
-    wire sd_ready_posedge = !sd_ready_oold & sd_ready_old;
-    wire sd_readnext_posedge = !sd_readnext_oold & sd_readnext_old;
-    wire sd_writenext_posedge = !sd_writenext_oold & sd_writenext_old;
+    wire sd_ready_posedge = !sd_ready_old & sd_ready;
+    wire sd_readnext_posedge = !sd_readnext_old & sd_readnext;
+    wire sd_writenext_posedge = !sd_writenext_old & sd_writenext;
+
+    wire sd_ready_real = sd_ready & !sd_rd & !sd_wr;
+
+    wire [8:0]a32 = {a[8:2], 2'b0}; // 32 bit aligned buffer R/W
 
     reg reading = 0;
     reg writing = 0;
-
     reg [9:0]counter = 0;
-
     always @ (posedge clk) begin
         if (rst) begin
             sd_address <= 0;
             dirty <= 0;
             reading <= 0;
             writing <= 0;
+            sd_rd <= 0;
+            sd_wr <= 0;
         end
         begin
             if (sd_ready_real) begin
                 if (we) begin
-                    case (a)
+                    case (a[15:0])
                         16'h1000: sd_address <= d;
                         16'h1004: sd_rd <= d[0];
                         16'h1008: sd_wr <= d[0];
@@ -184,22 +179,34 @@ module sdcard
                 sd_din <= block[counter];
                 counter <= counter + 1;
             end
-            else if (we & (a[15:12] == 0)) begin
-                block[a[10:2]] <= d;
-                dirty <= 1;
+            else if (we) begin
+                if (a[15:12] == 0) begin
+                    block[a[10:2]] <= d;
+                    dirty <= 1;
+                end
+                else if (a[15:12] == 4'hf) begin
+                    block[a32+0] <= d[7:0];
+                    block[a32+1] <= d[15:8];
+                    block[a32+2] <= d[23:16];
+                    block[a32+3] <= d[31:24];
+                    dirty <= 1;
+                end
             end
         end
     end
 
-    // handle non-relevant reading
+    // handle non-relevant control address reading
     always @ (*) begin
         spo = 0;
         if (a[15:12] == 0) spo = block[a[10:2]];
-        else case (a)
+        if (a[15:12] == 4'hf) spo = {block[a32+3], block[a32+2], block[a32+1], block[a32+0]};
+        else case (a[15:0])
             16'h2000: spo = sd_ncd;
             16'h2004: spo = sd_wp;
             16'h2010: spo = sd_ready_real;
             16'h2014: spo = dirty;
+            16'h3000: spo = mm_start_sector;
+            16'h3004: spo = mm_end_sector;
             default: ;
         endcase
     end

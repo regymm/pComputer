@@ -10,6 +10,7 @@ module control_unit
         input ALUCf,
         input ALUOf,
         input ALUSf,
+        input MemReady,
         input [31:0]status,
         input irq,
         output reg iack,
@@ -41,8 +42,9 @@ module control_unit
     );
 
     // control unit FSM state names (values doesn't matter)
-    //(*mark_debug = "true"*) reg [7:0]phase = IF;
-    reg [7:0]phase = IF;
+    (*mark_debug = "true"*) reg [7:0]phase = IF;
+    reg [7:0]phase_return = IF;
+    //reg [7:0]phase = IF;
     localparam IF = 0;
     localparam ID_RF = 1;
     localparam R_EX = 2;
@@ -69,6 +71,9 @@ module control_unit
     localparam I_SYSCALL_END = 53;
     localparam I_INT_END = 54;
     localparam I_EXCPTN_END = 55;
+    localparam IF_REMEDY = 96;
+    localparam WB_REMEDY = 97;
+    localparam MEM_WAIT = 98;
     localparam BAD = 99;
 
     // instruction[31:26] instruction type
@@ -220,6 +225,7 @@ module control_unit
                 FUNCT_XOR: Op = OP_XOR;
                 FUNCT_SLT: Op = OP_SLT;
                 FUNCT_SLTU: Op = OP_SLTU;
+                // minor bug here: NOP judged as SHIFT
                 default: if (instruction == 32'b0) Op = OP_NOP;
                 else Op = OP_BAD;
             endcase
@@ -256,6 +262,10 @@ module control_unit
             case(phase)
                 IF: phase <= ID_RF;
                 ID_RF: begin
+                    if (!MemReady) begin
+                        phase <= MEM_WAIT;
+                        phase_return <= IF_REMEDY;
+                    end
                     if (status[3] & irq) phase <= I_INT_END;
                     else case(Op)
                         OP_NOP: phase <= IF;
@@ -305,8 +315,16 @@ module control_unit
                     default: phase <= BAD;
                 endcase
                 MEM_ACCESS_LW: phase <= WB;
-                WB: phase <= IF;
-                MEM_ACCESS_SW: phase <= IF;
+                WB: begin 
+                    if (MemReady) phase <= IF;
+                    else begin
+                        phase <= MEM_WAIT;
+                        phase_return <= WB_REMEDY;
+                    end
+                end
+                MEM_ACCESS_SW: begin
+                    phase <= MEM_WAIT; phase_return <= IF;
+                end
                 LUI_END: phase <= IF;
                 R_EX: case (Op)
                     OP_SLT: phase <= CMP_END;
@@ -338,6 +356,10 @@ module control_unit
                 I_ERET_END: phase <= IF;
                 I_SYSCALL_END: phase <= IF;
                 I_INT_END: phase <= IF;
+                MEM_WAIT: begin // this costs thousands of cycles but who cares?
+                    if (MemReady) phase <= phase_return;
+                    else phase <= MEM_WAIT;
+                end
                 default: phase <= BAD;
             endcase
         end
@@ -377,6 +399,12 @@ module control_unit
                 NewInstr = 1;
                 ALUSrcB = 2'b01;
             end
+            IF_REMEDY: begin
+                IRWrite = 1;
+                PCWrite = 1;
+                NewInstr = 1;
+                ALUSrcB = 2'b01;
+            end
             ID_RF: begin
                 ALUSrcB = 2'b11;
             end
@@ -385,6 +413,15 @@ module control_unit
             end
             MEM_ACCESS_LW: begin
                 MemRead = 1; IorD = 1;
+            end
+            WB: begin // guess write a bad value to regs won't harm
+                RegWrite = 1; RegSrc = 3'b001;
+            end
+            WB_REMEDY: begin
+                RegWrite = 1; RegSrc = 3'b001;
+            end
+            MEM_ACCESS_SW: begin
+                MemWrite = 1; IorD = 1;
             end
             CALCI_EX: begin
                 ALUSrcA = 2'b01; ALUSrcB = 2'b10;
@@ -410,12 +447,6 @@ module control_unit
             end
             LUI_END: begin
                 RegWrite = 1; RegSrc = 3'b010;
-            end
-            WB: begin
-                RegWrite = 1; RegSrc = 3'b001;
-            end
-            MEM_ACCESS_SW: begin
-                MemWrite = 1; IorD = 1;
             end
             R_EX: begin
                 ALUSrcA = 2'b01;
@@ -482,13 +513,13 @@ module control_unit
                 StatusWrite = 1; StatusSrc = 1;
             end
             I_SYSCALL_END: begin
-                PCWrite = 1; PCSource = 3'b100;
+                PCWrite = 1; PCSource = 3'b101;
                 CauseWrite = 1; CauseSrc = 1;
                 StatusWrite = 1; StatusSrc = 0;
                 EPCWrite = 1; EPCSrc = 0;
             end
             I_INT_END: begin
-                PCWrite = 1; PCSource = 3'b100;
+                PCWrite = 1; PCSource = 3'b101;
                 CauseWrite = 1; CauseSrc = 0;
                 StatusWrite = 1; StatusSrc = 0;
                 EPCWrite = 1; EPCSrc = 1;

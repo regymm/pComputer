@@ -70,10 +70,10 @@ module interrupt_unit
             isr_timer_mask <= 1;
             isr_keyboard_addr <= 32'h8000f000;
             isr_keyboard_mask <= 1;
-            isr_sdcard_mask <= 32'h8000f000;
-            isr_sdcard_addr <= 1;
-            isr_syscall_mask <= 32'h8000f000;
-            isr_syscall_addr <= 1;
+            isr_sdcard_addr <= 32'h8000f000;
+            isr_sdcard_mask <= 1;
+            isr_syscall_addr <= 32'h8000f000;
+            isr_syscall_mask <= 1;
         end
         else begin
             if (we & (a == 32'h80001000)) isr_timer_addr <= d;

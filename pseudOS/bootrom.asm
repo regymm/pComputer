@@ -17,54 +17,41 @@ _start:
     jal setupstack
 
     # print welcome
-    li $a0, name_str
+    la $a0, name_str
     jal uart_printstring
 
     # check sd card
     jal sd_present
     beq $v0, $zero, _err_no_sd
-    li $a0, sd_detected_str
+    la $a0, sd_detected_str
     jal uart_printstring
 
-    # read first sector
-    li $a0, sd_read1st_str
-    jal uart_printstring
-    addi $a0, $zero, 0x000
-    jal sd_read_sector
-    #jal sd_print_block
+    # copy 6 sectors
+    li $a0, 0
+    lw $a1, mem_start_addr
+    jal sd_to_mem
+    li $a0, 1
+    addi $a1, $a1, 0x200
+    jal sd_to_mem
+    li $a0, 2
+    addi $a1, $a1, 0x200
+    jal sd_to_mem
+    li $a0, 3
+    addi $a1, $a1, 0x200
+    jal sd_to_mem
+    li $a0, 4
+    addi $a1, $a1, 0x200
+    jal sd_to_mem
+    li $a0, 5
+    addi $a1, $a1, 0x200
+    jal sd_to_mem
 
-    # copy first sector to memory
-    li $a0, sd_copy_str
-    jal uart_printstring
-    addi $t0, $zero, 0
-    addi $t9, $zero, 2048
-    lw $t1, sd_data_addr
-    lw $t2, mem_start_addr
-_cfs_start:
-    lw $t3, 0($t1)
-    sll $t3, $t3, 0
-    lw $t4, 4($t1)
-    sll $t4, $t4, 4
-    add $t3, $t3, $t4
-    lw $t3, 8($t1)
-    sll $t3, $t3, 8
-    add $t3, $t3, $t4
-    lw $t3, 12($t1)
-    sll $t3, $t3, 12
-    add $t3, $t3, $t4
-    sw $t3, 0($t2)
-    addi $t0, $t0, 4
-    addi $t1, $t1, 16
-    addi $t2, $t2, 4
-    beq $t0, $t9, _cfs_end
-    j _cfs_start
-_cfs_end:
+
 
     # transfer control
-    li $a0, sd_boot_str
+    la $a0, sd_boot_str
     jal uart_printstring
-    lw $t0, mem_start_addr
-    addi $ra, $t0, 0
+    lw $ra, mem_start_addr
     jr $ra
 
 
@@ -83,12 +70,56 @@ _err_no_sd:
     j _halt
 
 _halt:
-    li $a0, halt_str
+    la $a0, halt_str
     jal uart_printstring
     addi $a0, $zero, 1
     jal triled_ctrl
 _halt_end:
     j _halt_end
+
+# sd_to_mem(int sector, int mem_start_addr)
+sd_to_mem:
+    push $ra
+    # read sector
+    push $a0
+    la $a0, sd_read1st_str
+    jal uart_printstring
+    pop $a0
+    #addi $a0, $zero, 0x000
+    jal sd_read_sector
+    #jal sd_print_block
+
+    # copy sector to memory
+    push $a0
+    la $a0, sd_copy_str
+    jal uart_printstring
+    pop $a0
+
+    li $s0, 0
+    li $s8, 2048
+    lw $s1, sd_data_addr
+    move $s2, $a1 # mem_start_addr
+_cfs_start:
+    lw $t0, 0($s1)
+    sll $t0, $t0, 24
+    lw $t1, 4($s1)
+    sll $t1, $t1, 16
+    add $t0, $t0, $t1
+    lw $t2, 8($s1)
+    sll $t2, $t2, 8
+    add $t0, $t0, $t2
+    lw $t3, 12($s1)
+    sll $t3, $t3, 0
+    add $t0, $t0, $t3
+    sw $t0, 0($s2)
+    addi $s0, $s0, 16
+    addi $s1, $s1, 16
+    addi $s2, $s2, 4
+    beq $s0, $s8, _cfs_end
+    j _cfs_start
+_cfs_end:
+    pop $ra
+    jr $ra
 
 #isa_timer_handler:
     #addi $a0, $zero, 1
@@ -110,12 +141,19 @@ _halt_end:
     ##pop $ra
     #jr $ra
 .data
+    .align 2
     name_str: .asciiz "pComputer bootrom v1.0\r\n"
+    .align 2
     sd_detected_str: .asciiz "SD card detected.\r\n"
+    .align 2
     sd_notdetected_str: .asciiz "SD card not detected!\r\n"
-    sd_read1st_str: .asciiz "Read first sector...\r\n"
-    sd_copy_str: .asciiz "Copy first sector to memory...\r\n"
+    .align 2
+    sd_read1st_str: .asciiz "Read sector...\r\n"
+    .align 2
+    sd_copy_str: .asciiz "Copy sector to memory...\r\n"
+    .align 2
     sd_boot_str: .asciiz "Transfer control now...\r\n"
+    .align 2
     halt_str: .asciiz "halt.\r\n"
 
     mem_start_addr: .word 0x10000000

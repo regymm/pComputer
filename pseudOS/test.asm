@@ -1,5 +1,25 @@
 .text
 _start:
+    lw $t1, isa_timer_addr
+    la $t0, timer_handler 
+    sw $t0, 0($t1)
+    lw $t1, isa_timer_mask
+    sw $zero, 0($t1)
+_end2:
+    li $t0, 20
+    j _end2
+
+
+    li $t4, 0x70436f6d
+    sll $t1, $t4, 0
+    srl $t1, $t1, 12
+    sll $t2, $t4, 4
+    srl $t2, $t2, 12
+    sll $t3, $t4, 8
+    srl $t3, $t3, 12
+    sll $t4, $t4, 12
+    srl $t4, $t4, 12
+
     addi $t0, $zero, 5
     addi $t1, $zero, 9
     add $t2, $t0, $t1 # 14
@@ -29,3 +49,10 @@ _start:
     #mul $t2, $t0, $t9
 _end:
     j _end
+timer_handler:
+    li $t0, 100
+    jr $ra
+.data
+    isa_timer_addr: .word 0x80001000
+    isa_timer_mask: .word 0x80001004
+

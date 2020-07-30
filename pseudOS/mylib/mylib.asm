@@ -70,41 +70,46 @@ _uart_putchar_wait2:
 # void uart_printstring(char* c)
 uart_printstring:
     push $ra
-    addi $t0, $zero, 0
+    push $s0
+    push $s1
+    push $s2
+    push $s3
+    push $s4
+    li $s0, 0
 _u_ps_start:
     push $a0
-    add $a0, $a0, $t0
-    lw $t4, 0($a0) # t1 contains 4 characters
-    srl $t3, $t1, 4
-    srl $t2, $t1, 8
-    srl $t1, $t1, 12
-    beqz $t1, _u_ps_end
-    beqz $t2, _u_ps_end
-    beqz $t3, _u_ps_end
-    beqz $t4, _u_ps_end
-    push $t0
-    push $t4
-    push $t3
-    push $t2
-    #push $t1
-    #pop $t1
-    move $a0, $t1
-    jal uart_putchar # last 8 bits char will be printed
-    pop $t2
-    move $a0, $t2
+    add $a0, $a0, $s0
+    lw $s4, 0($a0) # t1 contains 4 characters
+    sll $s1, $s4, 0
+    srl $s1, $s1, 24
+    sll $s2, $s4, 8
+    srl $s2, $s2, 24
+    sll $s3, $s4, 16
+    srl $s3, $s3, 24
+    sll $s4, $s4, 24
+    srl $s4, $s4, 24
+    beqz $s1, _u_ps_end
+    move $a0, $s1
     jal uart_putchar
-    pop $t3
-    move $a0, $t3
+    beqz $s2, _u_ps_end
+    move $a0, $s2
     jal uart_putchar
-    pop $t4
-    move $a0, $t4
+    beqz $s3, _u_ps_end
+    move $a0, $s3
     jal uart_putchar
-    pop $t0
+    beqz $s4, _u_ps_end
+    move $a0, $s4
+    jal uart_putchar
     pop $a0
-    addi $t0, $t0, 4
+    addi $s0, $s0, 4
     j _u_ps_start
 _u_ps_end:
     pop $a0
+    pop $s4
+    pop $s3
+    pop $s2
+    pop $s1
+    pop $s0
     pop $ra
     jr $ra
 
@@ -206,18 +211,18 @@ _sd_print_block_end:
 
 .data
     mem_addr: .word 0x10000000
-    gpio_addr: .word 0x20000000
-    uart_addr: .word 0x30000000
+    gpio_addr: .word 0x92000000
+    uart_addr: .word 0x93000000
     isa_timer_addr: .word 0x80001000
     isa_timer_mask: .word 0x80001004
     isa_keyboard_addr: .word 0x80002000
     isa_keyboard_mask: .word 0x80002004
     isa_syscall_addr: .word 0x80008000
     isa_syscall_mask: .word 0x80008004
-    sd_data_addr: .word 0x60000000
-    sd_addr_addr: .word 0x60001000
-    sd_do_read_addr: .word 0x60001004
-    sd_do_write_addr: .word 0x60001008
-    sd_ncd_addr: .word 0x60002000
-    sd_wp_addr: .word 0x60002004
-    sd_ready_addr: .word 0x60002010
+    sd_data_addr: .word 0x96000000
+    sd_addr_addr: .word 0x96001000
+    sd_do_read_addr: .word 0x96001004
+    sd_do_write_addr: .word 0x96001008
+    sd_ncd_addr: .word 0x96002000
+    sd_wp_addr: .word 0x96002004
+    sd_ready_addr: .word 0x96002010

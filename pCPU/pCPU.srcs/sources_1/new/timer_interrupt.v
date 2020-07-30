@@ -9,7 +9,8 @@ module timer_interrupt
 
         output reg irq
     );
-    localparam CNTMAX = 150000000;
+    //localparam CNTMAX = 150000000;
+    localparam CNTMAX = 80000000;
     //localparam CNTMAX = 500;
     reg [31:0]counter = 0;
     always @ (posedge clk_125M) begin

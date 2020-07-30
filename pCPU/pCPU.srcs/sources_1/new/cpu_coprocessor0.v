@@ -44,19 +44,19 @@ module coprocessor0
             default: mfc0out = 0;
         endcase
         case (CauseSrc)
-            0: CauseData = {28'b0, causedata_outside};
-            1: CauseData = 1;
+            0: CauseData = {28'b0, causedata_outside};  // timer, ...
+            1: CauseData = 1;                           // syscall
             //2: CauseData = mtc0in;
             default: ;
         endcase
         case (StatusSrc)
-            0: StatusData = {status[15:0], 16'b0};
-            1: StatusData = {16'b0, status[31:16]};
+            0: StatusData = {status[15:0], 16'b0};  // syscall/interrupt
+            1: StatusData = {16'b0, status[31:16]}; // eret
             //2: StatusData = mtc0in;
         endcase
         case (EPCSrc)
-            0: EPCData = pc;
-            1: EPCData = current_pc;
+            0: EPCData = pc;            // syscall: return to next instr
+            1: EPCData = current_pc;    // interrupt: return to current instr
             //2: EPCData = mtc0in;
         endcase
     end

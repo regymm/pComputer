@@ -12,11 +12,13 @@ module cpu_multi_cycle
         output reg [31:0]a,
         output reg [31:0]d,
         output reg we,
-        input [31:0]spo
+        output reg rd,
+        input [31:0]spo,
+        input ready
     );
 
     // internal registers
-    reg [31:0]instruction = 0;
+    (*mark_debug = "true"*) reg [31:0]instruction = 0;
     reg [31:0]pc = 0;
     reg [31:0]current_pc = 0;
     reg [31:0]mdr = 0;
@@ -43,6 +45,7 @@ module cpu_multi_cycle
     wire IorD;
     wire MemRead;
     wire MemWrite;
+    wire MemReady;
     wire [2:0]RegSrc;
     wire IRWrite;
     wire [2:0]PCSource;
@@ -79,6 +82,7 @@ module cpu_multi_cycle
         .IorD(IorD),
         .MemRead(MemRead),
         .MemWrite(MemWrite),
+        .MemReady(MemReady),
         .RegSrc(RegSrc),
         .IRWrite(IRWrite),
         .PCSource(PCSource),
@@ -124,7 +128,9 @@ module cpu_multi_cycle
         a = mem_addr;
         d = B;
         we = MemWrite;
+        rd = MemRead;
         MemData = spo;
+        MemReady = ready;
     end
 
     // ALU
