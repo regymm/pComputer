@@ -263,6 +263,26 @@ connect_debug_port u_ila_0/probe3 [get_nets [list {top_design_i/mmapper_0/inst/d
 connect_debug_port u_ila_0/probe4 [get_nets [list {top_design_i/mmapper_0/inst/a[0]} {top_design_i/mmapper_0/inst/a[1]} {top_design_i/mmapper_0/inst/a[2]} {top_design_i/mmapper_0/inst/a[3]} {top_design_i/mmapper_0/inst/a[4]} {top_design_i/mmapper_0/inst/a[5]} {top_design_i/mmapper_0/inst/a[6]} {top_design_i/mmapper_0/inst/a[7]} {top_design_i/mmapper_0/inst/a[8]} {top_design_i/mmapper_0/inst/a[9]} {top_design_i/mmapper_0/inst/a[10]} {top_design_i/mmapper_0/inst/a[11]} {top_design_i/mmapper_0/inst/a[12]} {top_design_i/mmapper_0/inst/a[13]} {top_design_i/mmapper_0/inst/a[14]} {top_design_i/mmapper_0/inst/a[15]} {top_design_i/mmapper_0/inst/a[16]} {top_design_i/mmapper_0/inst/a[17]} {top_design_i/mmapper_0/inst/a[18]} {top_design_i/mmapper_0/inst/a[19]} {top_design_i/mmapper_0/inst/a[20]} {top_design_i/mmapper_0/inst/a[21]} {top_design_i/mmapper_0/inst/a[22]} {top_design_i/mmapper_0/inst/a[23]} {top_design_i/mmapper_0/inst/a[24]} {top_design_i/mmapper_0/inst/a[25]} {top_design_i/mmapper_0/inst/a[26]} {top_design_i/mmapper_0/inst/a[27]} {top_design_i/mmapper_0/inst/a[28]} {top_design_i/mmapper_0/inst/a[29]} {top_design_i/mmapper_0/inst/a[30]} {top_design_i/mmapper_0/inst/a[31]}]]
 connect_debug_port u_ila_0/probe7 [get_nets [list top_design_i/mmapper_0/inst/we]]
 
+connect_debug_port u_ila_0/probe0 [get_nets [list {top_design_i/sdcard_0/inst/sd_controller_inst/status[0]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[1]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[2]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[3]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[4]}]]
+
+
+
+
+
+
+
+
+
+connect_debug_port u_ila_0/clk [get_nets [list sysclk_IBUF]]
+connect_debug_port dbg_hub/clk [get_nets sysclk_IBUF]
+
+
+
+
+
+
+
+
 create_debug_core u_ila_0 ila
 set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
 set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
@@ -273,19 +293,31 @@ set_property C_INPUT_PIPE_STAGES 0 [get_debug_cores u_ila_0]
 set_property C_TRIGIN_EN false [get_debug_cores u_ila_0]
 set_property C_TRIGOUT_EN false [get_debug_cores u_ila_0]
 set_property port_width 1 [get_debug_ports u_ila_0/clk]
-connect_debug_port u_ila_0/clk [get_nets [list sysclk_IBUF]]
+connect_debug_port u_ila_0/clk [get_nets [list top_design_i/clk_wiz_0/inst/clk_main]]
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe0]
-set_property port_width 5 [get_debug_ports u_ila_0/probe0]
-connect_debug_port u_ila_0/probe0 [get_nets [list {top_design_i/sdcard_0/inst/sd_controller_inst/status[0]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[1]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[2]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[3]} {top_design_i/sdcard_0/inst/sd_controller_inst/status[4]}]]
+set_property port_width 4 [get_debug_ports u_ila_0/probe0]
+connect_debug_port u_ila_0/probe0 [get_nets [list {top_design_i/sdmm_0/inst/state[0]} {top_design_i/sdmm_0/inst/state[1]} {top_design_i/sdmm_0/inst/state[2]} {top_design_i/sdmm_0/inst/state[3]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe1]
-set_property port_width 8 [get_debug_ports u_ila_0/probe1]
-connect_debug_port u_ila_0/probe1 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[0]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[1]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[2]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[3]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[4]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[5]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[6]} {top_design_i/cpu_multi_cycle_0/inst/control_unit_inst/phase[7]}]]
+set_property port_width 32 [get_debug_ports u_ila_0/probe1]
+connect_debug_port u_ila_0/probe1 [get_nets [list {top_design_i/sdmm_0/inst/spo[0]} {top_design_i/sdmm_0/inst/spo[1]} {top_design_i/sdmm_0/inst/spo[2]} {top_design_i/sdmm_0/inst/spo[3]} {top_design_i/sdmm_0/inst/spo[4]} {top_design_i/sdmm_0/inst/spo[5]} {top_design_i/sdmm_0/inst/spo[6]} {top_design_i/sdmm_0/inst/spo[7]} {top_design_i/sdmm_0/inst/spo[8]} {top_design_i/sdmm_0/inst/spo[9]} {top_design_i/sdmm_0/inst/spo[10]} {top_design_i/sdmm_0/inst/spo[11]} {top_design_i/sdmm_0/inst/spo[12]} {top_design_i/sdmm_0/inst/spo[13]} {top_design_i/sdmm_0/inst/spo[14]} {top_design_i/sdmm_0/inst/spo[15]} {top_design_i/sdmm_0/inst/spo[16]} {top_design_i/sdmm_0/inst/spo[17]} {top_design_i/sdmm_0/inst/spo[18]} {top_design_i/sdmm_0/inst/spo[19]} {top_design_i/sdmm_0/inst/spo[20]} {top_design_i/sdmm_0/inst/spo[21]} {top_design_i/sdmm_0/inst/spo[22]} {top_design_i/sdmm_0/inst/spo[23]} {top_design_i/sdmm_0/inst/spo[24]} {top_design_i/sdmm_0/inst/spo[25]} {top_design_i/sdmm_0/inst/spo[26]} {top_design_i/sdmm_0/inst/spo[27]} {top_design_i/sdmm_0/inst/spo[28]} {top_design_i/sdmm_0/inst/spo[29]} {top_design_i/sdmm_0/inst/spo[30]} {top_design_i/sdmm_0/inst/spo[31]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
-set_property port_width 32 [get_debug_ports u_ila_0/probe2]
-connect_debug_port u_ila_0/probe2 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/pc[0]} {top_design_i/cpu_multi_cycle_0/inst/pc[1]} {top_design_i/cpu_multi_cycle_0/inst/pc[2]} {top_design_i/cpu_multi_cycle_0/inst/pc[3]} {top_design_i/cpu_multi_cycle_0/inst/pc[4]} {top_design_i/cpu_multi_cycle_0/inst/pc[5]} {top_design_i/cpu_multi_cycle_0/inst/pc[6]} {top_design_i/cpu_multi_cycle_0/inst/pc[7]} {top_design_i/cpu_multi_cycle_0/inst/pc[8]} {top_design_i/cpu_multi_cycle_0/inst/pc[9]} {top_design_i/cpu_multi_cycle_0/inst/pc[10]} {top_design_i/cpu_multi_cycle_0/inst/pc[11]} {top_design_i/cpu_multi_cycle_0/inst/pc[12]} {top_design_i/cpu_multi_cycle_0/inst/pc[13]} {top_design_i/cpu_multi_cycle_0/inst/pc[14]} {top_design_i/cpu_multi_cycle_0/inst/pc[15]} {top_design_i/cpu_multi_cycle_0/inst/pc[16]} {top_design_i/cpu_multi_cycle_0/inst/pc[17]} {top_design_i/cpu_multi_cycle_0/inst/pc[18]} {top_design_i/cpu_multi_cycle_0/inst/pc[19]} {top_design_i/cpu_multi_cycle_0/inst/pc[20]} {top_design_i/cpu_multi_cycle_0/inst/pc[21]} {top_design_i/cpu_multi_cycle_0/inst/pc[22]} {top_design_i/cpu_multi_cycle_0/inst/pc[23]} {top_design_i/cpu_multi_cycle_0/inst/pc[24]} {top_design_i/cpu_multi_cycle_0/inst/pc[25]} {top_design_i/cpu_multi_cycle_0/inst/pc[26]} {top_design_i/cpu_multi_cycle_0/inst/pc[27]} {top_design_i/cpu_multi_cycle_0/inst/pc[28]} {top_design_i/cpu_multi_cycle_0/inst/pc[29]} {top_design_i/cpu_multi_cycle_0/inst/pc[30]} {top_design_i/cpu_multi_cycle_0/inst/pc[31]}]]
+set_property port_width 16 [get_debug_ports u_ila_0/probe2]
+connect_debug_port u_ila_0/probe2 [get_nets [list {top_design_i/sdmm_0/inst/sddrv_a[0]} {top_design_i/sdmm_0/inst/sddrv_a[1]} {top_design_i/sdmm_0/inst/sddrv_a[2]} {top_design_i/sdmm_0/inst/sddrv_a[3]} {top_design_i/sdmm_0/inst/sddrv_a[4]} {top_design_i/sdmm_0/inst/sddrv_a[5]} {top_design_i/sdmm_0/inst/sddrv_a[6]} {top_design_i/sdmm_0/inst/sddrv_a[7]} {top_design_i/sdmm_0/inst/sddrv_a[8]} {top_design_i/sdmm_0/inst/sddrv_a[9]} {top_design_i/sdmm_0/inst/sddrv_a[10]} {top_design_i/sdmm_0/inst/sddrv_a[11]} {top_design_i/sdmm_0/inst/sddrv_a[12]} {top_design_i/sdmm_0/inst/sddrv_a[13]} {top_design_i/sdmm_0/inst/sddrv_a[14]} {top_design_i/sdmm_0/inst/sddrv_a[15]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe3]
+set_property port_width 32 [get_debug_ports u_ila_0/probe3]
+connect_debug_port u_ila_0/probe3 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/pc[0]} {top_design_i/cpu_multi_cycle_0/inst/pc[1]} {top_design_i/cpu_multi_cycle_0/inst/pc[2]} {top_design_i/cpu_multi_cycle_0/inst/pc[3]} {top_design_i/cpu_multi_cycle_0/inst/pc[4]} {top_design_i/cpu_multi_cycle_0/inst/pc[5]} {top_design_i/cpu_multi_cycle_0/inst/pc[6]} {top_design_i/cpu_multi_cycle_0/inst/pc[7]} {top_design_i/cpu_multi_cycle_0/inst/pc[8]} {top_design_i/cpu_multi_cycle_0/inst/pc[9]} {top_design_i/cpu_multi_cycle_0/inst/pc[10]} {top_design_i/cpu_multi_cycle_0/inst/pc[11]} {top_design_i/cpu_multi_cycle_0/inst/pc[12]} {top_design_i/cpu_multi_cycle_0/inst/pc[13]} {top_design_i/cpu_multi_cycle_0/inst/pc[14]} {top_design_i/cpu_multi_cycle_0/inst/pc[15]} {top_design_i/cpu_multi_cycle_0/inst/pc[16]} {top_design_i/cpu_multi_cycle_0/inst/pc[17]} {top_design_i/cpu_multi_cycle_0/inst/pc[18]} {top_design_i/cpu_multi_cycle_0/inst/pc[19]} {top_design_i/cpu_multi_cycle_0/inst/pc[20]} {top_design_i/cpu_multi_cycle_0/inst/pc[21]} {top_design_i/cpu_multi_cycle_0/inst/pc[22]} {top_design_i/cpu_multi_cycle_0/inst/pc[23]} {top_design_i/cpu_multi_cycle_0/inst/pc[24]} {top_design_i/cpu_multi_cycle_0/inst/pc[25]} {top_design_i/cpu_multi_cycle_0/inst/pc[26]} {top_design_i/cpu_multi_cycle_0/inst/pc[27]} {top_design_i/cpu_multi_cycle_0/inst/pc[28]} {top_design_i/cpu_multi_cycle_0/inst/pc[29]} {top_design_i/cpu_multi_cycle_0/inst/pc[30]} {top_design_i/cpu_multi_cycle_0/inst/pc[31]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe4]
+set_property port_width 32 [get_debug_ports u_ila_0/probe4]
+connect_debug_port u_ila_0/probe4 [get_nets [list {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[0]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[1]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[2]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[3]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[4]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[5]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[6]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[7]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[8]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[9]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[10]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[11]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[12]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[13]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[14]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[15]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[16]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[17]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[18]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[19]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[20]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[21]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[22]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[23]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[24]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[25]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[26]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[27]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[28]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[29]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[30]} {top_design_i/cpu_multi_cycle_0/inst/coprocessor0_inst/counter[31]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe5]
+set_property port_width 1 [get_debug_ports u_ila_0/probe5]
+connect_debug_port u_ila_0/probe5 [get_nets [list top_design_i/sdmm_0/inst/ready]]
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
-connect_debug_port dbg_hub/clk [get_nets sysclk_IBUF]
+connect_debug_port dbg_hub/clk [get_nets u_ila_0_clk_main]

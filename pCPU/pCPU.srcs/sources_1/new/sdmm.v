@@ -11,25 +11,31 @@ module sdmm
         input clk,
         input rst,
 
-        input [31:0]a,
-        input [31:0]d,
-        input we,
-        input rd,
-        output reg [31:0]spo,
-        output wire ready,
+        (*mark_debug = "true"*) input [31:0]a,
+        (*mark_debug = "true"*) input [31:0]d,
+        (*mark_debug = "true"*) input we,
+        (*mark_debug = "true"*) input rd,
+        (*mark_debug = "true"*) output reg [31:0]spo,
+        (*mark_debug = "true"*) output wire ready,
 
-        output reg [15:0]sddrv_a,
-        output reg [31:0]sddrv_d,
-        output reg sddrv_we,
-        input [31:0]sddrv_spo,
+        (*mark_debug = "true"*) output reg [15:0]sddrv_a,
+        (*mark_debug = "true"*) output reg [31:0]sddrv_d,
+        (*mark_debug = "true"*) output reg sddrv_we,
+        (*mark_debug = "true"*) input [31:0]sddrv_spo,
 
         output reg irq = 0
     );
 
-    wire control_addr = (a[31:16] == 16'h9600);
     reg [31:0]mm_start_sector = 0;
-    reg [31:0]mm_size = 0;
+    reg [31:0]mm_size = 0; // size in sector number
+
+    localparam CONTROL_ADDR = 16'h9600;
+    wire control_addr = (a[31:16] == CONTROL_ADDR);
     wire ncontrol_addr_legal = (a[31:28] == 4'b0) & (a < (mm_size << 9)); // this means not control_addr
+
+    reg [31:0]target_addr = 0;
+    reg [31:0]target_data = 0;
+    wire [15:0]cache_rw_addr = {4'h0, 3'h0, target_addr[8:0]};
 
     localparam IDLE = 4'h0;
     localparam READ = 4'h1;
@@ -40,22 +46,21 @@ module sdmm
     localparam SET_NEW_SECTOR = 4'h6;
     localparam LOAD_NEW_SECTOR = 4'h7;
     localparam WAIT_READY = 4'hf;
-    reg [3:0]state = IDLE;
+    (*mark_debug = "true"*) reg [3:0]state = IDLE;
     reg [3:0]state_return = IDLE; // return to after SD becomes ready
     reg [3:0]state_todo = IDLE; // READ or WRITE
-    reg [31:0]target_addr = 0;
-    wire [15:0]cache_rw_addr = {4'hf, 3'h0, target_addr[8:0]};
-    reg [31:0]target_data = 0;
+    reg cache_valid = 0;
+
     reg need_flush; // whether the target_addr falls into the current loaded SD sector
     reg is_dirty;
-    reg is_ready;
-    assign ready = (state == IDLE | state == READ | state == WRITE);
+    reg sd_is_ready;
 
     always @ (posedge clk) begin
         if (rst) begin
             mm_start_sector <= 0;
             mm_size <= 0;
             state <= IDLE;
+            cache_valid <= 0;
         end
         else begin
             if (control_addr & we & ready)
@@ -83,7 +88,8 @@ module sdmm
                     end
                 end
                 FLUSH_CHECK: begin
-                    if (need_flush) state <= DIRTY_CHECK;
+                    if (!cache_valid) state <= SET_NEW_SECTOR;
+                    else if (need_flush) state <= DIRTY_CHECK;
                     else state <= state_todo; // we have a "cache hit"
                 end
                 DIRTY_CHECK: begin
@@ -96,6 +102,7 @@ module sdmm
                 end
                 SET_NEW_SECTOR: begin
                     state <= LOAD_NEW_SECTOR;
+                    cache_valid <= 1;
                 end
                 LOAD_NEW_SECTOR: begin
                     state_return <= state_todo;
@@ -108,7 +115,7 @@ module sdmm
                     state <= IDLE;
                 end
                 WAIT_READY: begin
-                    if (is_ready) state <= state_return;
+                    if (sd_is_ready) state <= state_return;
                     else state <= WAIT_READY;
                 end
                 default: begin
@@ -125,9 +132,9 @@ module sdmm
         sddrv_we = 0;
         need_flush = 0;
         is_dirty = 0;
-        is_ready = 0;
+        sd_is_ready = 0;
         case (state)
-            IDLE: begin
+            IDLE: begin // so control addr when NOT idle will be ignored
                 if (control_addr)
                     case (a[15:0])
                         16'h3000: spo = mm_start_sector;
@@ -142,7 +149,7 @@ module sdmm
             end
             FLUSH_CHECK: begin
                 sddrv_a = 16'h1000;
-                need_flush = (sddrv_spo == (target_addr>>9) + mm_start_sector);
+                need_flush = (sddrv_spo != ((target_addr>>9) + mm_start_sector));
             end
             DIRTY_CHECK: begin
                 sddrv_a = 16'h2014;
@@ -165,7 +172,7 @@ module sdmm
             end
             WAIT_READY: begin
                 sddrv_a = 16'h2010;
-                is_ready = sddrv_spo[0];
+                sd_is_ready = sddrv_spo[0];
             end
             READ: begin
                 sddrv_a = cache_rw_addr;
@@ -180,16 +187,8 @@ module sdmm
         endcase
     end
 
-    //always @ (*) begin
-        //spo = 0;
-        //if (control_addr) case (a)
-            //16'h2000: spo = sd_ncd;
-            //16'h2004: spo = sd_wp;
-            //16'h2010: spo = sd_ready_real;
-            //16'h2014: spo = dirty;
-            //16'h3000: spo = mm_start_sector;
-            //16'h3004: spo = mm_end_sector;
-            //default: ;
-        //endcase
-    //end
+    assign ready = (control_addr | // control addr always ready
+        (state == IDLE & 
+        !(ncontrol_addr_legal & (rd | we))) | // ready should be update right in the cycle r/w starts
+        state == READ | state == WRITE); // early finish, or read result will be lost
 endmodule

@@ -17,10 +17,14 @@ module cpu_multi_cycle
         input ready
     );
 
+    localparam START_ADDR = 32'hf0000000;
+
     // internal registers
-    (*mark_debug = "true"*) reg [31:0]instruction = 0;
-    reg [31:0]pc = 0;
-    reg [31:0]current_pc = 0;
+    //(*mark_debug = "true"*) reg [31:0]instruction = 0;
+    reg [31:0]instruction = 0;
+    reg [31:0]pc = START_ADDR;
+    reg [31:0]current_pc = START_ADDR;
+    reg [31:0]waitaddr = 0;
     reg [31:0]mdr = 0;
     reg [31:0]ALUOut = 0;
     reg [31:0]BAddr = 0;
@@ -42,10 +46,10 @@ module cpu_multi_cycle
     // control unit signals
     wire PCWrite;
     wire NewInstr;
-    wire IorD;
+    wire [1:0]IorDorW;
     wire MemRead;
     wire MemWrite;
-    wire MemReady;
+    reg MemReady;
     wire [2:0]RegSrc;
     wire IRWrite;
     wire [2:0]PCSource;
@@ -61,7 +65,7 @@ module cpu_multi_cycle
     wire CauseSrc;
     wire StatusWrite;
     wire StatusSrc;
-    wire [1:0]Mfc0Src;
+    wire [4:0]Mfc0Src;
     wire HiLoSrc;
     wire HiLoWrite;
     control_unit control_unit_inst
@@ -79,7 +83,7 @@ module cpu_multi_cycle
 
         .PCWrite(PCWrite),
         .NewInstr(NewInstr),
-        .IorD(IorD),
+        .IorDorW(IorDorW),
         .MemRead(MemRead),
         .MemWrite(MemWrite),
         .MemReady(MemReady),
@@ -201,9 +205,11 @@ module cpu_multi_cycle
 
     // datapath -- main
     always @ (*) begin
-        case (IorD)
+        case (IorDorW)
             0: mem_addr = pc;                           // IF
             1: mem_addr = ALUOut;                       // MEM
+            2: mem_addr = waitaddr;                 // MEM_WAIT
+            default: mem_addr = 0;
         endcase
         case (RegDst)
             0: WriteRegister = instruction[20:16];      // I-type
@@ -249,12 +255,13 @@ module cpu_multi_cycle
     end
     always @ (posedge clk) begin
         if (rst) begin
-            pc <= 32'b0;
+            pc <= START_ADDR;
             //instruction <= 0;
             //mdr <= 0;
             //ALUOut <= 0;
             //ALUCf <= 0;
             //ALUOf <= 0;
+            //BAddr <= 0;
             //A <= 0;
             //B <= 0;
         end
@@ -272,6 +279,7 @@ module cpu_multi_cycle
             if (NewInstr) current_pc <= pc;
             if (IRWrite) instruction <= MemData;
             if (HiLoWrite) {Hi, Lo} <= newHiLo;
+            if (MemRead | MemWrite) waitaddr <= mem_addr;
         end
     end
 endmodule

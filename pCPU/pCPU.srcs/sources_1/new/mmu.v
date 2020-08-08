@@ -35,6 +35,8 @@ module mmu
     reg [31:0]ptbr = 0; // page table base register
     reg enabled = 0;
 
+    //reg [31:0]pa_bak = 32'hffffffff;
+
     localparam IDLE = 4'h0;
     localparam CHECK_RANGE = 4'h1;
     localparam READ_PT = 4'h2;
@@ -46,20 +48,31 @@ module mmu
             ptbr <= 0;
             enabled <= 0;
             phase <= IDLE;
+            //pa_bak <= 32'hffffffff;
         end
         else begin
+            //if (pready) pa_bak <= va;
+            //pa_bak <= pa;
 
         end
     end
 
+    //always @ (*) begin
+        //if (!pready) begin // lock value until ready
+            ////pa = pa_bak;
+            //pa = 0;
+        //end
+        //else pa = va;
+    //end
+
     always @ (*) begin
-        if (!enabled) begin
-            pa = va;
-            pd = vd;
-            pwe = vwe; 
-            prd = vrd;
-            vspo = pspo;
-            vready = pready;
+        pa = va;
+        pd = vd;
+        pwe = vwe; 
+        prd = vrd;
+        vspo = pspo;
+        vready = pready;
+        if (enabled) begin // paging ON
         end
     end
 

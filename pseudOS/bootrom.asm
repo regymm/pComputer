@@ -96,24 +96,14 @@ sd_to_mem:
     pop $a0
 
     li $s0, 0
-    li $s8, 2048
+    li $s8, 128
     lw $s1, sd_data_addr
     move $s2, $a1 # mem_start_addr
 _cfs_start:
     lw $t0, 0($s1)
-    sll $t0, $t0, 24
-    lw $t1, 4($s1)
-    sll $t1, $t1, 16
-    add $t0, $t0, $t1
-    lw $t2, 8($s1)
-    sll $t2, $t2, 8
-    add $t0, $t0, $t2
-    lw $t3, 12($s1)
-    sll $t3, $t3, 0
-    add $t0, $t0, $t3
     sw $t0, 0($s2)
-    addi $s0, $s0, 16
-    addi $s1, $s1, 16
+    addi $s0, $s0, 1
+    addi $s1, $s1, 4
     addi $s2, $s2, 4
     beq $s0, $s8, _cfs_end
     j _cfs_start

@@ -1,12 +1,13 @@
 `timescale 1ns / 1ps
-// pComputer multi-cycle CPU -- coprocessor0(interrupt/exception handler)
+// pComputer multi-cycle CPU -- coprocessor0
+// interrupt/exception handler, and other random stuff
 
 module coprocessor0
     (
         input clk,
         input rst,
         
-        input [1:0]Mfc0Src,
+        input [4:0]Mfc0Src,
         input EPCSrc,
         input CauseSrc,
         input StatusSrc,
@@ -24,9 +25,14 @@ module coprocessor0
     );
 
     // cp0 registers
+    // "standard" ones
     reg [31:0]cause = 0;
-    reg [31:0]status = 0;
+    reg [31:0]status = 32'b1111;
     reg [31:0]epc = 0;
+    // privilege level
+    reg [1:0]ring = 2'b00;
+    // counter
+    (*mark_debug = "true"*) reg [31:0]counter = 0;
 
     // cp0 signals
     reg [31:0]CauseData;
@@ -38,9 +44,9 @@ module coprocessor0
     // datpath -- coprocessor 0
     always @ (*) begin
         case (Mfc0Src)
-            0: mfc0out = epc;
-            1: mfc0out = cause;
-            2: mfc0out = status;
+            14: mfc0out = epc;
+            13: mfc0out = cause;
+            12: mfc0out = status;
             default: mfc0out = 0;
         endcase
         case (CauseSrc)
@@ -65,8 +71,10 @@ module coprocessor0
             epc <= 0;
             cause <= 0;
             status <= 32'b1111;
+            counter <= 0;
         end
         else begin
+            counter <= counter + 1;
             if (EPCWrite) epc <= EPCData;
             if (CauseWrite) cause <= CauseData;
             if (StatusWrite) status <= StatusData;

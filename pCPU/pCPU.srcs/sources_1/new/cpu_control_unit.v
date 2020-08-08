@@ -17,7 +17,7 @@ module control_unit
 
         output reg PCWrite,
         output reg NewInstr,
-        output reg IorD,
+        output reg [1:0]IorDorW,
         output reg MemRead,
         output reg MemWrite,
         output reg [2:0]RegSrc,
@@ -38,13 +38,9 @@ module control_unit
         output reg CauseSrc,
         output reg StatusWrite,
         output reg StatusSrc,
-        output reg [1:0]Mfc0Src
+        output reg [4:0]Mfc0Src
     );
 
-    // control unit FSM state names (values doesn't matter)
-    (*mark_debug = "true"*) reg [7:0]phase = IF;
-    reg [7:0]phase_return = IF;
-    //reg [7:0]phase = IF;
     localparam IF = 0;
     localparam ID_RF = 1;
     localparam R_EX = 2;
@@ -72,9 +68,12 @@ module control_unit
     localparam I_INT_END = 54;
     localparam I_EXCPTN_END = 55;
     localparam IF_REMEDY = 96;
-    localparam WB_REMEDY = 97;
     localparam MEM_WAIT = 98;
     localparam BAD = 99;
+    // control unit FSM state names (values doesn't matter)
+    (*mark_debug = "true"*) reg [7:0]phase = IF;
+    reg [7:0]phase_return = IF;
+    //reg [7:0]phase = IF;
 
     // instruction[31:26] instruction type
     wire [5:0]instr_type = instruction[31:26];
@@ -266,7 +265,7 @@ module control_unit
                         phase <= MEM_WAIT;
                         phase_return <= IF_REMEDY;
                     end
-                    if (status[3] & irq) phase <= I_INT_END;
+                    else if (status[3] & irq) phase <= I_INT_END;
                     else case(Op)
                         OP_NOP: phase <= IF;
 
@@ -314,13 +313,11 @@ module control_unit
                     OP_SW: phase <= MEM_ACCESS_SW;
                     default: phase <= BAD;
                 endcase
-                MEM_ACCESS_LW: phase <= WB;
+                MEM_ACCESS_LW: begin
+                    phase <= MEM_WAIT; phase_return <= WB;
+                end
                 WB: begin 
-                    if (MemReady) phase <= IF;
-                    else begin
-                        phase <= MEM_WAIT;
-                        phase_return <= WB_REMEDY;
-                    end
+                    phase <= IF;
                 end
                 MEM_ACCESS_SW: begin
                     phase <= MEM_WAIT; phase_return <= IF;
@@ -369,7 +366,7 @@ module control_unit
     always @ (*) begin
         PCWrite = 0;
         NewInstr = 0;
-        IorD = 0;
+        IorDorW = 2'b00;
         MemRead = 0;
         MemWrite = 0;
         RegSrc = 3'b000;
@@ -389,7 +386,7 @@ module control_unit
         CauseSrc = 0;
         StatusWrite = 0;
         StatusSrc = 0;
-        Mfc0Src = 2'b0;
+        Mfc0Src = 5'b0;
         iack = 0;
         case (phase)
             IF: begin
@@ -412,16 +409,13 @@ module control_unit
                 ALUSrcA = 2'b01; ALUSrcB = 2'b10;
             end
             MEM_ACCESS_LW: begin
-                MemRead = 1; IorD = 1;
+                MemRead = 1; IorDorW = 2'b01;
             end
-            WB: begin // guess write a bad value to regs won't harm
-                RegWrite = 1; RegSrc = 3'b001;
-            end
-            WB_REMEDY: begin
+            WB: begin
                 RegWrite = 1; RegSrc = 3'b001;
             end
             MEM_ACCESS_SW: begin
-                MemWrite = 1; IorD = 1;
+                MemWrite = 1; IorDorW = 2'b01;
             end
             CALCI_EX: begin
                 ALUSrcA = 2'b01; ALUSrcB = 2'b10;
@@ -501,11 +495,7 @@ module control_unit
             end
             I_MFC0_END: begin
                 RegWrite = 1; RegSrc = 3'b100;
-                case (instruction[15:11])
-                    12: Mfc0Src = 2;
-                    13: Mfc0Src = 1;
-                    14: Mfc0Src = 0;
-                endcase
+                Mfc0Src = instruction[15:11];
             end
             //I_MTC0_END: begin ; end
             I_ERET_END: begin
@@ -526,6 +516,9 @@ module control_unit
                 iack = 1;
             //I_EXCPTN_END: begin
                 //EPCWrite = 1; PCWrite = 1; PCSource = 3'b100; CauseWrite = 1; CauseSrc = 2; StatusWrite = 1; StatusSrc = 0; iack = 1; 
+            end
+            MEM_WAIT: begin
+                IorDorW = 2'b10;
             end
         endcase
     end

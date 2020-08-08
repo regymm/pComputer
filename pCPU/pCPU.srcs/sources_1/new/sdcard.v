@@ -15,9 +15,8 @@
 //                                    +-------
 //
 // *addresses have already x4
-// read/write 0x0000 to 0x07fc: 512*8 R/W block cache
-// read/write 0xf000 to 0xf1fc: 128*32 aligned cache R/W
-// write 0x1000: set <address> for R/W, auto 512 aligned (may lost changes)
+// read/write 0x0000 to 0x01fc: 128*32 block cache
+// read/write 0x1000: get/set <address> for R/W, auto 512 aligned (may lost changes)
 // write 0x1004: do a read at <address> (may lost changes)
 // write 0x1008: do a write to <address>
 // read 0x2000: negative card detect
@@ -70,8 +69,8 @@ module sdcard
     assign sd_dat2 = 1;
     //assign sd_reset = 0;
 
-    reg [31:0]sd_address = 0;
-    reg [7:0]block[511:0];
+    reg [31:0]sd_address = 32'hffffffff; // init as an invalid address
+    reg [31:0]block[127:0];
     reg dirty = 0;
 
     reg sd_rd = 0;
@@ -128,14 +127,17 @@ module sdcard
 
     wire sd_ready_real = sd_ready & !sd_rd & !sd_wr;
 
-    wire [8:0]a32 = {a[8:2], 2'b0}; // 32 bit aligned buffer R/W
 
     reg reading = 0;
     reg writing = 0;
     reg [9:0]counter = 0;
+    wire [31:0]cache = block[counter[8:2]];
+    reg [7:0]cache1;
+    reg [7:0]cache2;
+    reg [7:0]cache3;
     always @ (posedge clk) begin
         if (rst) begin
-            sd_address <= 0;
+            sd_address <= 32'hffffffff;
             dirty <= 0;
             reading <= 0;
             writing <= 0;
@@ -172,23 +174,26 @@ module sdcard
             end
 
             if (reading & sd_readnext_posedge) begin
-                block[counter] <= sd_dout;
+                case (counter[1:0])
+                    2'b00: cache1 <= sd_dout;
+                    2'b01: cache2 <= sd_dout;
+                    2'b10: cache3 <= sd_dout;
+                    2'b11: block[counter[8:2]] <= {cache1, cache2, cache3, sd_dout};
+                endcase
                 counter <= counter + 1;
             end
             else if (writing & sd_writenext_posedge) begin
-                sd_din <= block[counter];
+                case (counter[1:0])
+                    2'b00: sd_din <= block[counter[8:2]][31:24];
+                    2'b01: sd_din <= block[counter[8:2]][23:16];
+                    2'b10: sd_din <= block[counter[8:2]][15:8];
+                    2'b11: sd_din <= block[counter[8:2]][7:0];
+                endcase
                 counter <= counter + 1;
             end
             else if (we) begin
                 if (a[15:12] == 0) begin
-                    block[a[10:2]] <= d;
-                    dirty <= 1;
-                end
-                else if (a[15:12] == 4'hf) begin
-                    block[a32+0] <= d[7:0];
-                    block[a32+1] <= d[15:8];
-                    block[a32+2] <= d[23:16];
-                    block[a32+3] <= d[31:24];
+                    block[a[8:2]] <= d;
                     dirty <= 1;
                 end
             end
@@ -198,15 +203,13 @@ module sdcard
     // handle non-relevant control address reading
     always @ (*) begin
         spo = 0;
-        if (a[15:12] == 0) spo = block[a[10:2]];
-        if (a[15:12] == 4'hf) spo = {block[a32+3], block[a32+2], block[a32+1], block[a32+0]};
+        if (a[15:12] == 0) spo = block[a[8:2]];
         else case (a[15:0])
+            16'h1000: spo = sd_address;
             16'h2000: spo = sd_ncd;
             16'h2004: spo = sd_wp;
             16'h2010: spo = sd_ready_real;
             16'h2014: spo = dirty;
-            16'h3000: spo = mm_start_sector;
-            16'h3004: spo = mm_end_sector;
             default: ;
         endcase
     end

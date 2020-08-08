@@ -1,13 +1,19 @@
 .text
 _start:
-    lw $t1, isa_timer_addr
-    la $t0, timer_handler 
-    sw $t0, 0($t1)
-    lw $t1, isa_timer_mask
-    sw $zero, 0($t1)
-_end2:
-    li $t0, 20
-    j _end2
+    li $t0, 5
+    sw $t0, 0x10000000
+    li $t0, 4
+    sw $t0, 0x10000004
+    lw $t1, 0x10000000
+    lw $t2 ,0x10000004
+    #lw $t1, isa_timer_addr
+    #la $t0, timer_handler 
+    #sw $t0, 0($t1)
+    #lw $t1, isa_timer_mask
+    #sw $zero, 0($t1)
+#_end2:
+    #li $t0, 20
+    #j _end2
 
 
     li $t4, 0x70436f6d

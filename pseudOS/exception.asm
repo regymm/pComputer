@@ -2,7 +2,7 @@
 # begin at 0x80000000
 .include "mylib/include.asm"
 .section .text.exception
-
+.set noat
 
 _start:
     # push

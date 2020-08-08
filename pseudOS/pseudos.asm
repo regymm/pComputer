@@ -12,43 +12,68 @@ _start:
     la $a0, osstart_str
     jal uart_printstring
 
-    # test sd card write
-    li $a0, 5
-    jal sd_read_sector
-    li $s0, 0
-    li $s8, 2048
-    lw $s1, sd_data_addr
-_sdw:
-    add $s2, $s1, $s0
-    li $t0, 'X'
-    sw $t0, 0($s2)
-    addi $s0, $s0, 4
-    bne $s0, $s8, _sdw
+    lw $t0, sdmm_start_sector_addr
+    li $t1, 0x10
+    sw $t1, 0($t0)
+    lw $t0, sdmm_size_addr
+    li $t1, 0x100
+    sw $t1, 0($t0)
 
-    lw $s1, sd_do_write_addr
-    li $t0, 1
-    sw $t0, 0($s1)
+    li $t0, 'A'
+    sw $t0, 0x00000000
+    sw $t0, 0x00000004
+    sw $t0, 0x00000008
+    sw $t0, 0x0000000c
+    lw $a0, 0x00000000
+    jal uart_putchar
 
-    lw $t1, sd_ready_addr
-_sdwait1:
-    lw $t2, 0($t1)
-    beq $t2, $zero, _sdwait1
+    li $t0, 'B'
+    sw $t0, 0x0001fffc
+    lw $a0, 0x0001fffc
+    jal uart_putchar
 
-    la $a0, done_str
-    jal uart_printstring
+    lw $a0, 0x00000000
+    jal uart_putchar
+
+    #lw $a0, 0x0001fffc
+    #jal uart_putchar
+    ## test sd card write
+    #li $a0, 0
+    #jal sd_read_sector
+    #li $s0, 0
+    #li $s8, 2048
+    #lw $s1, sd_data_addr
+#_sdw:
+    #add $s2, $s1, $s0
+    #li $t0, 'X'
+    #sw $t0, 0($s2)
+    #addi $s0, $s0, 4
+    #bne $s0, $s8, _sdw
+
+    #lw $s1, sd_do_write_addr
+    #li $t0, 1
+    #sw $t0, 0($s1)
+
+    #lw $t1, sd_ready_addr
+#_sdwait1:
+    #lw $t2, 0($t1)
+    #beq $t2, $zero, _sdwait1
+
+    #la $a0, done_str
+    #jal uart_printstring
 
     #la $a0, setupint_str
     #jal uart_printstring
     #la $a0, timer_handler
     #jal isa_timer_set_addr
     #jal isa_timer_enable
-    #la $a0, syscall_handler
-    #jal isa_syscall_set_addr
-    #jal isa_syscall_enable
+    la $a0, syscall_handler
+    jal isa_syscall_set_addr
+    jal isa_syscall_enable
 
-    #li $v0, 4
-    #la $a0, syscall_test_str
-    #syscall
+    li $v0, 4
+    la $a0, syscall_test_str
+    syscall
 
 _end:
     j _end

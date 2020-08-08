@@ -34,7 +34,7 @@ module mmapper
         //// special devices:
         //// counter 0x50000000
         //// RNG 0x50000004
-        //// TODO
+        //// this should be moved into cp0
         //output reg [1:0]special_a = 0,
         //output reg [31:0]special_d = 0,
         //output reg special_we = 0,
@@ -50,7 +50,7 @@ module mmapper
         input [31:0]isr_spo,
 
         // MMIO devices
-        // 0x90000000
+        // 
         // gpio: 0x92000000
         output reg [3:0]gpio_a,
         output reg [31:0]gpio_d,
@@ -94,21 +94,53 @@ module mmapper
         gpio_we = 0;
         uart_we = 0;
         sd_we = 0;
+        sd_rd = 0;
         isr_we = 0;
         spo = 0;
         ready = 1; // read finish instantly except SDMM
-        if (a[31:28] == 4'h0) begin spo = sd_spo; sd_we = we; sd_rd = rd; ready = sd_ready; end
-        else if (a[31:28] == 4'h1) begin spo = mainm_spo; mainm_we = we; end
-        else if (a[31:28] == 4'h8) begin spo = isr_spo; isr_we = we; end
+        //if (!sd_ready) begin // if not ready, then lock to it
+            //spo = sd_spo;
+            //ready = sd_ready;
+            //sd_we = we;
+            //sd_rd = rd;
+        //end
+        ////else if (!xx_ready) begin
+        ////end
+        //else // all ready, continue working
+        if (a[31:28] == 4'h0) begin
+            spo = sd_spo;
+            ready = sd_ready;
+            sd_we = we;
+            sd_rd = rd;
+        end
+        else if (a[31:28] == 4'h1) begin
+            spo = mainm_spo;
+            mainm_we = we;
+        end
+        else if (a[31:28] == 4'h8) begin
+            spo = isr_spo;
+            isr_we = we;
+        end
         else if (a[31:28] == 4'h9) begin
             case (a[27:24])
-                4'h2: begin spo = gpio_spo; gpio_we = we; end
-                4'h3: begin spo = uart_spo; uart_we = we; end
-                4'h6: begin spo = sd_spo; sd_we = we; sd_rd = rd; ready = sd_ready; end
+                4'h2: begin
+                    spo = gpio_spo;
+                    gpio_we = we;
+                end
+                4'h3: begin
+                    spo = uart_spo;
+                    uart_we = we;
+                end
+                4'h6: begin
+                    spo = sd_spo;
+                    sd_we = we;
+                end
                 default: irq = 1;
             endcase
         end
-        else if (a[31:28] == 4'hf) begin spo = bootm_spo; end
+        else if (a[31:28] == 4'hf) begin
+            spo = bootm_spo;
+        end
         else irq = 1;
         //case (a[31:28])
             //0: 

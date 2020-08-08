@@ -47,7 +47,7 @@ module uart
     localparam START = 2'b01;
     localparam DATA = 2'b10;
     localparam STOP = 2'b11;
-    (*mark_debug = "true"*) reg [1:0]state_tx = IDLE;
+    reg [1:0]state_tx = IDLE;
     reg [7:0]data_tx = 8'h00;
     reg [2:0]bitpos_tx = 3'b0;
 
