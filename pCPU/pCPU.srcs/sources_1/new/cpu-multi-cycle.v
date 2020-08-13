@@ -21,10 +21,10 @@ module cpu_multi_cycle
 
     // internal registers
     //(*mark_debug = "true"*) reg [31:0]instruction = 0;
-    reg [31:0]instruction = 0;
-    reg [31:0]pc = START_ADDR;
+    (*mark_debug = "true"*) reg [31:0]instruction = 0;
+    (*mark_debug = "true"*) reg [31:0]pc = START_ADDR;
     reg [31:0]current_pc = START_ADDR;
-    reg [31:0]waitaddr = 0;
+    reg [31:0]waitaddr = 32'hffffffff;
     reg [31:0]mdr = 0;
     reg [31:0]ALUOut = 0;
     reg [31:0]BAddr = 0;
@@ -59,6 +59,7 @@ module cpu_multi_cycle
     wire RegWrite;
     wire [1:0]RegDst;
     wire Cmp;
+    wire IRSrc;
     wire EPCWrite;
     wire EPCSrc;
     wire CauseWrite;
@@ -96,6 +97,7 @@ module cpu_multi_cycle
         .RegWrite(RegWrite),
         .RegDst(RegDst),
         .Cmp(Cmp),
+        .IRSrc(IRSrc),
         .HiLoSrc(HiLoSrc),
         .HiLoWrite(HiLoWrite),
 
@@ -209,11 +211,11 @@ module cpu_multi_cycle
             0: mem_addr = pc;                           // IF
             1: mem_addr = ALUOut;                       // MEM
             2: mem_addr = waitaddr;                 // MEM_WAIT
-            default: mem_addr = 0;
+            default: mem_addr = 32'hffffffff;
         endcase
         case (RegDst)
             0: WriteRegister = instruction[20:16];      // I-type
-            1: WriteRegister = instruction[15:11];      // R-type
+            1: WriteRegister = instruction[15:11];      // R-type, jalr
             2: WriteRegister = 5'b11111;                // jal
             default: WriteRegister = 0;
         endcase
@@ -243,7 +245,7 @@ module cpu_multi_cycle
             0: newpc = ALUResult;                               // IF
             1: newpc = BAddr;                                   // beq, bne
             2: newpc = {pc[31:28], instruction[25:0], 2'b0};    // j, jal
-            3: newpc = A;                                       // jr
+            3: newpc = A;                                       // jr, jalr
             4: newpc = epc;                                     // eret
             5: newpc = 32'h80000000;                            // syscall/int
             default: newpc = 0;
@@ -277,7 +279,10 @@ module cpu_multi_cycle
             mdr <= MemData;
             if (PCWrite) pc <= newpc;
             if (NewInstr) current_pc <= pc;
-            if (IRWrite) instruction <= MemData;
+            if (IRWrite) begin
+                if (IRSrc) instruction <= mdr;
+                else instruction <= MemData;
+            end
             if (HiLoWrite) {Hi, Lo} <= newHiLo;
             if (MemRead | MemWrite) waitaddr <= mem_addr;
         end

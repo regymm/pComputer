@@ -31,7 +31,8 @@ module sd_controller(
     output ready, // HIGH if the SD card is ready for a read or write operation.
     input [31:0] address,   // Memory address for read/write operation. This MUST 
                             // be a multiple of 512 bytes, due to SD sectoring.
-    input clk,  // 25 MHz clock.
+    input clk,  // normal speed clock
+    input clk_pulse_slow, // pulsed slow clock
     output [4:0] status, // For debug purposes: Current state of controller.
     output reg [7:0] recv_data
 );
@@ -70,7 +71,8 @@ module sd_controller(
     reg [9:0] byte_counter;
     reg [9:0] bit_counter;
     
-    reg [26:0] boot_counter = 27'd005_000;
+    reg [26:0] boot_counter = 27'd050_000;
+    reg [7:0] reset_counter = 0;
     always @(posedge clk) begin
         if(reset == 1) begin
             state <= RST;
@@ -82,8 +84,13 @@ module sd_controller(
             cs <= 1;
             cmd_out <= {56{1'b1}};
             data_sig <= 8'hFF;
+            if (clk_pulse_slow) begin
+                reset_counter <= reset_counter + 1;
+                if (reset_counter[2]) sclk_sig <= ~sclk_sig;
+            end
         end
         else begin
+            if (clk_pulse_slow) begin
             case(state)
                 RST: begin
                     if(boot_counter == 0) begin
@@ -99,7 +106,7 @@ module sd_controller(
                     end
                     else begin
                         boot_counter <= boot_counter - 1;
-                        if (boot_counter[3]) sclk_sig <= ~sclk_sig;
+                        if (boot_counter[2]) sclk_sig <= ~sclk_sig;
                         //sclk_sig <= ~sclk_sig; // I added this
                     end
                 end
@@ -277,6 +284,7 @@ module sd_controller(
                     sclk_sig <= ~sclk_sig;
                 end
             endcase
+            end
         end
     end
 

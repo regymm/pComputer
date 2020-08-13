@@ -3,12 +3,12 @@
 
 module mmapper
     (
-        input [31:0]a,
-        input [31:0]d,
-        input we,
-        input rd,
-        output reg [31:0]spo,
-        output reg ready,
+        (*mark_debug = "true"*)input [31:0]a,
+        (*mark_debug = "true"*)input [31:0]d,
+        (*mark_debug = "true"*)input we,
+        (*mark_debug = "true"*)input rd,
+        (*mark_debug = "true"*)output reg [31:0]spo,
+        (*mark_debug = "true"*)output reg ready,
 
         // 64MB(256MB max) mapped SD card memory: 0x00000000 to 0x03fffffc(or 0x0ffffffc max)
         output reg [31:0]sd_a,

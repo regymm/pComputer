@@ -7,7 +7,7 @@ CFLAGS	=	-nostdlib -Wa,O0 -EB -ffreestanding -fno-delayed-branch -static
 OBJCOPY	=	mipsel-linux-gnu-objcopy
 OBJDIR	=	obj
 
-all: exception.coe bootrom.coe pseudos.bin test.coe
+all: exception.coe bootrom.coe pseudos.bin sdbootloader.bin test.coe
 
 %.coe: %.bin
 	./write_coe.sh $*
@@ -25,6 +25,9 @@ bootrom.elf: bootrom.o mylib/mylib.o
 	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
 
 pseudos.elf: pseudos.o mylib/mylib_big.o
+	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
+
+sdbootloader.elf: sdbootloader.o
 	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
 
 test.elf: test.o

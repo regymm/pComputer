@@ -3,37 +3,59 @@
 .text
 
 _start:
-    # re-setup stack
-    jal setupstack
+    ## re-setup stack
+    #jal setupstack
 
-    li $a0, 1
+    li $a0, 0
     jal led_ctrl
 
+    #li $t0, 'M'
+    #li $t1, 0x0000fffc
+    #sw $t0, ($t1)
+    #li $t0, 'N'
+    #li $t1, 0x00007ffc
+    #sw $t0, ($t1)
+    #lw $a0, 0x0000fffc
+    #jal uart_putchar
+    #lw $a0, 0x00007ffc
+    #jal uart_putchar
+
+    #li $a0, 'X'
+    #jal uart_putchar
+
+    li $sp, 0x00007ffc
+
+
+    li $s0, 1
+    li $s1, 10
+    li $s2, 100
+    li $s3, 1000
+    li $s4, 10000
     la $a0, osstart_str
     jal uart_printstring
 
-    lw $t0, sdmm_start_sector_addr
-    li $t1, 0x10
-    sw $t1, 0($t0)
-    lw $t0, sdmm_size_addr
-    li $t1, 0x100
-    sw $t1, 0($t0)
+    #lw $t0, sdmm_start_sector_addr
+    #li $t1, 0x10
+    #sw $t1, 0($t0)
+    #lw $t0, sdmm_size_addr
+    #li $t1, 0x100
+    #sw $t1, 0($t0)
 
-    li $t0, 'A'
-    sw $t0, 0x00000000
-    sw $t0, 0x00000004
-    sw $t0, 0x00000008
-    sw $t0, 0x0000000c
-    lw $a0, 0x00000000
-    jal uart_putchar
+    #li $t0, 'A'
+    #sw $t0, 0x00000000
+    #sw $t0, 0x00000004
+    #sw $t0, 0x00000008
+    #sw $t0, 0x0000000c
+    #lw $a0, 0x00000000
+    #jal uart_putchar
 
-    li $t0, 'B'
-    sw $t0, 0x0001fffc
-    lw $a0, 0x0001fffc
-    jal uart_putchar
+    #li $t0, 'B'
+    #sw $t0, 0x0001fffc
+    #lw $a0, 0x0001fffc
+    #jal uart_putchar
 
-    lw $a0, 0x00000000
-    jal uart_putchar
+    #lw $a0, 0x00000000
+    #jal uart_putchar
 
     #lw $a0, 0x0001fffc
     #jal uart_putchar
@@ -62,11 +84,11 @@ _start:
     #la $a0, done_str
     #jal uart_printstring
 
-    #la $a0, setupint_str
-    #jal uart_printstring
-    #la $a0, timer_handler
-    #jal isa_timer_set_addr
-    #jal isa_timer_enable
+    la $a0, setupint_str
+    jal uart_printstring
+    la $a0, timer_handler
+    jal isa_timer_set_addr
+    jal isa_timer_enable
     la $a0, syscall_handler
     jal isa_syscall_set_addr
     jal isa_syscall_enable

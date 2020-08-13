@@ -16,11 +16,8 @@
 .globl led_ctrl
 .globl triled_ctrl
 
-.globl sd_read_sector
-.globl sd_print_block
 .globl sd_present
 
-.globl mem_addr
 .globl gpio_addr
 .globl uart_addr
 .globl isa_timer_addr
@@ -39,14 +36,12 @@
 .globl sdmm_start_sector_addr
 .globl sdmm_size_addr
 
-#.extern mem_addr
-
-# void setupstack()
-# stack begin from 0x10003ffc (16KB)
-setupstack:
-    lw $t0, mem_addr
-    addi $sp, $t0, 0x3ffc
-    jr $ra
+## void setupstack()
+## stack begin from 0x10003ffc (16KB)
+#setupstack:
+    #lw $t0, mem_addr
+    #addi $sp, $t0, 0x3ffc
+    #jr $ra
 
 # void isa_timer_set_addr(int addr)
 isa_timer_set_addr:
@@ -178,58 +173,7 @@ _sd_present:
     addi $v0, $zero, 1
     jr $ra
 
-# void sd_read_sector(int sector_addr)
-sd_read_sector:
-    # wait for ready
-    lw $t1, sd_ready_addr
-_sd_read_sector_wait1:
-    lw $t2, 0($t1)
-    beq $t2, $zero, _sd_read_sector_wait1
-    # now ready
-    lw $t1, sd_addr_addr
-    sw $a0, 0($t1)
-    # address set
-    addi $t0, $zero, 1
-    lw $t1, sd_do_read_addr
-    sw $t0, 0($t1)
-    # read command sent
-    ## wait for not ready
-    #lw $t1, sd_ready_addr
-#_sd_read_sector_nwait2:
-    #lw $t2, 0($t1)
-    #beq $t2, $t0, _sd_read_sector_nwait2
-    # and wait for ready again
-    lw $t1, sd_ready_addr
-_sd_read_sector_wait3:
-    lw $t2, 0($t1)
-    beq $t2, $zero, _sd_read_sector_wait3
-    jr $ra
-
-# void sd_print_block()
-sd_print_block:
-    push $ra
-    lw $t1, sd_data_addr
-    addi $t0, $zero, 0
-    addi $t4, $zero, 2048 # 512 * 4
-_sd_print_block_loop:
-    add $t2, $t0, $t1
-    lw $a0, 0($t2)
-    push $t0
-    push $t1
-    push $t4
-    jal uart_putchar
-    pop $t4
-    pop $t1
-    pop $t0
-    addi $t0, $t0, 4
-    beq $t0, $t4, _sd_print_block_end
-    j _sd_print_block_loop
-_sd_print_block_end:
-    pop $ra
-    jr $ra
-
 .data
-    mem_addr: .word 0x10000000
     gpio_addr: .word 0x92000000
     uart_addr: .word 0x93000000
     isa_timer_addr: .word 0x80001000
@@ -238,12 +182,13 @@ _sd_print_block_end:
     isa_keyboard_mask: .word 0x80002004
     isa_syscall_addr: .word 0x80008000
     isa_syscall_mask: .word 0x80008004
-    sd_data_addr: .word 0x96000000
-    sd_addr_addr: .word 0x96001000
-    sd_do_read_addr: .word 0x96001004
-    sd_do_write_addr: .word 0x96001008
     sd_ncd_addr: .word 0x96002000
     sd_wp_addr: .word 0x96002004
-    sd_ready_addr: .word 0x96002010
     sdmm_start_sector_addr: .word 0x96003000
     sdmm_size_addr: .word 0x96003004
+    sd_set_sector_addr: .word 0x96001000
+    sd_set_offset_addr: .word 0x96001004
+    sd_do_read_addr: .word 0x96001008
+    sd_do_write_addr: .word 0x9600100c
+    sd_ready_addr: .word 0x96001010
+    sd_result_addr: .word 0x96001014

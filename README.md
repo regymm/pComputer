@@ -4,16 +4,20 @@ A simple "computer" from scratch, including CPU and OS, running on FPGA-based ha
 
 ### Gallery
 
-In early development. CPU boots from BootROM, reads and transfers control to SD card sectors, which tests syscall and timer ISR. 
+**2020.08.13**  In early development. CPU boots from BootROM, which loads sdbootloader from SD card, then sdbootloader sets up memory(actually another part on SD card) and loads pseudos. Finally pseudos start running, showing timer interrupt and syscall demo. No cache yet, so the process takes ~10s to finish. 
 
-TBD
+![](doc/src/gallery-2020-0813.png)
+
+**2020.06.30** Temporarily ported to a EBAZ4205 board for school course. Showing a simple program(hard-coded in bootrom) reading and echoing strings via UART(I switched the UART receiver from PS to PL after loading bitstream). 
+
+![](doc/src/gallery-2020-0630.png)
 
 ### Features/Roadmap:
 
 **Processor**
 
 - [x] Multiple-cycle MIPS-like CPU @ 62.5MHz on Zynq 7020 PL
-- [x] Current supported instructions: `add(u), sub(u), and, or, xor, slt, sltu, addi(u), slti, sltiu, andi, ori, xori, lui, lw, sw, beq, bne, j, jr, jal, mfc0, eret, nop ` *Trap not supported, so add/addu (and other similar ones) do the same thing.* Pseudoinstructions: `beqz, bnez, li, la, move`
+- [x] Current supported instructions: `add(u), sub(u), and, or, xor, slt, sltu, addi(u), slti, sltiu, andi, ori, xori, lui, lw, sw, beq, bne, j, jr, jal, jalr, mfc0, eret, nop ` *Trap not supported, so add/addu (and other similar ones) do the same thing.* Pseudoinstructions: `beqz, bnez, li, la, move`
 - [x] Memory-like bus interface
 - [x] Interrupt support: timer, syscall, ~~uart input~~, ~~sdcard~~, with custom ISR
 - [ ] Exception support: illegal instruction, divide 0, ...

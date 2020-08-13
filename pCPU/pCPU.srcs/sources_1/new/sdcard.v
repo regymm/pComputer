@@ -27,7 +27,7 @@
 module sdcard
     (
         input clk,
-        input clk_slow,
+        //input clk_slow,
         input rst,
 
         input sd_dat0,
@@ -49,21 +49,28 @@ module sdcard
         output reg irq = 0
     );
 
-    // input 125MHz
-    wire clk_2;
-    wire clk_4;
-    wire clk_8;
-    wire clk_16;
-    wire clk_32;
-    wire clk_64; // this is 1.95MHz
-    wire clk_128;
-    wire clk_256; // this is 488KHz
-    wire clk_512; // this is 244KHz
-    clock_divider div1(clk, clk_2);
-    clock_divider div2(clk_2, clk_4);
-    clock_divider div3(clk_4, clk_8);
-    clock_divider div4(clk_8, clk_16);
-    clock_divider div5(clk_16, clk_32);
+    // slow clock
+    reg [4:0]clkcounter = 0;
+    always @ (posedge clk) begin
+        if (rst) clkcounter <= 5'b0;
+        else clkcounter <= clkcounter + 1;
+    end
+
+    wire clk_pulse_slow = (clkcounter == 5'b0);
+    //wire clk_2;
+    //wire clk_4;
+    //wire clk_8;
+    //wire clk_16;
+    //wire clk_32;
+    //wire clk_64; // this is 1.95MHz
+    //wire clk_128;
+    //wire clk_256; // this is 488KHz
+    //wire clk_512; // this is 244KHz
+    //clock_divider div1(clk, clk_2);
+    //clock_divider div2(clk_2, clk_4);
+    //clock_divider div3(clk_4, clk_8);
+    //clock_divider div4(clk_8, clk_16);
+    //clock_divider div5(clk_16, clk_32);
 
     assign sd_dat1 = 1;
     assign sd_dat2 = 1;
@@ -83,7 +90,8 @@ module sdcard
     wire [4:0]sd_status;
     sd_controller sd_controller_inst
     (
-        .clk(clk_32),
+        .clk(clk),
+        .clk_pulse_slow(clk_pulse_slow),
         .reset(rst),
 
         .cs(sd_dat3),
@@ -144,7 +152,7 @@ module sdcard
             sd_rd <= 0;
             sd_wr <= 0;
         end
-        begin
+        else begin
             if (sd_ready_real) begin
                 if (we) begin
                     case (a[15:0])
@@ -219,11 +227,11 @@ module sdcard
 
 endmodule
 
-module clock_divider (
-    input clk_in,
-    output reg clk_out = 0
-);
-    always @(posedge clk_in) begin
-        clk_out <= ~clk_out;
-    end
-endmodule
+//module clock_divider (
+    //input clk_in,
+    //output reg clk_out = 0
+//);
+    //always @(posedge clk_in) begin
+        //clk_out <= ~clk_out;
+    //end
+//endmodule

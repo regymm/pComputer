@@ -29,6 +29,7 @@ module control_unit
         output reg RegWrite,
         output reg [1:0]RegDst,
         output reg Cmp,
+        output reg IRSrc,
         output reg HiLoSrc,
         output reg HiLoWrite,
 
@@ -61,6 +62,7 @@ module control_unit
     localparam J_END = 40;
     localparam JAL_END = 41;
     localparam JR_END = 42;
+    localparam JALR_END = 43;
     localparam I_MFC0_END = 50;
     //localparam I_MTC0_END = 51;
     localparam I_ERET_END = 52;
@@ -104,6 +106,7 @@ module control_unit
     localparam FUNCT_SLLV = 6'b000100;
     localparam FUNCT_SRLV = 6'b000110;
     localparam FUNCT_JR = 6'b001000;
+    localparam FUNCT_JALR = 6'b001001;
     localparam FUNCT_SYSCALL = 6'b001100;
     localparam FUNCT_MFHI = 6'b010000;
     localparam FUNCT_MTHI = 6'b010001; // not on todo list
@@ -154,10 +157,11 @@ module control_unit
     localparam OP_J = 90013;
     localparam OP_JAL = 90014;
     localparam OP_JR = 90015;
-    localparam OP_MFC0 = 90016;
-    //localparam OP_MTC0 = 90017;
-    localparam OP_ERET = 90018;
-    localparam OP_SYSCALL = 90019;
+    localparam OP_JALR = 90016;
+    localparam OP_MFC0 = 90017;
+    //localparam OP_MTC0 = 90018;
+    localparam OP_ERET = 90019;
+    localparam OP_SYSCALL = 90020;
     localparam OP_NOP = 98000;
     localparam OP_BAD = 99000;
 
@@ -214,6 +218,7 @@ module control_unit
                 FUNCT_SLLV: Op = OP_SLLV;
                 FUNCT_SRLV: Op = OP_SRLV;
                 FUNCT_JR: Op = OP_JR;
+                FUNCT_JALR: Op = OP_JALR;
                 FUNCT_SYSCALL: Op = OP_SYSCALL;
                 FUNCT_ADD: Op = OP_ADD;
                 FUNCT_ADDU: Op = OP_ADD;
@@ -260,6 +265,7 @@ module control_unit
         else begin
             case(phase)
                 IF: phase <= ID_RF;
+                IF_REMEDY: phase <= ID_RF;
                 ID_RF: begin
                     if (!MemReady) begin
                         phase <= MEM_WAIT;
@@ -297,6 +303,7 @@ module control_unit
                         OP_J: phase <= J_END;
                         OP_JAL: phase <= JAL_END;
                         OP_JR: phase <= JR_END;
+                        OP_JALR: phase <= JALR_END;
 
                         OP_MFC0: phase <= I_MFC0_END;
                         //OP_MTC0: phase <= I_MTC0_END;
@@ -332,6 +339,7 @@ module control_unit
                 SHIFT_EX: phase <= R_END;
                 CMP_END: phase <= IF;
                 JR_END: phase <= IF;
+                JALR_END: phase <= IF;
                 J_END: phase <= IF;
                 JAL_END: phase <= IF;
                 B_EX: case (Op)
@@ -378,6 +386,7 @@ module control_unit
         RegWrite = 0;
         RegDst = 2'b00;
         Cmp = 0;
+        IRSrc = 0;
         HiLoSrc = 0;
         HiLoWrite = 0;
         EPCWrite = 0;
@@ -398,9 +407,11 @@ module control_unit
             end
             IF_REMEDY: begin
                 IRWrite = 1;
-                PCWrite = 1;
-                NewInstr = 1;
+                IRSrc = 1;
                 ALUSrcB = 2'b01;
+                //PCWrite = 1;
+                //NewInstr = 1;
+                //ALUSrcB = 2'b01;
             end
             ID_RF: begin
                 ALUSrcB = 2'b11;
@@ -492,6 +503,10 @@ module control_unit
             end
             JR_END: begin
                 PCWrite = 1; PCSource = 3'b011;
+            end
+            JALR_END: begin
+                PCWrite = 1; PCSource = 3'b011;
+                RegWrite = 1; RegDst = 2'b01; RegSrc = 3'b011;
             end
             I_MFC0_END: begin
                 RegWrite = 1; RegSrc = 3'b100;
