@@ -8,11 +8,18 @@ A simple "computer" from scratch, including CPU and OS, running on FPGA-based ha
 
 ![](doc/src/gallery-2020-0813.png)
 
-**2020.06.30** Temporarily ported to a EBAZ4205 board for school course. Showing a simple program(hard-coded in bootrom) reading and echoing strings via UART(I switched the UART receiver from PS to PL after loading bitstream). 
+**2020.06.30** Temporarily ported to an EBAZ4205 board for school course. Showing a simple program(hard-coded in bootrom) reading and echoing strings via UART(I switched the UART receiver from PS to PL after loading bitstream). 
 
 ![](doc/src/gallery-2020-0630.png)
 
 ### Features/Roadmap:
+
+**Overall progress**
+
+- [x] Runs on board
+- [x] Works as a usable micro controller
+- [ ] Works as a usable computer
+- [ ] Can do development in the OS
 
 **Processor**
 
@@ -20,24 +27,26 @@ A simple "computer" from scratch, including CPU and OS, running on FPGA-based ha
 - [x] Current supported instructions: `add(u), sub(u), and, or, xor, slt, sltu, addi(u), slti, sltiu, andi, ori, xori, lui, lw, sw, beq, bne, j, jr, jal, jalr, mfc0, eret, nop ` *Trap not supported, so add/addu (and other similar ones) do the same thing.* Pseudoinstructions: `beqz, bnez, li, la, move`
 - [x] Memory-like bus interface
 - [x] Interrupt support: timer, syscall, ~~uart input~~, ~~sdcard~~, with custom ISR
-- [ ] Exception support: illegal instruction, divide 0, ...
+- [ ] Exception support: illegal instruction, memory error, divide 0, protection error ...
+- [ ] User/Privileged mode support
 
 **Hardware/Software**
 
-I/O
+Peripherals
 
 - [x] GPIO (LEDs, buttons, switches)
-- [x] UART input/output
-- [ ] PS/2 keyboard input
-- [ ] HDMI output
-- [x] Read/Write SD card
-
+- [x] UART
+- [x] SD card
+- [ ] PS/2 keyboard
+- [ ] HDMI character terminal
+- [ ] Graphics unit
+- [ ] W5500 Internet module
 
 Memory
 
-- [x] Use part of SD card as main memory (because DDR not usable in PL)
+- [x] Use part of SD card as main memory
+- [ ] Use PS-side DDR memory via AXI4-lite
 - [ ] primitive MMU and paging
-- [ ] User/Privileged mode
 - [ ] Cache
 
 OS
@@ -58,10 +67,8 @@ OS
 Others
 
 - [x] Cycle counter
+- [ ] RNG
 
-**Overall progress**
+### Documents
 
-- [x] Run on board
-- [x] Work as a usable micro controller
-- [ ] Work as a usable computer
-- [ ] Do development in the OS
+Not yet...

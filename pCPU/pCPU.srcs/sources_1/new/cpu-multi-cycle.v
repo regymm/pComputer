@@ -8,6 +8,7 @@ module cpu_multi_cycle
         input irq,
         input [3:0]icause,
         output iack,
+        output ring,
 
         output reg [31:0]a,
         output reg [31:0]d,
@@ -40,8 +41,8 @@ module cpu_multi_cycle
     // some signals
     reg [31:0]newpc;
     reg [63:0]newHiLo;
-    wire [31:0]imm = {{16{instruction[15]}}, instruction[15:0]};
     wire [31:0]status;
+    reg [31:0]imm;
 
     // control unit signals
     wire PCWrite;
@@ -58,8 +59,11 @@ module cpu_multi_cycle
     wire [1:0]ALUSrcB;
     wire RegWrite;
     wire [1:0]RegDst;
+    wire ImmNSE;
     wire Cmp;
     wire IRSrc;
+    wire HiLoSrc;
+    wire HiLoWrite;
     wire EPCWrite;
     wire EPCSrc;
     wire CauseWrite;
@@ -67,8 +71,8 @@ module cpu_multi_cycle
     wire StatusWrite;
     wire StatusSrc;
     wire [4:0]Mfc0Src;
-    wire HiLoSrc;
-    wire HiLoWrite;
+    wire Mtc0Write;
+    wire [4:0]Mtc0Src;
     control_unit control_unit_inst
     (
         .clk(clk),
@@ -96,6 +100,7 @@ module cpu_multi_cycle
         .ALUSrcB(ALUSrcB),
         .RegWrite(RegWrite),
         .RegDst(RegDst),
+        .ImmNSE(ImmNSE),
         .Cmp(Cmp),
         .IRSrc(IRSrc),
         .HiLoSrc(HiLoSrc),
@@ -107,7 +112,9 @@ module cpu_multi_cycle
         .CauseSrc(CauseSrc),
         .StatusWrite(StatusWrite),
         .StatusSrc(StatusSrc),
-        .Mfc0Src(Mfc0Src)
+        .Mfc0Src(Mfc0Src),
+        .Mtc0Write(Mtc0Write),
+        .Mtc0Src(Mtc0Src)
     );
 
     // register file
@@ -202,11 +209,18 @@ module cpu_multi_cycle
         .mtc0in(B),
         .mfc0out(mfc0out),
         .epc_out(epc),
-        .status_out(status)
+        .status_out(status),
+        .ring_out(ring)
     );
+
+
 
     // datapath -- main
     always @ (*) begin
+        case (ImmNSE)
+            0: imm = {{16{instruction[15]}}, instruction[15:0]};
+            1: imm = {16'h0, instruction[15:0]};
+        endcase
         case (IorDorW)
             0: mem_addr = pc;                           // IF
             1: mem_addr = ALUOut;                       // MEM
@@ -229,17 +243,17 @@ module cpu_multi_cycle
             6: WriteData = Hi;                          // mfhi
             7: WriteData = Lo;                          // mflo
         endcase
-        case (ALUSrcB)
-            0: ALUIn2 = B;                              //
-            1: ALUIn2 = 4;                              // IF
-            2: ALUIn2 = imm;                            // addi,...
-            3: ALUIn2 = imm << 2;                       // ID
-        endcase
         case (ALUSrcA)
             0: ALUIn1 = pc;                             // IF, ID
             1: ALUIn1 = A;                              // 
             2: ALUIn1 = {27'b0, instruction[10:6]};              // sll,srl
             default: ALUIn1 = 0;
+        endcase
+        case (ALUSrcB)
+            0: ALUIn2 = B;                              //
+            1: ALUIn2 = 4;                              // IF
+            2: ALUIn2 = imm;                            // addi,...
+            3: ALUIn2 = imm << 2;                       // ID
         endcase
         case (PCSource)
             0: newpc = ALUResult;                               // IF
@@ -251,8 +265,8 @@ module cpu_multi_cycle
             default: newpc = 0;
         endcase
         case (HiLoSrc)
-            1'b0: newHiLo <= MultResult;                        // mult
-            1'b1: newHiLo <= DivResult;                         // div
+            1'b0: newHiLo = MultResult;                        // mult
+            1'b1: newHiLo = DivResult;                         // div
         endcase
     end
     always @ (posedge clk) begin

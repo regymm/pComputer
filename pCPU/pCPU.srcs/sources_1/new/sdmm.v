@@ -51,7 +51,7 @@ module sdmm
 
     localparam CONTROL_ADDR = 16'h9600;
     wire control_addr = (a[31:16] == CONTROL_ADDR);
-    wire ncontrol_addr_legal = (a[31:28] == 4'b0) & (a < (mm_size << 9)); // this means not control_addr
+    wire ncontrol_addr_legal = (a[31:28] == 4'b0) & ({9'b0, a[31:9]} <= mm_size); // this means not control_addr
 
     reg [31:0]target_addr = 0;
     reg [31:0]target_data = 0;
@@ -83,6 +83,7 @@ module sdmm
             state <= IDLE;
             cache_valid <= 0;
             load_count <= 0;
+            irq <= 0;
         end
         else begin
             if (control_addr & we & ready)
@@ -93,6 +94,10 @@ module sdmm
                     16'h3004: mm_size <= d;
                     default: ;
                 endcase
+
+                if ((rd | we) & !ncontrol_addr_legal) begin
+                    irq <= 1;
+                end
 
             case (state)
                 IDLE: begin

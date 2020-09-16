@@ -28,6 +28,7 @@ module control_unit
         output reg [1:0]ALUSrcB,
         output reg RegWrite,
         output reg [1:0]RegDst,
+        output reg ImmNSE,
         output reg Cmp,
         output reg IRSrc,
         output reg HiLoSrc,
@@ -39,11 +40,22 @@ module control_unit
         output reg CauseSrc,
         output reg StatusWrite,
         output reg StatusSrc,
-        output reg [4:0]Mfc0Src
+        output reg [4:0]Mfc0Src,
+        output reg Mtc0Write,
+        output reg [4:0]Mtc0Src
     );
 
+    // control unit FSM state names (values doesn't matter)
     localparam IF = 0;
     localparam ID_RF = 1;
+    localparam MFHI_END = 60;
+    localparam MFLO_END = 61;
+    localparam MULT_EX = 62;
+    localparam MULT_WAIT = 63;
+    localparam MULT_END = 64;
+    localparam DIV_EX = 65;
+    localparam DIV_WAIT = 66;
+    localparam DIV_END = 67;
     localparam R_EX = 2;
     localparam R_END = 3;
     localparam SHIFT_EX = 4;
@@ -64,7 +76,7 @@ module control_unit
     localparam JR_END = 42;
     localparam JALR_END = 43;
     localparam I_MFC0_END = 50;
-    //localparam I_MTC0_END = 51;
+    localparam I_MTC0_END = 51;
     localparam I_ERET_END = 52;
     localparam I_SYSCALL_END = 53;
     localparam I_INT_END = 54;
@@ -72,10 +84,10 @@ module control_unit
     localparam IF_REMEDY = 96;
     localparam MEM_WAIT = 98;
     localparam BAD = 99;
-    // control unit FSM state names (values doesn't matter)
     (*mark_debug = "true"*) reg [7:0]phase = IF;
     reg [7:0]phase_return = IF;
     //reg [7:0]phase = IF;
+    reg [7:0]counter;
 
     // instruction[31:26] instruction type
     wire [5:0]instr_type = instruction[31:26];
@@ -129,6 +141,10 @@ module control_unit
 
     // instruction label (values doesn't matter)
     reg [31:0]Op;
+    localparam OP_MFHI = 91101;
+    localparam OP_MFLO = 91102;
+    localparam OP_MULT = 91103;
+    localparam OP_DIV = 91104;
     localparam OP_ADD = 91001;
     localparam OP_SUB = 91002;
     localparam OP_AND = 91003;
@@ -136,7 +152,6 @@ module control_unit
     localparam OP_XOR = 91005;
     localparam OP_SLT = 91006;
     localparam OP_SLTU = 91007;
-    localparam OP_MULT = 91008;
     localparam OP_SLL = 91009;
     localparam OP_SRL = 91010;
     localparam OP_SLLV = 91011;
@@ -159,57 +174,12 @@ module control_unit
     localparam OP_JR = 90015;
     localparam OP_JALR = 90016;
     localparam OP_MFC0 = 90017;
-    //localparam OP_MTC0 = 90018;
+    localparam OP_MTC0 = 90018;
     localparam OP_ERET = 90019;
     localparam OP_SYSCALL = 90020;
     localparam OP_NOP = 98000;
     localparam OP_BAD = 99000;
 
-    // instruction decoding
-    //always @ (posedge clk) begin
-        //case (instr_type)
-            //TYPE_REG: case (instr_funct)
-                //FUNCT_SLL: Op <= OP_SLL;
-                //FUNCT_SRL: Op <= OP_SRL;
-                //FUNCT_SLLV: Op <= OP_SLLV;
-                //FUNCT_SRLV: Op <= OP_SRLV;
-                //FUNCT_JR: Op <= OP_JR;
-                //FUNCT_SYSCALL: Op <= OP_SYSCALL;
-                //FUNCT_ADD: Op <= OP_ADD;
-                //FUNCT_ADDU: Op <= OP_ADD;
-                //FUNCT_SUB: Op <= OP_SUB;
-                //FUNCT_SUBU: Op <= OP_SUB;
-                //FUNCT_AND: Op <= OP_AND;
-                //FUNCT_OR: Op <= OP_OR;
-                //FUNCT_XOR: Op <= OP_XOR;
-                //FUNCT_SLT: Op <= OP_SLT;
-                //FUNCT_SLTU: Op <= OP_SLTU;
-                //default: if (instruction == 32'b0) Op <= OP_NOP;
-                //else Op <= OP_BAD;
-            //endcase
-            //TYPE_J: Op <= OP_J;
-            //TYPE_JAL: Op <= OP_JAL;
-            //TYPE_BEQ: Op <= OP_BEQ;
-            //TYPE_BNE: Op <= OP_BNE;
-            //TYPE_ADDI: Op <= OP_ADDI;
-            //TYPE_ADDIU: Op <= OP_ADDI;
-            //TYPE_SLTI: Op <= OP_SLTI;
-            //TYPE_SLTIU: Op <= OP_SLTIU;
-            //TYPE_ANDI: Op <= OP_ANDI;
-            //TYPE_ORI: Op <= OP_ORI;
-            //TYPE_XORI: Op <= OP_XORI;
-            //TYPE_LUI: Op <= OP_LUI;
-            //TYPE_LW: Op <= OP_LW;
-            //TYPE_SW: Op <= OP_SW;
-            //TYPE_INT: case (instruction[25:21])
-                //5'b10000: Op <= OP_ERET;
-                //5'b00000: Op <= OP_MFC0;
-                //5'b00100: Op <= OP_MTC0;
-                //default: Op <= OP_BAD;
-            //endcase
-            //default: Op <= OP_BAD;
-        //endcase
-    //end
     always @ (*) begin
         case (instr_type)
             TYPE_REG: case (instr_funct)
@@ -220,6 +190,12 @@ module control_unit
                 FUNCT_JR: Op = OP_JR;
                 FUNCT_JALR: Op = OP_JALR;
                 FUNCT_SYSCALL: Op = OP_SYSCALL;
+                FUNCT_MFHI: Op = OP_MFHI;
+                FUNCT_MFLO: Op = OP_MFLO;
+                FUNCT_MULT: Op = OP_MULT;
+                FUNCT_MULTU: Op = OP_MULT;
+                FUNCT_DIV: Op = OP_DIV;
+                FUNCT_DIVU: Op = OP_DIV;
                 FUNCT_ADD: Op = OP_ADD;
                 FUNCT_ADDU: Op = OP_ADD;
                 FUNCT_SUB: Op = OP_SUB;
@@ -250,7 +226,7 @@ module control_unit
             TYPE_INT: case (instruction[25:21])
                 5'b10000: Op = OP_ERET;
                 5'b00000: Op = OP_MFC0;
-                //5'b00100: Op = OP_MTC0;
+                5'b00100: Op = OP_MTC0;
                 default: Op = OP_BAD;
             endcase
             default: Op = OP_BAD;
@@ -264,17 +240,21 @@ module control_unit
         end
         else begin
             case(phase)
-                IF: phase <= ID_RF;
+                IF: if (!MemReady) begin
+                    phase <= MEM_WAIT;
+                    phase_return <= IF_REMEDY;
+                end
+                else phase <= ID_RF;
                 IF_REMEDY: phase <= ID_RF;
                 ID_RF: begin
-                    if (!MemReady) begin
-                        phase <= MEM_WAIT;
-                        phase_return <= IF_REMEDY;
-                    end
-                    else if (status[3] & irq) phase <= I_INT_END;
+                    if (status[3] & irq) phase <= I_INT_END;
                     else case(Op)
                         OP_NOP: phase <= IF;
 
+                        OP_MFHI: phase <= MFHI_END;
+                        OP_MFLO: phase <= MFLO_END;
+                        OP_MULT: phase <= MULT_EX;
+                        OP_DIV: phase <= DIV_EX;
                         OP_ADD: phase <= R_EX;
                         OP_SUB: phase <= R_EX;
                         OP_AND: phase <= R_EX;
@@ -306,7 +286,7 @@ module control_unit
                         OP_JALR: phase <= JALR_END;
 
                         OP_MFC0: phase <= I_MFC0_END;
-                        //OP_MTC0: phase <= I_MTC0_END;
+                        OP_MTC0: phase <= I_MTC0_END;
                         OP_ERET: phase <= I_ERET_END;
                         OP_SYSCALL: begin
                             if (status[0]) phase <= I_SYSCALL_END;
@@ -330,6 +310,26 @@ module control_unit
                     phase <= MEM_WAIT; phase_return <= IF;
                 end
                 LUI_END: phase <= IF;
+                MFHI_END: phase <= IF;
+                MFLO_END: phase <= IF;
+                MULT_EX: begin
+                    phase <= MULT_WAIT;
+                    counter <= 1;
+                end
+                MULT_WAIT: begin
+                    counter <= counter - 1;
+                    if (counter == 0) phase <= MULT_END;
+                end
+                MULT_END: phase <= IF;
+                DIV_EX: begin
+                    phase <= DIV_WAIT;
+                    counter <= 34;
+                end
+                DIV_WAIT: begin
+                    counter <= counter - 1;
+                    if (counter == 0) phase <= DIV_END;
+                end
+                DIV_END: phase <= IF;
                 R_EX: case (Op)
                     OP_SLT: phase <= CMP_END;
                     OP_SLTU: phase <= CMP_END;
@@ -357,7 +357,7 @@ module control_unit
                 CALCI_END: phase <= IF;
                 CMPI_END: phase <= IF;
                 I_MFC0_END: phase <= IF;
-                //I_MTC0_END: phase <= IF;
+                I_MTC0_END: phase <= IF;
                 I_ERET_END: phase <= IF;
                 I_SYSCALL_END: phase <= IF;
                 I_INT_END: phase <= IF;
@@ -385,6 +385,7 @@ module control_unit
         ALUSrcB = 0;
         RegWrite = 0;
         RegDst = 2'b00;
+        ImmNSE = 0;
         Cmp = 0;
         IRSrc = 0;
         HiLoSrc = 0;
@@ -396,6 +397,8 @@ module control_unit
         StatusWrite = 0;
         StatusSrc = 0;
         Mfc0Src = 5'b0;
+        Mtc0Write = 0;
+        Mtc0Src = 5'b0;
         iack = 0;
         case (phase)
             IF: begin
@@ -432,11 +435,11 @@ module control_unit
                 ALUSrcA = 2'b01; ALUSrcB = 2'b10;
                 case (Op)
                     OP_ADDI: ALUm = 3'b000;
-                    OP_ANDI: ALUm = 3'b010;
-                    OP_ORI: ALUm = 3'b011;
-                    OP_XORI: ALUm = 3'b100;
-                    OP_SLTI: ALUm = 3'b001;
-                    OP_SLTIU: ALUm = 3'b001;
+                    OP_ANDI: begin ALUm = 3'b010; ImmNSE = 1; end
+                    OP_ORI: begin ALUm = 3'b011; ImmNSE = 1; end
+                    OP_XORI: begin ALUm = 3'b100; ImmNSE = 1; end
+                    OP_SLTI: ALUm = 3'b001; // TODO
+                    OP_SLTIU: ALUm = 3'b001; // TODO
                 endcase
             end
             CALCI_END: begin
@@ -452,6 +455,26 @@ module control_unit
             end
             LUI_END: begin
                 RegWrite = 1; RegSrc = 3'b010;
+            end
+            MFHI_END: begin
+                RegWrite = 1; RegSrc = 3'b110;
+            end
+            MFLO_END: begin
+                RegWrite = 1; RegSrc = 3'b111;
+            end
+            MULT_EX: begin
+                ALUSrcA = 2'b01;
+            end
+            MULT_WAIT: ;
+            MULT_END: begin
+                HiLoWrite = 1;
+            end
+            DIV_EX: begin
+                ALUSrcA = 2'b01;
+            end
+            DIV_WAIT: ;
+            DIV_END: begin
+                HiLoWrite = 1; HiLoSrc = 1;
             end
             R_EX: begin
                 ALUSrcA = 2'b01;
@@ -512,7 +535,10 @@ module control_unit
                 RegWrite = 1; RegSrc = 3'b100;
                 Mfc0Src = instruction[15:11];
             end
-            //I_MTC0_END: begin ; end
+            I_MTC0_END: begin
+                Mtc0Write = 1;
+                Mtc0Src = instruction[15:11];
+            end
             I_ERET_END: begin
                 PCWrite = 1; PCSource = 3'b100;
                 StatusWrite = 1; StatusSrc = 1;
@@ -529,8 +555,13 @@ module control_unit
                 StatusWrite = 1; StatusSrc = 0;
                 EPCWrite = 1; EPCSrc = 1;
                 iack = 1;
-            //I_EXCPTN_END: begin
-                //EPCWrite = 1; PCWrite = 1; PCSource = 3'b100; CauseWrite = 1; CauseSrc = 2; StatusWrite = 1; StatusSrc = 0; iack = 1; 
+            end
+            I_EXCPTN_END: begin
+                PCWrite = 1; PCSource = 3'b100;
+                CauseWrite = 1; CauseSrc = 2;
+                StatusWrite = 1; StatusSrc = 0;
+                EPCWrite = 1; EPCSrc = 1;
+                //iack = 1; 
             end
             MEM_WAIT: begin
                 IorDorW = 2'b10;

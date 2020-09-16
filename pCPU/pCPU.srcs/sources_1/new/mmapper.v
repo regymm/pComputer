@@ -19,17 +19,11 @@ module mmapper
         input sd_ready,
 
         // 4096*32(32KB) distributed memory: 0x10000000 to 0x10007ffc
-        output reg [11:0]mainm_a,
-        output reg [31:0]mainm_d,
-        output reg mainm_we,
-        input [31:0]mainm_spo,
+        output reg [11:0]distm_a,
+        output reg [31:0]distm_d,
+        output reg distm_we,
+        input [31:0]distm_spo,
 
-        //// 4800*8(80*30*2*8) vram: 0x40000000 to 0x4000
-        //// TODO
-        //output reg [12:0]video_a = 0,
-        //output reg [31:0]video_d = 0,
-        //output reg video_we = 0,
-        //input [31:0]video_spo,
 
         //// special devices:
         //// counter 0x50000000
@@ -63,9 +57,18 @@ module mmapper
         output reg uart_we,
         input [31:0]uart_spo,
 
+        //// 4800*8(80*30*2*8) vram: 0x40000000 to 0x4000
+        // testing
+        //// TODO
+        output reg [31:0]video_a = 0,
+        output reg [31:0]video_d = 0,
+        output reg video_we = 0,
+        input [31:0]video_spo,
         // SD card control: 0x96000000
         // same as SDMM memory
         
+        // 0xe0000000 MMU control
+
         // 1024*32(8KB) boot rom: 0xf0000000 to 0xf00007fc
         output reg [9:0]bootm_a,
         input [31:0]bootm_spo,
@@ -76,12 +79,14 @@ module mmapper
 
     always @ (*) begin 
         bootm_a = a[11:2];
-        mainm_a = a[13:2];
-        mainm_d = d;
+        distm_a = a[13:2];
+        distm_d = d;
         gpio_a = a[5:2];
         gpio_d = d;
         uart_a = a[4:2];
         uart_d = d;
+        video_a = a;
+        video_d = d;
         sd_a = a[31:0];
         sd_d = d;
         isr_a = a;
@@ -90,9 +95,10 @@ module mmapper
 
     always @ (*) begin
         irq = 0;
-        mainm_we = 0;
+        distm_we = 0;
         gpio_we = 0;
         uart_we = 0;
+        video_we = 0;
         sd_we = 0;
         sd_rd = 0;
         isr_we = 0;
@@ -114,8 +120,8 @@ module mmapper
             sd_rd = rd;
         end
         else if (a[31:28] == 4'h1) begin
-            spo = mainm_spo;
-            mainm_we = we;
+            spo = distm_spo;
+            distm_we = we;
         end
         else if (a[31:28] == 4'h8) begin
             spo = isr_spo;
@@ -130,6 +136,10 @@ module mmapper
                 4'h3: begin
                     spo = uart_spo;
                     uart_we = we;
+                end
+                4'h4: begin
+                    spo = video_spo;
+                    video_we = we;
                 end
                 4'h6: begin
                     spo = sd_spo;

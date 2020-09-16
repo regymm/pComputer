@@ -6,22 +6,27 @@ module coprocessor0
     (
         input clk,
         input rst,
-        
+
         input [4:0]Mfc0Src,
+        output reg [31:0]mfc0out,
+        input [4:0]Mtc0Src,
+        input Mtc0Write,
+        input [31:0]mtc0in,
+
         input EPCSrc,
         input CauseSrc,
         input StatusSrc,
         input EPCWrite,
         input CauseWrite,
         input StatusWrite,
-
         input [31:0]pc,
         input [31:0]current_pc,
         input [3:0]causedata_outside,
-        input [31:0]mtc0in,
-        output reg [31:0]mfc0out,
+
+        // TODO: better exception cause id
         output wire [31:0]epc_out,
-        output wire [31:0]status_out
+        output wire [31:0]status_out,
+        output wire ring_out
     );
 
     // cp0 registers
@@ -35,11 +40,14 @@ module coprocessor0
     (*mark_debug = "true"*) reg [31:0]counter = 0;
 
     // cp0 signals
+    // need extras signals because many regs may be written at once
     reg [31:0]CauseData;
     reg [31:0]StatusData;
     reg [31:0]EPCData;
+    // and other signals are needed at all time
     assign epc_out = epc;
     assign status_out = status;
+    assign ring_out = ring[0];
 
     // datpath -- coprocessor 0
     always @ (*) begin
@@ -52,7 +60,7 @@ module coprocessor0
         case (CauseSrc)
             0: CauseData = {28'b0, causedata_outside};  // timer, ...
             1: CauseData = 1;                           // syscall
-            //2: CauseData = mtc0in;
+            2: CauseData = 2;                           // exception
             default: ;
         endcase
         case (StatusSrc)
@@ -75,9 +83,18 @@ module coprocessor0
         end
         else begin
             counter <= counter + 1;
-            if (EPCWrite) epc <= EPCData;
-            if (CauseWrite) cause <= CauseData;
-            if (StatusWrite) status <= StatusData;
+            // in theory these two cases won't overlap
+            if (Mtc0Write) case (Mtc0Src)
+                14: epc <= mtc0in;
+                13: cause <= mtc0in;
+                12: status <= mtc0in;
+                default: ;
+            endcase
+            else begin
+                if (EPCWrite) epc <= EPCData;
+                if (CauseWrite) cause <= CauseData;
+                if (StatusWrite) status <= StatusData;
+            end
         end
     end
 endmodule

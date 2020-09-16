@@ -46,6 +46,8 @@ _start:
     beq $t0, $t1, _keyboard
     addi $t1, $zero, 1
     beq $t0, $t1, _syscall
+    addi $t1, $zero, 2
+    beq $t0, $t1, _exception
 _unknown:
     j _unknown
     # in subroutines just use jr $ra to _finish
@@ -57,6 +59,9 @@ _keyboard:
     jr $t0
 _syscall:
     lw $t0, 0x80008000
+    jr $t0
+_exception:
+    lw $t0, 0x8000c000
     jr $t0
 _finish:
     # pop

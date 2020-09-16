@@ -55,22 +55,7 @@ module sdcard
         if (rst) clkcounter <= 5'b0;
         else clkcounter <= clkcounter + 1;
     end
-
     wire clk_pulse_slow = (clkcounter == 5'b0);
-    //wire clk_2;
-    //wire clk_4;
-    //wire clk_8;
-    //wire clk_16;
-    //wire clk_32;
-    //wire clk_64; // this is 1.95MHz
-    //wire clk_128;
-    //wire clk_256; // this is 488KHz
-    //wire clk_512; // this is 244KHz
-    //clock_divider div1(clk, clk_2);
-    //clock_divider div2(clk_2, clk_4);
-    //clock_divider div3(clk_4, clk_8);
-    //clock_divider div4(clk_8, clk_16);
-    //clock_divider div5(clk_16, clk_32);
 
     assign sd_dat1 = 1;
     assign sd_dat2 = 1;
@@ -114,27 +99,19 @@ module sdcard
     );
 
     // manual slow clock posedge detection
-    // TODO: remove duplicate
     reg sd_ready_old = 0;
     reg sd_readnext_old = 0;
     reg sd_writenext_old = 0;
-    //reg sd_ready_oold = 0;
-    //reg sd_readnext_oold = 0;
-    //reg sd_writenext_oold = 0;
     always @ (posedge clk) begin
         sd_ready_old <= sd_ready;
         sd_readnext_old <= sd_readnext;
         sd_writenext_old <= sd_writenext;
-        //sd_ready_oold <= sd_ready_old;
-        //sd_readnext_oold <= sd_readnext_old;
-        //sd_writenext_oold <= sd_writenext_old;
     end
     wire sd_ready_posedge = !sd_ready_old & sd_ready;
     wire sd_readnext_posedge = !sd_readnext_old & sd_readnext;
     wire sd_writenext_posedge = !sd_writenext_old & sd_writenext;
 
     wire sd_ready_real = sd_ready & !sd_rd & !sd_wr;
-
 
     reg reading = 0;
     reg writing = 0;
@@ -227,11 +204,3 @@ module sdcard
 
 endmodule
 
-//module clock_divider (
-    //input clk_in,
-    //output reg clk_out = 0
-//);
-    //always @(posedge clk_in) begin
-        //clk_out <= ~clk_out;
-    //end
-//endmodule

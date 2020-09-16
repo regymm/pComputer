@@ -1,10 +1,15 @@
 # Boot ROM
+# use mylib/mylib.asm
 .include "mylib/include.asm"
 .section .text.boot
 
 _start:
+    lw $t0, gpio_addr
+    li $t1, 0
+    sw $t1, 24($t0)
     #addi $a0, $zero, 0
     #jal led_ctrl
+
     addi $a0, $zero, 'O'
     jal uart_putchar
     addi $a0, $zero, 'K'

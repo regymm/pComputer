@@ -1,29 +1,45 @@
 # pseudOS main
+# use mylib/mylib_big.asm
 .include "mylib/include.asm"
 .text
 
 _start:
     ## re-setup stack
     #jal setupstack
+    #ori $t1, $zero, 0xfffc
 
-    li $a0, 0
-    jal led_ctrl
+    #li $a0, 0
+    #jal led_ctrl
+    lw $t0, gpio_addr
+    li $t1, 0
+    sw $t1, 32($t0)
 
-    #li $t0, 'M'
-    #li $t1, 0x0000fffc
-    #sw $t0, ($t1)
-    #li $t0, 'N'
-    #li $t1, 0x00007ffc
-    #sw $t0, ($t1)
-    #lw $a0, 0x0000fffc
-    #jal uart_putchar
-    #lw $a0, 0x00007ffc
-    #jal uart_putchar
+    li  $sp, 0x00001ffc
+    lui $t0, 0xdead
+    addi $t0, $t0, 0xbeef
+    #li $t0, 0xdeadbeef
+    push $t0
+    push $t0
+    pop $t0
+    pop $t0
+    #j _end
 
-    #li $a0, 'X'
-    #jal uart_putchar
+    li $t0, 'M'
+    li $t1, 0x0000fffc
+    sw $t0, ($t1)
+    #sw $t0, 0x0000fffc
+    li $t0, 'N'
+    li $t1, 0x00007ffc
+    sw $t0, ($t1)
+    lw $a0, 0x0000fffc
+    jal uart_putchar
+    lw $a0, 0x00007ffc
+    jal uart_putchar
 
-    li $sp, 0x00007ffc
+    li $a0, 'X'
+    jal uart_putchar
+
+    li $sp, 0x0000fffc
 
 
     li $s0, 1

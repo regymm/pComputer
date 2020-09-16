@@ -22,20 +22,6 @@ module top_simu();
         .sd_dat0(sd_dat0)
     );
     
-    //top top_inst
-    //(
-        //.sysclk(clk),
-        //.sw(sw),
-        //.led4_b(led4_b),
-        //.led4_g(led4_g),
-        //.led4_r(led4_r),
-        //.led5_b(led5_b),
-        //.led5_g(led5_g),
-        //.led5_r(led5_r),
-        //.led(led),
-        //.btn(btn)
-    //);
-
     initial begin
         clk = 0;
         forever #5 clk = ~clk;
