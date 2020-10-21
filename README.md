@@ -44,7 +44,7 @@ Peripherals
 
 Memory
 
-- [ ] 64MB-max SPI pseudo SRAM via custom-drawn PMOD board
+- [ ] SPI pseudo SRAM via custom-drawn PMOD board
 - [x] Use part of SD card as main memory
 - [ ] Use PS-side DDR memory via AXI4-lite
 - [ ] primitive MMU and paging

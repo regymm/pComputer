@@ -71,10 +71,14 @@ module pcpu_main
     // bootrom 1024*32
     wire [9:0]bootm_a;
     wire [31:0]bootm_spo;
-    bootrom bootm_inst(
+	simple_rom #(
+		.WIDTH(32),
+		.DEPTH(10),
+		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_bootrom.dat")
+	) bootrom(
         .a(bootm_a),
         .spo(bootm_spo)
-    );
+	);
 
     
     // distributed ram 4096*32
@@ -82,7 +86,10 @@ module pcpu_main
     wire [31:0]distm_d;
     wire distm_we;
     wire [31:0]distm_spo;
-    distram distm_inst(
+	simple_ram #(
+		.WIDTH(32),
+		.DEPTH(12)
+	) distram (
         .clk(clk_main),
         .a(distm_a),
         .d(distm_d),
@@ -165,33 +172,33 @@ module pcpu_main
     );
 
 
-    // sdcard memory mapper
-    wire [31:0]sdmm_a;
-    wire [31:0]sdmm_d;
-    wire sdmm_we;
-    wire sdmm_rd;
-    wire [31:0]sdmm_spo;
-    wire sdmm_ready;
+    //// sdcard memory mapper
+    //wire [31:0]sdmm_a;
+    //wire [31:0]sdmm_d;
+    //wire sdmm_we;
+    //wire sdmm_rd;
+    //wire [31:0]sdmm_spo;
+    //wire sdmm_ready;
 
-    wire irq_sdmm;
-    sdmm sdmm_inst(
-        .clk(clk_main),
-        .rst(rst),
+    //wire irq_sdmm;
+    //sdmm sdmm_inst(
+        //.clk(clk_main),
+        //.rst(rst),
 
-        .a(sdmm_a),
-        .d(sdmm_d),
-        .we(sdmm_we),
-        .rd(sdmm_rd),
-        .spo(sdmm_spo),
-        .ready(sdmm_ready),
+        //.a(sdmm_a),
+        //.d(sdmm_d),
+        //.we(sdmm_we),
+        //.rd(sdmm_rd),
+        //.spo(sdmm_spo),
+        //.ready(sdmm_ready),
 
-        .sddrv_spo(sd_spo),
-        .sddrv_a(sd_a),
-        .sddrv_d(sd_d),
-        .sddrv_we(sd_we),
+        //.sddrv_spo(sd_spo),
+        //.sddrv_a(sd_a),
+        //.sddrv_d(sd_d),
+        //.sddrv_we(sd_we),
 
-        .irq(irq_sdmm)
-    );
+        //.irq(irq_sdmm)
+    //);
 
 
     // video
@@ -245,7 +252,7 @@ module pcpu_main
 
         .irq_timer(irq_timer),
         .irq_keyboard(irq_uart),
-        .irq_sdcard(irq_sdmm),
+        .irq_sdcard(irq_sd),
 
         .a(isr_a),
         .d(isr_d),
@@ -335,12 +342,10 @@ module pcpu_main
         .distm_we(distm_we),
         .distm_spo(distm_spo),
 
-        .sd_spo(sdmm_spo),
-        .sd_ready(sdmm_ready),
-        .sd_a(sdmm_a),
-        .sd_d(sdmm_d),
-        .sd_we(sdmm_we),
-        .sd_rd(sdmm_rd),
+        .sd_spo(sd_spo),
+        .sd_a(sd_a),
+        .sd_d(sd_d),
+        .sd_we(sd_we),
 
         .gpio_spo(gpio_spo),
         .gpio_a(gpio_a),

@@ -314,7 +314,7 @@ module control_unit
                 MFLO_END: phase <= IF;
                 MULT_EX: begin
                     phase <= MULT_WAIT;
-                    counter <= 1;
+                    counter <= 3 - 2;
                 end
                 MULT_WAIT: begin
                     counter <= counter - 1;
@@ -323,7 +323,7 @@ module control_unit
                 MULT_END: phase <= IF;
                 DIV_EX: begin
                     phase <= DIV_WAIT;
-                    counter <= 34;
+                    counter <= 36 - 2;
                 end
                 DIV_WAIT: begin
                     counter <= counter - 1;

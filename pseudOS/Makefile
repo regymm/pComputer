@@ -7,10 +7,11 @@ CFLAGS	=	-nostdlib -Wa,O0 -EB -ffreestanding -fno-delayed-branch -static
 OBJCOPY	=	mipsel-linux-gnu-objcopy
 OBJDIR	=	obj
 
-all: exception.coe bootrom.coe pseudos.bin sdbootloader.bin test.coe
+all: exception.dat bootrom.dat pseudos.bin sdbootloader.bin test.dat
 
-%.coe: %.bin
-	./write_coe.sh $*
+%.dat: %.bin
+	xxd -c 4 -p $*.bin >> coe/result_$*.dat
+	#./write_coe.sh $*
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $*.elf $*.bin

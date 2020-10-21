@@ -251,7 +251,7 @@ module cpu_multi_cycle
         endcase
         case (ALUSrcB)
             0: ALUIn2 = B;                              //
-            1: ALUIn2 = 4;                              // IF
+            1: ALUIn2 = 4;                              // IF, IF_REMEDY
             2: ALUIn2 = imm;                            // addi,...
             3: ALUIn2 = imm << 2;                       // ID
         endcase

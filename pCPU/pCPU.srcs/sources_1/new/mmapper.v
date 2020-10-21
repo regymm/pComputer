@@ -10,14 +10,6 @@ module mmapper
         (*mark_debug = "true"*)output reg [31:0]spo,
         (*mark_debug = "true"*)output reg ready,
 
-        // 64MB(256MB max) mapped SD card memory: 0x00000000 to 0x03fffffc(or 0x0ffffffc max)
-        output reg [31:0]sd_a,
-        output reg [31:0]sd_d,
-        output reg sd_we,
-        output reg sd_rd,
-        input [31:0]sd_spo,
-        input sd_ready,
-
         // 4096*32(32KB) distributed memory: 0x10000000 to 0x10007ffc
         output reg [11:0]distm_a,
         output reg [31:0]distm_d,
@@ -51,7 +43,7 @@ module mmapper
         output reg gpio_we,
         input [31:0]gpio_spo,
 
-        // fifo uart: 0x93000000
+        // uart: 0x93000000
         output reg [2:0]uart_a,
         output reg [31:0]uart_d,
         output reg uart_we,
@@ -64,8 +56,15 @@ module mmapper
         output reg [31:0]video_d = 0,
         output reg video_we = 0,
         input [31:0]video_spo,
+
         // SD card control: 0x96000000
-        // same as SDMM memory
+        output reg [31:0]sd_a,
+        output reg [31:0]sd_d,
+        output reg sd_we,
+        //output reg sd_rd,
+        input [31:0]sd_spo,
+        //input sd_ready,
+
         
         // 0xe0000000 MMU control
 
@@ -100,7 +99,6 @@ module mmapper
         uart_we = 0;
         video_we = 0;
         sd_we = 0;
-        sd_rd = 0;
         isr_we = 0;
         spo = 0;
         ready = 1; // read finish instantly except SDMM
@@ -115,9 +113,7 @@ module mmapper
         //else // all ready, continue working
         if (a[31:28] == 4'h0) begin
             spo = sd_spo;
-            ready = sd_ready;
             sd_we = we;
-            sd_rd = rd;
         end
         else if (a[31:28] == 4'h1) begin
             spo = distm_spo;

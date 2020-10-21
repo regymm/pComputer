@@ -1,11 +1,34 @@
 .text
 _start:
-    li $t0, 5
-    sw $t0, 0x10000000
-    li $t0, 4
-    sw $t0, 0x10000004
-    lw $t1, 0x10000000
-    lw $t2 ,0x10000004
+	li $t0, 0
+	li $t1, 0
+	li $t2, 0
+	li $t3, 0
+	li $t4, 0
+	li $t5, 0
+	li $t6, 0
+	li $t7, 0
+	li $t8, 0
+	nop
+	nop
+	nop
+	li $t0, 10
+	li $t1, 99800
+	mult $t0, $t1
+	mfhi $s0
+	mflo $s1
+	div $t1, $t0
+	mfhi $s0
+	mflo $s1
+    #li $t0, 0xfffc
+    #li $t1, 0x1ffc
+    #li $t2, 0x1fffc
+    #li $t0, 5
+    #sw $t0, 0x10000000
+    #li $t0, 4
+    #sw $t0, 0x10000004
+    #lw $t1, 0x10000000
+    #lw $t2 ,0x10000004
     #lw $t1, isa_timer_addr
     #la $t0, timer_handler 
     #sw $t0, 0($t1)

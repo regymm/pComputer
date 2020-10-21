@@ -23,11 +23,14 @@ module interrupt_unit
 
     // 128*32 ISR ROM, address 0x80000000
     wire [31:0]spo_mem;
-    isr_memory isr_memory_inst
-    (
-        .a(a[10:2]),
-        .spo(spo_mem)
-    );
+	simple_rom #(
+		.WIDTH(32),
+		.DEPTH(9),
+		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_exception.dat")
+	) isr_memory(
+		.a(a[10:2]),
+		.spo(spo_mem)
+	);
 
     // ISR handler address, the data contained is the address
     // of user-writen handler, default is a dummy return(jr $ra)

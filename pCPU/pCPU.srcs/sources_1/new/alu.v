@@ -1,56 +1,69 @@
 `timescale 1ns / 1ps
-// ALU
-// 2020 COD Lab1
-// ustcpetergu
+// ALU with more operations
+// 4 bit ALUm:
+// 0000: add
+// 1000: sub
+// 0001: sll
+// 0101: srl
+// 1101: sra
+// 0100: xor
+// 0110: or
+// 0111: and
+// 0010: slt
+// 0011: sltu
+//
 
 module alu
-    #(parameter WIDTH = 32)
     (
-        input [2:0]m, // selection
-        input [WIDTH-1:0]a, b, // input
-        output reg [WIDTH-1:0]y, // result
-        output reg zf, // zero flag
-        output reg cf, // carry out flag: WIDTH bit
-        output reg of, // overflow flag
-        output wire sf // sign flag: WIDTH-1 sign bit
+        input [3:0]m, // selection
+        input [31:0]a, b, // input
+        output reg [31:0]y // result
     );
 
-    assign sf = y[WIDTH-1];
+	// zf: zero
+	// cf: carry out, WIDTH bit
+	// of: overflow
+	// sf: sign, WIDTH-1
 
+	wire [31:0]addition = a + b;
+	wire [32:0]subtraction = a - b;
+	wire sub_of = (!a[31] & b[31] & subtraction[31]) |
+				 (a[31] & !b[31] & !subtraction[31]);
+	wire sub_zf = (subtraction[31:0] == 32'h0);
+    wire sub_sf = subtraction[31];
+	wire sub_cf = subtraction[32];
+	//reg cf;
     always @ (*) begin
-        y = 0; zf = 0; cf = 0; of = 0;
+        //y = 0; cf = 0; of = 0;
         case(m)
-            3'b000: begin // add
-                {cf, y} = a + b;
-                of = (!a[WIDTH-1] & !b[WIDTH-1] & y[WIDTH-1]) |
-                 (a[WIDTH-1] & b[WIDTH-1] & !y[WIDTH-1]);
-                zf = (y == 0);
-            end
-            3'b001: begin // sub
-                {cf, y} = a - b;
-                of = (!a[WIDTH-1] & b[WIDTH-1] & y[WIDTH-1]) |
-                 (a[WIDTH-1] & !b[WIDTH-1] & !y[WIDTH-1]);
-                zf = (y == 0);
-            end
-            3'b010: begin // and
-                y = a & b;
-                zf = (y == 0);
-            end
-            3'b011: begin // or
-                y = a | b;
-                zf = (y == 0);
-            end
-            3'b100: begin // xor
-                y = a ^ b;
-                zf = (y == 0);
-            end
-            3'b101: begin // sll
+            4'b0000: // add
+				y = addition[31:0];
+                //{cf, y} = addition;
+                //of = (!a[WIDTH-1] & !b[WIDTH-1] & y[WIDTH-1]) |
+                 //(a[WIDTH-1] & b[WIDTH-1] & !y[WIDTH-1]);
+            4'b1000: // sub
+				y = subtraction[31:0];
+                //{cf, y} = subtraction;
+                //of = (!a[WIDTH-1] & b[WIDTH-1] & y[WIDTH-1]) |
+                 //(a[WIDTH-1] & !b[WIDTH-1] & !y[WIDTH-1]);
+            4'b0001: // sll
                 y = b << a;
-            end
-            3'b110: begin // srl
+            4'b0101: // srl
                 y = b >> a;
-            end
+			4'b1101: // sra
+				y = b >>> a;
+            4'b0100: // xor
+                y = a ^ b;
+            4'b0110: // or
+                y = a | b;
+            4'b0111: // and
+                y = a & b;
+			4'b0010: // slt
+				y = {31'b0, (sub_of ^ sub_sf) & !sub_zf};
+			4'b0011: // sltu
+				y = {31'b0, sub_cf};
             default: begin // error
+				y = 32'hDEADBEEF;
             end
         endcase
     end
