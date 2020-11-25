@@ -1,3 +1,10 @@
+/**
+ * File              : gpio.v
+ * License           : GPL-3.0-or-later
+ * Author            : Peter Gu <github.com/ustcpetergu>
+ * Date              : 2020.11.25
+ * Last Modified Date: 2020.11.25
+ */
 `timescale 1ns / 1ps
 // pComputer LED/Switch IO
 

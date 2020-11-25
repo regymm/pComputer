@@ -6,18 +6,18 @@ module top_simu();
     reg [1:0]sw = 0;
     reg [3:0]btn = 0;
     wire [3:0]led;
-    wire [2:0]led4;
-    wire [2:0]led5;
+    wire [2:0]rgbled1;
+    wire [2:0]rgbled2;
     wire sd_dat0 = 0;
     //wire sd_dat0 = 1;
 
-    top_design_wrapper top_design_wrapper_inst
+    pcpu_main pcpu_main_inst
     (
         .sysclk(clk),
         .btn(btn),
         .led(led),
-        .led4(led4),
-        .led5(led5),
+        .rgbled1(rgbled1),
+        .rgbled2(rgbled2),
         .sw(sw),
         .sd_dat0(sd_dat0)
     );

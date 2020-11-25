@@ -1,3 +1,10 @@
+/**
+ * File              : pcpu_main.v
+ * License           : GPL-3.0-or-later
+ * Author            : Peter Gu <github.com/ustcpetergu>
+ * Date              : 2020.11.25
+ * Last Modified Date: 2020.11.25
+ */
 `timescale 1ns / 1ps
 // pComputer main block design
 
@@ -268,24 +275,43 @@ module pcpu_main
     wire we;
     wire rd;
 
-    wire ring;
-    cpu_multi_cycle cpu_multi_cycle_inst(
-        .clk(clk_main),
-        .rst(rst),
+    //wire ring;
+    //cpu_multi_cycle cpu_multi_cycle_inst(
+        //.clk(clk_main),
+        //.rst(rst),
 
-        .irq(irq),
-        .icause(icause),
-        .iack(iack),
+        //.irq(irq),
+        //.icause(icause),
+        //.iack(iack),
 
-        .spo(spo),
-        .ready(ready),
-        .a(a),
-        .d(d),
-        .we(we),
-        .rd(rd),
+        //.spo(spo),
+        //.ready(ready),
+        //.a(a),
+        //.d(d),
+        //.we(we),
+        //.rd(rd),
 
-        .ring(ring)
-    );
+        //.ring(ring)
+    //);
+
+	wire [1:0]ring;
+	riscv_multicyc cpu_multi_cycle_inst(
+		.clk(clk_main),
+		.rst(rst),
+
+		.irq(irq),
+		.icause(icause),
+		.iack(iack),
+
+		.spo(spo),
+		.ready(ready),
+		.a(a),
+		.d(d),
+		.we(we),
+		.rd(rd),
+
+		.ring(ring)
+	);
 
 
     // MMU

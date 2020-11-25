@@ -3,9 +3,11 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2020.10.21
- * Last Modified Date: 2020.10.21
+ * Last Modified Date: 2020.11.25
  */
-// pComputer 5-cycle RISC-V processor
+// pComputer multicycle RISC-V processor
+// currently supported(wip): RV32I
+// todo: CSR, M, A
 
 `timescale 1ns / 1ps
 
@@ -18,7 +20,7 @@ module riscv_multicyc
 
 		input irq,
 		input [3:0]icause,
-		output iack,
+		output reg iack,
 
 		output reg [31:0]a,
 		output reg [31:0]d,
@@ -28,7 +30,7 @@ module riscv_multicyc
 		input ready
     );
 
-	localparam START_ADDR = 32'hff000000;
+	localparam START_ADDR = 32'hf0000000;
 	localparam INVALID_ADDR =32'hffffffff;
 
 	// 
@@ -54,19 +56,20 @@ module riscv_multicyc
 	reg [31:0]mstatus;
 
 	// control signals
-	wire PCWrite;
-	wire [1:0]PCSrc;
-	wire [1:0]IorDorW;
-	wire MemRead;
-	wire MemWrite;
-	wire MemSrc;
-	wire IRWrite;
-	wire IRLate;
-	wire [3:0]ALUm;
-	wire ALUSrcA;
-	wire ALUSrcB;
-	wire RegWrite;
-	wire [2:0]RegSrc;
+	reg PCWrite;
+	reg [1:0]PCSrc;
+	reg [1:0]IorDorW;
+	reg MemRead;
+	reg MemWrite;
+	reg MemReady;
+	reg MemSrc;
+	reg IRWrite;
+	reg IRLate;
+	reg [3:0]ALUm;
+	reg ALUSrcA;
+	reg ALUSrcB;
+	reg RegWrite;
+	reg [2:0]RegSrc;
 	//wire RegDst;
 
 
@@ -79,16 +82,16 @@ module riscv_multicyc
     register_file register_file_inst
     (
         .clk(clk),
-        .ra0(instruction[24:20]),
-        .ra1(instruction[19:15]),
-        .wa(instruction[11:7]),
+        .ra0(instruction[19:15]), // rs1
+        .ra1(instruction[24:20]), // rs2
+        .wa(instruction[11:7]),   // rd
         .we(RegWrite),
         .wd(WriteData),
         .rd0(ReadData1),
         .rd1(ReadData2)
     );
 
-	// memory mapper
+	// memory mapper, little endian
 	// signal: MemWrite
 	// signal: MemRead
 	// signal: MemReady
@@ -97,10 +100,10 @@ module riscv_multicyc
 	reg [31:0]memread_data;
 	always @ (*) begin
 		a = mem_addr;
-		d = memwrite_data;
+		d = {memwrite_data[7:0], memwrite_data[15:8], memwrite_data[23:16], memwrite_data[31:24]};
 		we = MemWrite;
 		rd = MemRead;
-		memread_data = spo;
+		memread_data = {spo[7:0], spo[15:8], spo[23:16], spo[31:24]};
 		MemReady = ready;
 	end
 
@@ -126,12 +129,23 @@ module riscv_multicyc
 		//.sf(ALUSf_out)
 	);
 
+	localparam OP_LUI	=	7'b0110111;
+	localparam OP_AUIPC	=	7'b0010111;
+	localparam OP_JAL	=	7'b1101111;
+	localparam OP_JALR	=	7'b1100111;
+	localparam OP_BR	=	7'b1100011;
+	localparam OP_LOAD	=	7'b0000011;
+	localparam OP_STORE	=	7'b0100011;
+	localparam OP_R_I	=	7'b0010011;
+	localparam OP_R		=	7'b0110011;
+	localparam OP_FENCE	=	7'b0001111;
+	localparam OP_ENV	=	7'b1110011;
 	wire [7:0]op = instruction[6:0];
 	wire nse = instruction[14];
 	reg [31:0]imm;
 	wire [31:0]imm_i = {{21{instruction[31]}}, instruction[30:20]};
 	wire [31:0]imm_i_nse = {20'b0, instruction[31:20]};
-	wire [31:0]imm_b = {{21{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8]};
+	wire [31:0]imm_b = {{20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
 	wire [31:0]imm_j = {{13{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21]};
 	wire [31:0]imm_u = {instruction[31:12], 12'b0};
 	wire [31:0]imm_s = {{21{instruction[31]}}, instruction[30:25], instruction[11:7]};
@@ -144,27 +158,16 @@ module riscv_multicyc
 		else if (op == OP_STORE) imm = imm_s;
 		else imm = 0;
 	end
-	localparam OP_LUI	=	7'b0110111;
-	localparam OP_AUIPC	=	7'b0010111;
-	localparam OP_JAL	=	7'b1101111;
-	localparam OP_JALR	=	7'b1100111;
-	localparam OP_BR	=	7'b1100011;
-	localparam OP_LOAD	=	7'b0000011;
-	localparam OP_STORE	=	7'b0100011;
-	localparam OP_R_I	=	7'b0010011;
-	localparam OP_R		=	7'b0110011;
-	localparam OP_FENCE	=	7'b0001111;
-	localparam OP_ENV	=	7'b1110011;
 	reg [7:0]phase;
 	reg [7:0]phase_return;
-	localparam IF			=	100;
-	localparam IF_REMEDY	=	200;
-	localparam ID_RF		=	300;
-	localparam EX			=	400;
-	localparam MEM			=	500;
-	localparam WB			=	600;
-	localparam MEM_WAIT		=	700;
-	localparam BAD			=	10000;
+	localparam IF			=	10;
+	localparam IF_REMEDY	=	20;
+	localparam ID_RF		=	30;
+	localparam EX			=	40;
+	localparam MEM			=	50;
+	localparam WB			=	60;
+	localparam MEM_WAIT		=	70;
+	localparam BAD			=	255;
 
 
 	// control signals
@@ -206,7 +209,7 @@ module riscv_multicyc
 				end else if (op == OP_JALR) begin
 					ALUSrcB = 1;
 				end else if (op == OP_BR) begin
-					ALUm = instruction[14] ? {2'b0, instruction[14:13]} : 4'b0;
+					ALUm = instruction[14] ? {2'b0, instruction[14:13]} : 4'b1000;
 				end
 			end
 			MEM: begin
@@ -231,7 +234,7 @@ module riscv_multicyc
 					RegWrite = 1; RegSrc = 3;
 					PCWrite = 1; PCSrc = 3;
 				end else if (op == OP_BR) begin
-					PCWrite = instruction[12] ^ &ALUOut; PCSrc = 1;
+					PCWrite = !instruction[12] ^ |ALUOut; PCSrc = 1;
 				end else if (op == OP_LOAD) begin // LB, LH, LW, LBU, LHU
 					RegWrite = 1; RegSrc = {1'b1, instruction[13:12]};
 				end
@@ -287,7 +290,7 @@ module riscv_multicyc
 	end
 
 	// CPU datapath
-	wire [31:0]newpc;
+	reg [31:0]newpc;
 	always @ (*) begin
 		case (IorDorW)
 			0: mem_addr = pc; // instruction
