@@ -8,6 +8,13 @@
 `timescale 1ns / 1ps
 // pComputer main block design
 
+`define GPIO_EN
+`define UART_EN
+//`define SDCARD_EN
+//`define VIDEO_EN
+//`define IRQ_EN
+//`define MMU_EN
+
 module pcpu_main
     (
         input sysclk,
@@ -89,13 +96,14 @@ module pcpu_main
 
     
     // distributed ram 4096*32
-    wire [9:0]distm_a;
+    wire [11:0]distm_a;
     wire [31:0]distm_d;
     wire distm_we;
     wire [31:0]distm_spo;
 	simple_ram #(
 		.WIDTH(32),
-		.DEPTH(12)
+		.DEPTH(12),
+		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_zeros.dat")
 	) distram (
         .clk(clk_main),
         .a(distm_a),
@@ -110,6 +118,7 @@ module pcpu_main
     wire [31:0]gpio_d;
     wire gpio_we;
     wire [31:0]gpio_spo;
+`ifdef GPIO_EN
     gpio gpio_inst(
         .clk(clk_main),
         .rst(rst),
@@ -125,6 +134,12 @@ module pcpu_main
         .rgbled1(rgbled1),
         .rgbled2(rgbled2)
     );
+`else
+	assign gpio_spo = 0;
+	assign led = 4'b0;
+	assign rgbled1 = 3'b0;
+	assign rgbled2 = 3'b0;
+`endif
 
 
     // uart
@@ -134,6 +149,7 @@ module pcpu_main
     wire [31:0]uart_spo;
 
     wire irq_uart;
+`ifdef UART_EN
     uart uart_inst(
         .clk(clk_main),
         .rst(rst),
@@ -148,6 +164,10 @@ module pcpu_main
 
         .irq(irq_uart)
     );
+`else
+	assign uart_spo = 0;
+	assign uart_tx = 1;
+`endif
 
 
     // sdcard
@@ -157,6 +177,7 @@ module pcpu_main
     wire [31:0]sd_spo;
 
     wire irq_sd;
+`ifdef SDCARD_EN
     sdcard sdcard_inst(
         .clk(clk_main),
         .rst(rst),
@@ -177,6 +198,15 @@ module pcpu_main
 
         .irq(irq_sd) // nc
     );
+`else
+	assign sd_spo = 0;
+	assign irq_sd = 0;
+	assign sd_dat1 = 1'bZ;
+	assign sd_dat2 = 1'bZ;
+	assign sd_dat3 = 1'bZ;
+	assign sd_cmd = 1'bZ;
+	assign sd_sck = 1'bZ;
+`endif
 
 
     //// sdcard memory mapper
@@ -213,6 +243,7 @@ module pcpu_main
     wire [31:0]video_d;
     wire video_we;
     wire [31:0]video_spo;
+`ifdef VIDEO_EN
     video video_inst(
         .clk(clk_main),
         .clk_pix(clk_hdmi_25),
@@ -229,15 +260,30 @@ module pcpu_main
         .TMDSp_clock(TMDSp_clock),
         .TMDSn_clock(TMDSn_clock)
     );
-
-
-    // timer interrupt
-    wire irq_timer;
-    timer_interrupt timer_interrupt_inst(
-        .clk_125M(clk_main),
-        .rst(rst),
-        .irq(irq_timer)
+`else
+	assign video_spo = 0;
+    OBUFDS OBUFDS_red(
+        .I(0),
+        .O(TMDSp[2]),
+        .OB(TMDSn[2])
     );
+    OBUFDS OBUFDS_green(
+        .I(0),
+        .O(TMDSp[1]),
+        .OB(TMDSn[1])
+    );
+    OBUFDS OBUFDS_blue(
+        .I(0),
+        .O(TMDSp[0]),
+        .OB(TMDSn[0])
+    );
+    OBUFDS OBUFDS_clock(
+        .I(0),
+        .O(TMDSp_clock),
+        .OB(TMDSn_clock)
+    );
+`endif
+
 
 
     // interrupt unit
@@ -249,6 +295,15 @@ module pcpu_main
     wire [31:0]isr_d;
     wire isr_we;
     wire [31:0]isr_spo;
+`ifdef IRQ_EN
+    // timer interrupt
+    wire irq_timer;
+    timer_interrupt timer_interrupt_inst(
+        .clk_125M(clk_main),
+        .rst(rst),
+        .irq(irq_timer)
+    );
+
     interrupt_unit interrupt_unit_inst(
         .clk(clk_main),
         .rst(rst),
@@ -266,6 +321,11 @@ module pcpu_main
         .we(isr_we),
         .spo(isr_spo)
     );
+`else
+	assign irq = 0;
+	assign icause = 0;
+	assign isr_spo = 0;
+`endif
 
     // cpu-multi-cycle
     wire [31:0]spo;
@@ -274,25 +334,6 @@ module pcpu_main
     wire [31:0]d;
     wire we;
     wire rd;
-
-    //wire ring;
-    //cpu_multi_cycle cpu_multi_cycle_inst(
-        //.clk(clk_main),
-        //.rst(rst),
-
-        //.irq(irq),
-        //.icause(icause),
-        //.iack(iack),
-
-        //.spo(spo),
-        //.ready(ready),
-        //.a(a),
-        //.d(d),
-        //.we(we),
-        //.rd(rd),
-
-        //.ring(ring)
-    //);
 
 	wire [1:0]ring;
 	riscv_multicyc cpu_multi_cycle_inst(
@@ -324,6 +365,7 @@ module pcpu_main
     wire [31:0]pd;
     wire pwe;
     wire prd;
+`ifdef MMU_EN
     mmu mmu_inst(
         .clk(clk_main),
         .rst(rst),
@@ -345,6 +387,15 @@ module pcpu_main
         .pwe(pwe),
         .prd(prd)
     );
+`else
+	assign virq = 0;
+	assign pa = a;
+	assign pd = d;
+	assign pwe = we;
+	assign prd = rd;
+	assign spo = pspo;
+	assign ready = pready;
+`endif
 
     // memory mapper
     mmapper mmapper_inst(

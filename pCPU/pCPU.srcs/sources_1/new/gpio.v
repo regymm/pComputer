@@ -24,6 +24,8 @@ module gpio
         output reg [2:0]rgbled2
     );
 
+	wire [2:0]data = d[26:24];
+
     always @ (*) begin
         case (a)
             0: spo = {31'b0, btn[0]};
@@ -50,12 +52,12 @@ module gpio
         end
         else if (we) begin
             case (a)
-                6: led[0] <= d[0];
-                7: led[1] <= d[0];
-                8: led[2] <= d[0];
-                9: led[3] <= d[0];
-                10: rgbled1 <= d[2:0];
-                11: rgbled2 <= d[2:0];
+                6: led[0] <= data[0];
+                7: led[1] <= data[0];
+                8: led[2] <= data[0];
+                9: led[3] <= data[0];
+                10: rgbled1 <= data[2:0];
+                11: rgbled2 <= data[2:0];
                 default: ;
             endcase
         end

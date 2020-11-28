@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-// pCPU memory address mapper (or bus)
+// pCPU memory address mapper (or "bus")
 
 module mmapper
     (

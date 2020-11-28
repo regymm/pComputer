@@ -11,7 +11,6 @@
 // 0111: and
 // 0010: slt
 // 0011: sltu
-//
 
 module alu
     (
@@ -25,6 +24,7 @@ module alu
 	// of: overflow
 	// sf: sign, WIDTH-1
 
+	wire signed [31:0]a_signed = a;
 	wire [31:0]addition = a + b;
 	wire [32:0]subtraction = a - b;
 	wire sub_of = (!a[31] & b[31] & subtraction[31]) |
@@ -47,11 +47,11 @@ module alu
                 //of = (!a[WIDTH-1] & b[WIDTH-1] & y[WIDTH-1]) |
                  //(a[WIDTH-1] & !b[WIDTH-1] & !y[WIDTH-1]);
             4'b0001: // sll
-                y = b << a;
+                y = a << b;
             4'b0101: // srl
-                y = b >> a;
+                y = a >> b;
 			4'b1101: // sra
-				y = b >>> a;
+				y = a_signed >>> b;
             4'b0100: // xor
                 y = a ^ b;
             4'b0110: // or

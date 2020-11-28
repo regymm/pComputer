@@ -1,10 +1,11 @@
-AS		=	riscv32-elf-as
+RISCV	=	/opt/riscv32ima/bin/riscv32-unknown-linux-gnu-
+AS		=	$(RISCV)as
 #ASFLAGS	=	
-LD 		=	riscv32-elf-ld 
+LD 		=	$(RISCV)ld
 LDFLAGS	=	--nostdlib
 CC		=	riscv3
 #CFLAGS	=	-nostdlib -Wa,O0 -EB -ffreestanding -fno-delayed-branch -static
-OBJCOPY	=	riscv32-elf-objcopy
+OBJCOPY	=	$(RISCV)objcopy
 #OBJDIR	=	obj
 
 #all: exception.dat bootrom.dat pseudos.bin sdbootloader.bin test.dat

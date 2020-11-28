@@ -31,6 +31,8 @@ module uart
         output reg tx = 1
     );
 
+	wire [7:0]data = d[31:24];
+
     wire rxclk_en;
     wire txclk_en;
     baud_rate_gen baud_rate_gen_inst
@@ -103,7 +105,7 @@ module uart
             //end
             case (state_tx)
                 IDLE: if (we & (a == 3'b000)) begin
-                    data_tx <= d[7:0];
+                    data_tx <= data;
                     state_tx <= START;
                     bitpos_tx <= 3'b0;
                 end

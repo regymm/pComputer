@@ -1,10 +1,16 @@
+/**
+ * File              : simple_ram.v
+ * License           : GPL-3.0-or-later
+ * Author            : Peter Gu <github.com/ustcpetergu>
+ * Date              : 2020.11.26
+ * Last Modified Date: 2020.11.26
+ */
 `timescale 1ns / 1ps
 module simple_ram
 	#(
 		parameter WIDTH = 32,
 		parameter DEPTH = 1,
 		parameter INIT = "/home/petergu/MyHome/pComputer/pCPU/null.dat"
-		//parameter INIT = ""
 	)
 	(
 		input clk, 
