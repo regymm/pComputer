@@ -49,6 +49,8 @@ module sdcard
         output reg irq = 0
     );
 
+	wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
+
     // slow clock
     reg [4:0]clkcounter = 0;
     always @ (posedge clk) begin
@@ -133,9 +135,9 @@ module sdcard
             if (sd_ready_real) begin
                 if (we) begin
                     case (a[15:0])
-                        16'h1000: sd_address <= d;
-                        16'h1004: sd_rd <= d[0];
-                        16'h1008: sd_wr <= d[0];
+                        16'h1000: sd_address <= data;
+                        16'h1004: sd_rd <= data[0];
+                        16'h1008: sd_wr <= data[0];
                         default: ;
                     endcase
                 end
@@ -178,7 +180,7 @@ module sdcard
             end
             else if (we) begin
                 if (a[15:12] == 0) begin
-                    block[a[8:2]] <= d;
+					block[a[8:2]] <= d; // pay attention to endian here
                     dirty <= 1;
                 end
             end

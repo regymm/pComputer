@@ -105,13 +105,13 @@ cont2:
 
 	li a0, 0xcbcd1234
 	li a1, 0x1777ffff
-	div a3, a0, a1
+	div a3, a0, a1 # FAIL
 	divu a4, a0, a1
-	rem a5, a0, a1
+	rem a5, a0, a1 # FAIL
 	remu a6, a0, a1
 	li s3, 0xfffffffe
 	li s4, 0x00000008
-	li s5, 0xabcd1234
+	li s5, 0xfabd1232
 	li s6, 0x100d123c
 	bne a3, s3, fail
 	bne a4, s4, fail
@@ -127,6 +127,13 @@ cont2:
 	li a1, 1
 	sw a1, 44(a0)
 
+	la a0, 0x20000aa8
+	li a1, 0x12345678
+	sw a1, 0(a0)
+	lw a2, 0(a0)
+	lw a3, 4(a0)
+	lw a4, 8(a0)
+	lw a5, 12(a0)
 
 
 	li a0, 'O'

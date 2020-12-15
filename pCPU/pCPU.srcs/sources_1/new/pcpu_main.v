@@ -10,6 +10,7 @@
 
 `define GPIO_EN
 `define UART_EN
+`define PSRAM
 //`define SDCARD_EN
 //`define VIDEO_EN
 //`define IRQ_EN
@@ -24,6 +25,13 @@ module pcpu_main
         output [3:0]led,
         output [2:0]rgbled1,
         output [2:0]rgbled2,
+
+		output psram_ce,
+		inout psram_mosi, 
+		inout psram_miso, 
+		inout psram_sio2,
+		inout psram_sio3,
+		output psram_sclk,
 
         input uart_rx,
         output uart_tx,
@@ -206,6 +214,39 @@ module pcpu_main
 	assign sd_dat3 = 1'bZ;
 	assign sd_cmd = 1'bZ;
 	assign sd_sck = 1'bZ;
+`endif
+
+	wire [31:0]mainm_a;
+	wire [31:0]mainm_d;
+	wire mainm_we;
+	wire mainm_rd;
+	wire [31:0]mainm_spo;
+	wire mainm_ready;
+
+	wire mainm_irq;
+`ifdef PSRAM
+	memory_controller memory_controller_inst
+	(
+		.rst(rst),
+		.clk(clk_main),
+
+		.a(mainm_a),
+		.d(mainm_d),
+		.we(mainm_we),
+		.rd(mainm_rd),
+		.spo(mainm_spo),
+		.ready(mainm_ready), 
+
+		.irq(mainm_irq),
+
+		.psram_ce(psram_ce), 
+		.psram_mosi(psram_mosi), 
+		.psram_miso(psram_miso), 
+		.psram_sio2(psram_sio2), 
+		.psram_sio3(psram_sio3),
+		.psram_sclk(psram_sclk)
+	);
+`else
 `endif
 
 
@@ -418,6 +459,13 @@ module pcpu_main
         .distm_d(distm_d),
         .distm_we(distm_we),
         .distm_spo(distm_spo),
+
+		.mainm_a(mainm_a),
+		.mainm_d(mainm_d),
+		.mainm_we(mainm_we),
+		.mainm_rd(mainm_rd),
+		.mainm_spo(mainm_spo),
+		.mainm_ready(mainm_ready),
 
         .sd_spo(sd_spo),
         .sd_a(sd_a),

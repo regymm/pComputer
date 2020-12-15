@@ -9,6 +9,7 @@
 // 0 m: 00 mul, 01 mulh, 10 mulhsu, 11 mulhu
 // 1 d: 00 div, 01 divu, 10 rem, 11 remu
 // 64 cycles for mulh, 32 cycles for other mul and div
+// dirty but seems working
 `timescale 1ns / 1ps
 
 module rv32m
@@ -33,13 +34,16 @@ module rv32m
 		(mreg[1:0] == 2'b01) ? cnt == 64 : cnt == 32
 		: cnt == 32;
 	reg divfix;
+	reg remfix;
 	always @ (posedge clk) begin
 		if (start) begin
 			if (!m[2]) begin
+				// mul
 				aext <= (m[1:0] != 2'b11) ? {{32{a[31]}}, a} : {32'b0, a};
 				bext <= (m[1:0] == 2'b01) ? {{32{b[31]}}, b} : {32'b0, b};
 			end else begin
-				if (!m[0]) begin // signed
+				// div
+				if (!m[0]) begin // signed div
 					if (b[31]) begin
 						aext <= {{32{!a[31]}}, -a};
 						bext <= {-b, 32'b0};
@@ -47,7 +51,7 @@ module rv32m
 						aext <= {{32{a[31]}}, a};
 						bext <= {b, 32'b0};
 					end
-				end else begin // unsigned
+				end else begin // unsigned div
 					aext <= {32'b0, a};
 					bext <= {b, 32'b0};
 				end
@@ -57,11 +61,13 @@ module rv32m
 			cnt <= 0;
 			finish <= 0;
 			div0 <= (b == 0) && m[2];
-			divfix <= aext[31] ^ bext[31] && !m[0];
+			divfix <= a[31] ^ b[31] && !m[0];
+			remfix <= b[31] && !m[0];
 		end
 		else begin
 			cnt <= cnt + 1;
 			if (mul_or_div) begin
+				// mul
 				aext <= aext << 1;
 				bext <= bext >> 1;
 				if (bext[0])
@@ -72,15 +78,29 @@ module rv32m
 					finish <= 1;
 				end
 			end else begin
+				// div
 				if (aext[62:31] >= bext[63:32])
-					aext <= (aext << 1) - bext + 1'b1;
+					aext <= aext[63] ? 
+						(aext << 1) + bext + 1'b1
+						: 
+						(aext << 1) - bext + 1'b1;
 				else
 					aext <= (aext << 1);
+					//aext <= aext[63] ? 
+						//(aext << 1) + 1'b1 :
+						//(aext << 1);
 				if (finish_cond) begin
 					r <= divfix ? 
-						(!mreg[1]) ? aext[31:0]+1 : aext[63:32]-bext[63:32]
+						//(!mreg[1]) ? aext[31:0]+1 : (aext[63] ? aext[63:32]-bext[63:32] : aext[63:32] + bext[63:32])
+						(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
 						: 
-						(!mreg[1]) ? aext[31:0] : aext[63:32];
+						(!mreg[1]) ? aext[31:0] : (remfix ? ~aext[63:32]+1 : aext[63:32]);
+					//r <= divfix ? 
+						////(!mreg[1]) ? aext[31:0]+1 : (aext[63] ? aext[63:32]-bext[63:32] : aext[63:32] + bext[63:32])
+						////(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
+						//(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
+						//: 
+						//(!mreg[1]) ? aext[31:0] : aext[63:32];
 					finish <= 1;
 				end
 			end

@@ -11,6 +11,8 @@
 
 `timescale 1ns / 1ps
 
+`define RV32M
+
 module riscv_multicyc
 	(
 		input clk,
@@ -126,6 +128,7 @@ module riscv_multicyc
 	wire RV32MReady;
 	wire [31:0]RV32MResult;
 	wire RV32MException;
+//`ifdef RV32M
 	rv32m rv32m_inst
 	(
 		.clk(clk),
@@ -137,6 +140,11 @@ module riscv_multicyc
 		.r(RV32MResult),
 		.div0(RV32MException)
 	);
+//`else
+	//assign RV32MReady = 1;
+	//assign RV32MException = 0;
+	//assign RV32MResult = 0;
+//`endif
 
 	// RV32A
 
@@ -151,6 +159,7 @@ module riscv_multicyc
 	localparam OP_R		=	7'b0110011; // including RV32M
 	localparam OP_FENCE	=	7'b0001111;
 	localparam OP_ENV	=	7'b1110011;
+	localparam OP_AMO	=	7'b0101111;
 	// TODO: ECALL, EBREAK(?), 
 	// no effect: FENCE, FENCE.I, SFENCE.VMA
 	wire [7:0]op = instruction[6:0];

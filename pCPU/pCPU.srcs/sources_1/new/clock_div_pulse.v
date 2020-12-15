@@ -13,7 +13,7 @@ module baud_rate_gen
         output wire txclk_en
     );
 
-	parameter CLOCK_FREQ = 125000000;
+	parameter CLOCK_FREQ = 100000000;
     //parameter CLOCK_FREQ = 62500000;
     parameter RX_ACC_MAX = CLOCK_FREQ / (115200 * 16);
     parameter TX_ACC_MAX = CLOCK_FREQ / 115200;

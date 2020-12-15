@@ -16,6 +16,13 @@ module mmapper
         output reg distm_we,
         input [31:0]distm_spo,
 
+		// 8MB PSRAM: 0x20000000 to 0x21fffffc
+        output reg [23:0]mainm_a,
+        output reg [31:0]mainm_d,
+        output reg mainm_we,
+        output reg mainm_rd,
+        input [31:0]mainm_spo,
+        input mainm_ready,
 
         //// special devices:
         //// counter 0x50000000
@@ -80,6 +87,8 @@ module mmapper
         bootm_a = a[11:2];
         distm_a = a[13:2];
         distm_d = d;
+		mainm_a = a[25:2];
+		mainm_d = d;
         gpio_a = a[5:2];
         gpio_d = d;
         uart_a = a[4:2];
@@ -95,35 +104,30 @@ module mmapper
     always @ (*) begin
         irq = 0;
         distm_we = 0;
+		mainm_we = 0;
+		mainm_rd = 0;
         gpio_we = 0;
         uart_we = 0;
         video_we = 0;
         sd_we = 0;
         isr_we = 0;
         spo = 0;
-        ready = 1; // read finish instantly except SDMM
-        //if (!sd_ready) begin // if not ready, then lock to it
-            //spo = sd_spo;
-            //ready = sd_ready;
-            //sd_we = we;
-            //sd_rd = rd;
-        //end
-        ////else if (!xx_ready) begin
-        ////end
-        //else // all ready, continue working
+        ready = 1;
         if (a[31:28] == 4'h0) begin
             spo = sd_spo;
             sd_we = we;
-        end
-        else if (a[31:28] == 4'h1) begin
+        end else if (a[31:28] == 4'h1) begin
             spo = distm_spo;
             distm_we = we;
-        end
-        else if (a[31:28] == 4'h8) begin
+        end else if (a[31:28] == 4'h2) begin
+            spo = mainm_spo;
+            mainm_we = we;
+            mainm_rd = rd;
+			ready = mainm_ready;
+        end else if (a[31:28] == 4'h8) begin
             spo = isr_spo;
             isr_we = we;
-        end
-        else if (a[31:28] == 4'h9) begin
+        end else if (a[31:28] == 4'h9) begin
             case (a[27:24])
                 4'h2: begin
                     spo = gpio_spo;
@@ -143,8 +147,7 @@ module mmapper
                 end
                 default: irq = 1;
             endcase
-        end
-        else if (a[31:28] == 4'hf) begin
+        end else if (a[31:28] == 4'hf) begin
             spo = bootm_spo;
         end
         else irq = 1;

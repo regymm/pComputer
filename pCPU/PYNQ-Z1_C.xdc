@@ -38,22 +38,35 @@ set_property -dict {PACKAGE_PIN L19 IOSTANDARD LVCMOS33} [get_ports {btn[3]}]
 
 ##Pmod Header JA
 
-set_property -dict {PACKAGE_PIN Y18 IOSTANDARD LVCMOS33} [get_ports sd_cmd]
-set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports sd_sck]
-set_property -dict {PACKAGE_PIN Y16 IOSTANDARD LVCMOS33} [get_ports sd_dat1]
-set_property -dict {PACKAGE_PIN Y17 IOSTANDARD LVCMOS33} [get_ports sd_wp]
-set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports sd_dat3]
-set_property -dict {PACKAGE_PIN U19 IOSTANDARD LVCMOS33} [get_ports sd_dat0]
-set_property -dict {PACKAGE_PIN W18 IOSTANDARD LVCMOS33} [get_ports sd_dat2]
-set_property -dict {PACKAGE_PIN W19 IOSTANDARD LVCMOS33} [get_ports sd_ncd]
+#set_property -dict {PACKAGE_PIN Y18 IOSTANDARD LVCMOS33} [get_ports sd_cmd]
+#set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports psram_miso]
+set_property -dict {PACKAGE_PIN Y16 IOSTANDARD LVCMOS33} [get_ports psram_mosi]
+set_property -dict {PACKAGE_PIN Y17 IOSTANDARD LVCMOS33} [get_ports psram_ce]
+set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports psram_sio2]
+set_property -dict {PACKAGE_PIN T11 IOSTANDARD LVCMOS33} [get_ports psram_sio3]
+set_property -dict {PACKAGE_PIN W18 IOSTANDARD LVCMOS33} [get_ports psram_miso]
+set_property -dict {PACKAGE_PIN W19 IOSTANDARD LVCMOS33} [get_ports psram_sclk]
+
+#set_property -dict {PACKAGE_PIN Y18 IOSTANDARD LVCMOS33} [get_ports sd_cmd]
+#set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports sd_sck]
+#set_property -dict {PACKAGE_PIN Y16 IOSTANDARD LVCMOS33} [get_ports sd_dat1]
+#set_property -dict {PACKAGE_PIN Y17 IOSTANDARD LVCMOS33} [get_ports sd_wp]
+#set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports sd_dat3]
+#set_property -dict {PACKAGE_PIN U19 IOSTANDARD LVCMOS33} [get_ports sd_dat0]
+#set_property -dict {PACKAGE_PIN W18 IOSTANDARD LVCMOS33} [get_ports sd_dat2]
+#set_property -dict {PACKAGE_PIN W19 IOSTANDARD LVCMOS33} [get_ports sd_ncd]
 
 ##Pmod Header JB
 
-set_property -dict {PACKAGE_PIN W14 IOSTANDARD LVCMOS33} [get_ports uart_tx]
-set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports uart_rx]
-#set_property -dict { PACKAGE_PIN T11   IOSTANDARD LVCMOS33 } [get_ports { jb[2] }]; #IO_L1P_T0_34 Sch=jb_p[2]
-#set_property -dict { PACKAGE_PIN T10   IOSTANDARD LVCMOS33 } [get_ports { jb[3] }]; #IO_L1N_T0_34 Sch=jb_n[2]
-#set_property -dict { PACKAGE_PIN V16   IOSTANDARD LVCMOS33 } [get_ports { jb[4] }]; #IO_L18P_T2_34 Sch=jb_p[3]
+#set_property -dict {PACKAGE_PIN W14 IOSTANDARD LVCMOS33} [get_ports uart_tx]
+#set_property -dict {PACKAGE_PIN W14 IOSTANDARD LVCMOS33} [get_ports psram_miso]
+#set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports uart_rx]
+#set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports psram_sio2]
+#set_property -dict {PACKAGE_PIN T11 IOSTANDARD LVCMOS33} [get_ports uart_tx]
+#set_property -dict {PACKAGE_PIN T11 IOSTANDARD LVCMOS33} [get_ports psram_sio3]
+
+set_property -dict {PACKAGE_PIN T10 IOSTANDARD LVCMOS33} [get_ports uart_tx]
+set_property -dict {PACKAGE_PIN V16 IOSTANDARD LVCMOS33} [get_ports uart_rx]
 #set_property -dict { PACKAGE_PIN W16   IOSTANDARD LVCMOS33 } [get_ports { jb[5] }]; #IO_L18N_T2_34 Sch=jb_n[3]
 #set_property -dict { PACKAGE_PIN V12   IOSTANDARD LVCMOS33 } [get_ports { jb[6] }]; #IO_L4P_T0_34 Sch=jb_p[4]
 #set_property -dict { PACKAGE_PIN W13   IOSTANDARD LVCMOS33 } [get_ports { jb[7] }]; #IO_L4N_T0_34 Sch=jb_n[4]
@@ -72,6 +85,14 @@ set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports uart_rx]
 ##NOTE: The ck_an_p pins can be used as single ended analog inputs with voltages from 0-3.3V (Chipkit Analog pins A0-A5).
 ##      These signals should only be connected to the XADC core. When using these pins as digital I/O, use pins ck_io[14-19].
 
+set_property -dict {PACKAGE_PIN D18 IOSTANDARD LVCMOS33} [get_ports sd_ncd]
+set_property -dict {PACKAGE_PIN E17 IOSTANDARD LVCMOS33} [get_ports sd_wp]
+set_property -dict {PACKAGE_PIN E19 IOSTANDARD LVCMOS33} [get_ports sd_dat0]
+set_property -dict {PACKAGE_PIN E18 IOSTANDARD LVCMOS33} [get_ports sd_dat1]
+set_property -dict {PACKAGE_PIN J14 IOSTANDARD LVCMOS33} [get_ports sd_dat2]
+set_property -dict {PACKAGE_PIN K14 IOSTANDARD LVCMOS33} [get_ports sd_dat3]
+set_property -dict {PACKAGE_PIN J16 IOSTANDARD LVCMOS33} [get_ports sd_cmd]
+set_property -dict {PACKAGE_PIN K16 IOSTANDARD LVCMOS33} [get_ports sd_sck]
 #set_property -dict { PACKAGE_PIN D18   IOSTANDARD LVCMOS33 } [get_ports { ck_an_n[0] }]; #IO_L3N_T0_DQS_AD1N_35 Sch=ck_an_n[0]
 #set_property -dict { PACKAGE_PIN E17   IOSTANDARD LVCMOS33 } [get_ports { ck_an_p[0] }]; #IO_L3P_T0_DQS_AD1P_35 Sch=ck_an_p[0]
 #set_property -dict { PACKAGE_PIN E19   IOSTANDARD LVCMOS33 } [get_ports { ck_an_n[1] }]; #IO_L5N_T0_AD9N_35 Sch=ck_an_n[1]
@@ -226,3 +247,81 @@ connect_debug_port dbg_hub/clk [get_nets u_ila_0_clk_main]
 
 
 
+
+
+
+
+
+
+
+
+
+connect_debug_port u_ila_0/probe2 [get_nets [list memory_controller_inst/psram_controller_inst/miso_TRI]]
+
+
+
+
+
+
+connect_debug_port u_ila_0/probe8 [get_nets [list {memory_controller_inst/count[0]_i_1_n_0}]]
+connect_debug_port u_ila_0/probe9 [get_nets [list {memory_controller_inst/count[1]_i_1_n_0}]]
+connect_debug_port u_ila_0/probe10 [get_nets [list {memory_controller_inst/count[2]_i_1_n_0}]]
+connect_debug_port u_ila_0/probe11 [get_nets [list {memory_controller_inst/count[3]_i_1_n_0}]]
+connect_debug_port u_ila_0/probe12 [get_nets [list {memory_controller_inst/count[4]_i_1_n_0}]]
+
+
+
+create_debug_core u_ila_0 ila
+set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
+set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
+set_property C_ADV_TRIGGER false [get_debug_cores u_ila_0]
+set_property C_DATA_DEPTH 1024 [get_debug_cores u_ila_0]
+set_property C_EN_STRG_QUAL false [get_debug_cores u_ila_0]
+set_property C_INPUT_PIPE_STAGES 0 [get_debug_cores u_ila_0]
+set_property C_TRIGIN_EN false [get_debug_cores u_ila_0]
+set_property C_TRIGOUT_EN false [get_debug_cores u_ila_0]
+set_property port_width 1 [get_debug_ports u_ila_0/clk]
+connect_debug_port u_ila_0/clk [get_nets [list clock_wizard_inst/inst/clk_main]]
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe0]
+set_property port_width 31 [get_debug_ports u_ila_0/probe0]
+connect_debug_port u_ila_0/probe0 [get_nets [list {bootm_spo[0]} {bootm_spo[1]} {bootm_spo[2]} {bootm_spo[3]} {bootm_spo[4]} {bootm_spo[5]} {bootm_spo[6]} {bootm_spo[7]} {bootm_spo[8]} {bootm_spo[9]} {bootm_spo[10]} {bootm_spo[11]} {bootm_spo[12]} {bootm_spo[13]} {bootm_spo[14]} {bootm_spo[15]} {bootm_spo[16]} {bootm_spo[17]} {bootm_spo[18]} {bootm_spo[19]} {bootm_spo[20]} {bootm_spo[21]} {bootm_spo[22]} {bootm_spo[23]} {bootm_spo[24]} {bootm_spo[26]} {bootm_spo[27]} {bootm_spo[28]} {bootm_spo[29]} {bootm_spo[30]} {bootm_spo[31]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe1]
+set_property port_width 5 [get_debug_ports u_ila_0/probe1]
+connect_debug_port u_ila_0/probe1 [get_nets [list {memory_controller_inst/psram_controller_inst/state[0]} {memory_controller_inst/psram_controller_inst/state[1]} {memory_controller_inst/psram_controller_inst/state[2]} {memory_controller_inst/psram_controller_inst/state[3]} {memory_controller_inst/psram_controller_inst/state[4]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
+set_property port_width 1 [get_debug_ports u_ila_0/probe2]
+connect_debug_port u_ila_0/probe2 [get_nets [list memory_controller_inst/psram_controller_inst/ce]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe3]
+set_property port_width 1 [get_debug_ports u_ila_0/probe3]
+connect_debug_port u_ila_0/probe3 [get_nets [list memory_controller_inst/psram_controller_inst/miso_IBUF]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe4]
+set_property port_width 1 [get_debug_ports u_ila_0/probe4]
+connect_debug_port u_ila_0/probe4 [get_nets [list memory_controller_inst/psram_controller_inst/mosi]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe5]
+set_property port_width 1 [get_debug_ports u_ila_0/probe5]
+connect_debug_port u_ila_0/probe5 [get_nets [list memory_controller_inst/psram_controller_inst/sclk]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe6]
+set_property port_width 1 [get_debug_ports u_ila_0/probe6]
+connect_debug_port u_ila_0/probe6 [get_nets [list memory_controller_inst/psram_controller_inst/sio2_IBUF]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe7]
+set_property port_width 1 [get_debug_ports u_ila_0/probe7]
+connect_debug_port u_ila_0/probe7 [get_nets [list memory_controller_inst/psram_controller_inst/sio3_IBUF]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe8]
+set_property port_width 1 [get_debug_ports u_ila_0/probe8]
+connect_debug_port u_ila_0/probe8 [get_nets [list {debounce_inst_0/o_state[1]_i_1_n_0}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe9]
+set_property port_width 1 [get_debug_ports u_ila_0/probe9]
+connect_debug_port u_ila_0/probe9 [get_nets [list {debounce_inst_0/o_state[0]_i_1_n_0}]]
+set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
+set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
+set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
+connect_debug_port dbg_hub/clk [get_nets clk_main]
