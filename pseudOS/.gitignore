@@ -2,5 +2,6 @@ build/
 coe/
 *.elf
 *.o
+*.c_o
 *.bin
 *.out

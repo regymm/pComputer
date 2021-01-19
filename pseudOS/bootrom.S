@@ -1,7 +1,13 @@
 .section .text
 .globl _start
+.globl c_start
 
 _start:
+	#li t0, 0
+	#li t1, 127
+	#bge t1, t0, _start
+	#li t0, 0x20000000
+	#jr t0
 	# arithmetic tests
 	li t2, 23
 	addi t3, zero, 4
@@ -58,8 +64,12 @@ cont1:
 	jal func_dummy
 
 	# load store tests
+	fence
 	li a1, 0xabcdf2f4
 	la a0, 0x10000000
+	sw zero, 0(a0)
+	sw zero, 4(a0)
+	sw zero, 8(a0)
 	sw a1, 0(a0)
 	sh a1, 4(a0)
 	sb a1, 8(a0)
@@ -73,14 +83,36 @@ cont1:
 	li a4, 0x000000f4
 	bne a3, a4, fail
 
+	fence
+	lhu a3, 2(a0)
+	li a4, 0x0000abcd
+	bne a3, a4, fail
+	lbu a3, 1(a0)
+	li a4, 0x000000f2
+	bne a3, a4, fail
+	lbu a3, 2(a0)
+	li a4, 0x000000cd
+	bne a3, a4, fail
+	lbu a3, 3(a0)
+	li a4, 0x000000ab
+	bne a3, a4, fail
+
+	fence
+	li a3, 0xdc
+	sb a3, 1(a0)
+	lbu a3, 1(a0)
+	li a4, 0xdc
+	bne a3, a4, fail
+
+	fence
 	lhu a3, 0(a0)
-	li a4, 0x0000f2f4
+	li a4, 0x0000dcf4
 	bne a3, a4, fail
 	lbu a3, 0(a0)
 	li a4, 0x000000f4
 	bne a3, a4, fail
 	lh a3, 0(a0)
-	li a4, 0xfffff2f4
+	li a4, 0xffffdcf4
 	bne a3, a4, fail
 	lb a3, 0(a0)
 	li a4, 0xfffffff4
@@ -105,9 +137,9 @@ cont2:
 
 	li a0, 0xcbcd1234
 	li a1, 0x1777ffff
-	div a3, a0, a1 # FAIL
+	div a3, a0, a1
 	divu a4, a0, a1
-	rem a5, a0, a1 # FAIL
+	rem a5, a0, a1
 	remu a6, a0, a1
 	li s3, 0xfffffffe
 	li s4, 0x00000008
@@ -137,20 +169,38 @@ cont2:
 
 
 	li a0, 'O'
-	jal uart_putchar
+	jal uart_putchar_simple
 	li a0, 'K'
-	jal uart_putchar
+	jal uart_putchar_simple
 	li a0, '\n'
-	jal uart_putchar
+	jal uart_putchar_simple
 	j end
 end:
-	j end
 	nop
 	nop
 	nop
 	nop
 	nop
+	la sp, 0x10001ffc
+	j c_start
+	j real_end
 	nop
+	nop
+	nop
+	nop
+	nop
+	li a0, '\n'
+	jal uart_putchar_simple
+	li a0, 'E'
+	jal uart_putchar_simple
+	li a0, 'X'
+	jal uart_putchar_simple
+	li a0, 'I'
+	jal uart_putchar_simple
+	li a0, 'T'
+	jal uart_putchar_simple
+real_end:
+	j real_end
 fail:
 	j fail
 
@@ -160,8 +210,9 @@ func_dummy:
 
 
 # void uart_putchar(char c)
-uart_putchar:
-    lw t2, uart_addr
+uart_putchar_simple:
+    #lw t2, uart_addr
+	la t2, 0x93000000
 1:
     lw t0, 8(t2)
     beq t0, zero, 1b
