@@ -2,8 +2,8 @@
 
 void c_start()
 {
-	uart_putstr("[bootrom]c_start\n");
-	uart_putstr("[bootrom]load from sdcard\n");
+	uart_putstr("[bootrom]c_start\n\r");
+	uart_putstr("[bootrom]load from sdcard\n\r");
 
 	while(! *sd_ready);
 	*sd_address = 0x0;
@@ -16,7 +16,7 @@ void c_start()
 		data = psram_base[i];
 	}
 
-	uart_putstr("[bootrom]xfer ctrl\n\n");
+	uart_putstr("[bootrom]xfer ctrl\n\r\n\r");
 
 	asm("li t0, 0x20000000; jr t0;" ::: "t0" );
 }

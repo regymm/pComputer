@@ -4,6 +4,10 @@ A simple "computer" from scratch, including CPU and OS, running on FPGA-based ha
 
 ### Gallery
 
+**2021.01.20** Migration to RISC-V is successful. Again boot from SD card, but this time cross-compiled C code is run. It reminds me of the time when the terminal fell into raw mode. 
+
+![](./doc/src/gallery-2021-0120.jpg)
+
 **2020.08.13**  In early development. CPU boots from BootROM, which loads sdbootloader from SD card, then sdbootloader sets up memory(actually another part on SD card) and loads pseudos. Finally pseudos start running, showing timer interrupt and syscall demo. No cache yet, so the process takes ~10s to finish. 
 
 ![](doc/src/gallery-2020-0813.png)
@@ -23,12 +27,13 @@ A simple "computer" from scratch, including CPU and OS, running on FPGA-based ha
 
 **Processor**
 
-- [x] Multiple-cycle MIPS-like CPU @ 62.5MHz on Zynq 7020 PL
-- [x] Current supported instructions: `add(u), sub(u), and, or, xor, slt, sltu, addi(u), slti, sltiu, andi, ori, xori, lui, lw, sw, beq, bne, j, jr, jal, jalr, mfc0, eret, nop ` *Trap not supported, so add/addu (and other similar ones) do the same thing.* Pseudoinstructions: `beqz, bnez, li, la, move`
+- [x] Multiple-cycle RISC-V like CPU @ 62.5MHz on SqueakyBoard(Zynq 7010 PL)
+- [x] RV32IM
+- [ ] M-mode CSR support (WIP)
 - [x] Memory-like bus interface
-- [x] Interrupt support: timer, syscall, ~~uart input~~, ~~sdcard~~, with custom ISR
-- [ ] Exception support: illegal instruction, memory error, divide 0, protection error ...
+- [ ] Exception and Interrupt support (WIP)
 - [ ] User/Privileged mode support
+- [ ] Sv32 MMU
 
 **Hardware/Software**
 
@@ -37,24 +42,22 @@ Peripherals
 - [x] GPIO (LEDs, buttons, switches)
 - [x] UART
 - [x] SD card
-- [ ] PS/2 keyboard
-- [ ] HDMI character terminal
+- [ ] PS/2 keyboard (WIP)
+- [ ] HDMI character terminal (WIP)
 - [ ] Graphics unit
 - [ ] W5500 Internet module
 
 Memory
 
-- [ ] SPI pseudo SRAM via custom-drawn PMOD board
-- [x] Use part of SD card as main memory
-- [ ] Use PS-side DDR memory via AXI4-lite
-- [ ] primitive MMU and paging
+- [x] ESP-PSRAM64H as main memory
 - [ ] Cache
 
 OS
 
-- [x] Run MIPS assembly
-- [ ] Enough commands to run cross-compiled C code
+- [x] Run RISC-V assembly
+- [x] Enough commands to run cross-compiled C code
 - [x] Boot from SD card (raw)
+- [ ] Boot from SD card (FAT32)
 - [ ] Syscall interface
 - [ ] Process switching demo
 - [ ] Simple C library
@@ -67,8 +70,8 @@ OS
 
 Others
 
-- [x] Cycle counter
-- [ ] RNG
+- [ ] time, timecmp
+- [ ] RGB LED +100% performance
 
 ### Documents
 
