@@ -5,15 +5,18 @@ void c_start()
 	uart_putstr("[bootrom]c_start\n\r");
 	uart_putstr("[bootrom]load from sdcard\n\r");
 
-	while(! *sd_ready);
-	*sd_address = 0x0;
-	*sd_do_read = 0x1;
-	while(! *sd_ready);
-	int i = 0;
-	int data;
-	for(i = 0; i < 128; i++) {
-		psram_base[i] = sd_cache_base[i];
-		data = psram_base[i];
+	int sector = 0;
+	for(sector = 0; sector < 500; sector++) {
+		while(! *sd_ready);
+		*sd_address = sector;
+		*sd_do_read = 0x1;
+		while(! *sd_ready);
+		int i = 0;
+		/*int data;*/
+		for(i = 0; i < 128; i++) {
+			psram_base[i + (sector * 128)] = sd_cache_base[i];
+			/*data = psram_base[i];*/
+		}
 	}
 
 	uart_putstr("[bootrom]xfer ctrl\n\r\n\r");

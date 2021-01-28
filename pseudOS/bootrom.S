@@ -174,9 +174,10 @@ cont2:
 	jal uart_putchar_simple
 	li a0, '\n'
 	jal uart_putchar_simple
+	li a0, '\r'
+	jal uart_putchar_simple
 	j end
 end:
-	nop
 	nop
 	nop
 	nop
@@ -184,7 +185,6 @@ end:
 	la sp, 0x10001ffc
 	j c_start
 	j real_end
-	nop
 	nop
 	nop
 	nop
