@@ -1,3 +1,10 @@
+/**
+ * File              : mmapper.v
+ * License           : GPL-3.0-or-later
+ * Author            : Peter Gu <github.com/ustcpetergu>
+ * Date              : 2021.01.24
+ * Last Modified Date: 2021.01.24
+ */
 `timescale 1ns / 1ps
 // pCPU memory address mapper (or "bus")
 
@@ -72,6 +79,12 @@ module mmapper
         input [31:0]sd_spo,
         //input sd_ready,
 
+		// CH375b: 0x97000000
+		output reg [2:0]usb_a,
+		output reg [31:0]usb_d,
+		output reg usb_we,
+		input [31:0]usb_spo,
+
         
         // 0xe0000000 MMU control
 
@@ -99,6 +112,8 @@ module mmapper
         video_d = d;
         sd_a = a[31:0];
         sd_d = d;
+		usb_a = a[4:2];
+		usb_d = d;
         isr_a = a;
         isr_d = d;
     end
@@ -112,6 +127,7 @@ module mmapper
         uart_we = 0;
         video_we = 0;
         sd_we = 0;
+		usb_we = 0;
         isr_we = 0;
 		bootm_rd = 0;
         spo = 0;
@@ -146,6 +162,10 @@ module mmapper
                 4'h6: begin
                     spo = sd_spo;
                     sd_we = we;
+                end
+                4'h7: begin
+                    spo = usb_spo;
+                    usb_we = we;
                 end
                 default: irq = 1;
             endcase

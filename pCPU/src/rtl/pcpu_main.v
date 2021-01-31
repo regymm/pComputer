@@ -36,20 +36,16 @@ module pcpu_main
         output sd_cmd,
         output sd_sck,
 
+		input ch375_tx,
+		output ch375_rx,
+		input ch375_nint,
+
         output [2:0]TMDSp,
         output [2:0]TMDSn,
         output TMDSp_clock,
         output TMDSn_clock
     );
 
-    //reg [1:0]sw_r;
-    //reg [3:0]btn_r;
-    //reg [3:0]led_r;
-    //reg [2:0]ledrgb1_r;
-    //reg [2:0]ledrgb2_r;
-
-    //reg uart_rx_r;
-    //reg uart_tx_r;
 
     wire clk_main;
     wire clk_hdmi_25;
@@ -211,6 +207,35 @@ module pcpu_main
 	assign sd_sck = 1'bZ;
 `endif
 
+	// CH375b
+	wire [2:0]usb_a;
+	wire [31:0]usb_d;
+	wire usb_we;
+	wire [31:0]usb_spo;
+
+	wire irq_usb;
+`ifdef CH375B_EN
+	ch375b ch375b_inst
+	(
+		.clk(clk_main),
+		.rst(rst),
+
+		.a(usb_a),
+		.d(usb_d),
+		.we(usb_we),
+		.spo(usb_spo),
+
+		.irq(irq_usb),
+
+		.ch375_tx(ch375_tx),
+		.ch375_rx(ch375_rx),
+		.ch375_nint(ch375_nint)
+	);
+`else
+	assign usb_spo = 0;
+	assign ch375_rx = 1;
+`endif
+
 	wire [31:0]mainm_a;
 	wire [31:0]mainm_d;
 	wire mainm_we;
@@ -245,35 +270,6 @@ module pcpu_main
 `endif
 
 
-    //// sdcard memory mapper
-    //wire [31:0]sdmm_a;
-    //wire [31:0]sdmm_d;
-    //wire sdmm_we;
-    //wire sdmm_rd;
-    //wire [31:0]sdmm_spo;
-    //wire sdmm_ready;
-
-    //wire irq_sdmm;
-    //sdmm sdmm_inst(
-        //.clk(clk_main),
-        //.rst(rst),
-
-        //.a(sdmm_a),
-        //.d(sdmm_d),
-        //.we(sdmm_we),
-        //.rd(sdmm_rd),
-        //.spo(sdmm_spo),
-        //.ready(sdmm_ready),
-
-        //.sddrv_spo(sd_spo),
-        //.sddrv_a(sd_a),
-        //.sddrv_d(sd_d),
-        //.sddrv_we(sd_we),
-
-        //.irq(irq_sdmm)
-    //);
-
-
     // video
     wire [31:0]video_a;
     wire [31:0]video_d;
@@ -298,26 +294,26 @@ module pcpu_main
 	);
 `else
 	assign video_spo = 0;
-    OBUFDS OBUFDS_red(
-        .I(0),
-        .O(TMDSp[2]),
-        .OB(TMDSn[2])
-    );
-    OBUFDS OBUFDS_green(
-        .I(0),
-        .O(TMDSp[1]),
-        .OB(TMDSn[1])
-    );
-    OBUFDS OBUFDS_blue(
-        .I(0),
-        .O(TMDSp[0]),
-        .OB(TMDSn[0])
-    );
-    OBUFDS OBUFDS_clock(
-        .I(0),
-        .O(TMDSp_clock),
-        .OB(TMDSn_clock)
-    );
+	OBUFDS OBUFDS_red(
+		.I(0),
+		.O(TMDSp[2]),
+		.OB(TMDSn[2])
+	);
+	OBUFDS OBUFDS_green(
+		.I(0),
+		.O(TMDSp[1]),
+		.OB(TMDSn[1])
+	);
+	OBUFDS OBUFDS_blue(
+		.I(0),
+		.O(TMDSp[0]),
+		.OB(TMDSn[0])
+	);
+	OBUFDS OBUFDS_clock(
+		.I(0),
+		.O(TMDSp_clock),
+		.OB(TMDSn_clock)
+	);
 `endif
 
 
@@ -470,6 +466,11 @@ module pcpu_main
         .sd_a(sd_a),
         .sd_d(sd_d),
         .sd_we(sd_we),
+
+        .usb_spo(usb_spo),
+        .usb_a(usb_a),
+        .usb_d(usb_d),
+        .usb_we(usb_we),
 
         .gpio_spo(gpio_spo),
         .gpio_a(gpio_a),

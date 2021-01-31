@@ -25,7 +25,7 @@ module privilege
 
 		input mcause_we,
 		input mcause_iore,
-		input [4:0]mcause_d_e, 
+		input [4:0]mcause_d_e,
 		// mcause_d_i is determined inside privilege module
 
 		input mtval_we,

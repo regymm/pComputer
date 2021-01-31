@@ -3,7 +3,7 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2020.12.01
- * Last Modified Date: 2020.12.01
+ * Last Modified Date: 2021.01.30
  */
 // Memory controller
 
@@ -31,13 +31,17 @@ module memory_controller
 		output psram_sclk
     );
 
+	reg [31:0]regspo;
+	wire [31:0]data = d;
+	assign spo = regspo;
+	//wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
+	//assign spo = {regspo[7:0], regspo[15:8], regspo[23:16], regspo[31:24]};
+
 	reg ready_r = 0;
 	assign ready = ready_r & !(rd | we);
 
 	reg [21:0]rega;
-	reg [31:0]regspo;
 	reg [7:0]regbuf[3:0];
-	assign spo = regspo;
 
 	reg [5:0]count;
 
@@ -124,10 +128,10 @@ module memory_controller
 						ready_r <= 0;
 					end else ready_r <= m_ready;
 					rega <= a[21:0];
-					regbuf[3] <= d[31:24];
-					regbuf[2] <= d[23:16];
-					regbuf[1] <= d[15:8];
-					regbuf[0] <= d[7:0];
+					regbuf[3] <= data[31:24];
+					regbuf[2] <= data[23:16];
+					regbuf[1] <= data[15:8];
+					regbuf[0] <= data[7:0];
 					m_wend <= 0;
 					m_rend <= 0;
 					count <= 4;

@@ -83,16 +83,15 @@ module sd_controller(
         if(reset == 1) begin
             state <= RST;
             sclk_sig <= 0;
-            //boot_counter <= 27'd100_000_000;
-            boot_counter <= 27'd005_000;
-            //boot_counter <= 27'd001_000;
+            //boot_counter <= 27'd005_000;
+			boot_counter <= 27'd080_000;
             cmd_mode <= 1;
             cs <= 1;
             cmd_out <= {56{1'b1}};
             data_sig <= 8'hFF;
-            if (clk_pulse_slow) begin
+			if (clk_pulse_slow) begin // startup init even when reseting
                 reset_counter <= reset_counter + 1;
-                if (reset_counter[2]) sclk_sig <= ~sclk_sig;
+                if (reset_counter[6]) sclk_sig <= ~sclk_sig;
             end
         end
         else begin
@@ -113,7 +112,7 @@ module sd_controller(
                     else begin
                         // <400KHz startup init
                         boot_counter <= boot_counter - 1;
-                        if (boot_counter[2]) sclk_sig <= ~sclk_sig;
+                        if (boot_counter[6]) sclk_sig <= ~sclk_sig;
                         //sclk_sig <= ~sclk_sig; // I added this
                     end
                 end

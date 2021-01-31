@@ -3,7 +3,7 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2020.10.21
- * Last Modified Date: 2020.12.26
+ * Last Modified Date: 2021.01.24
  */
 // pComputer multicycle RISC-V processor
 // currently supported: RV32IM
@@ -34,7 +34,6 @@ module riscv_multicyc
 	localparam START_ADDR = 32'hf0000000;
 	localparam INVALID_ADDR =32'hffffffff;
 
-	// 
 	(*mark_debug = "true"*) reg [31:0]pc;
 	reg [31:0]oldpc;
 	(*mark_debug = "true"*) reg [31:0]instruction;
@@ -70,7 +69,6 @@ module riscv_multicyc
     reg [31:0]WriteData;
     wire [31:0]ReadData1;
     wire [31:0]ReadData2;
-	// signal: RegWrite
     register_file register_file_inst
     (
         .clk(clk),
@@ -84,9 +82,6 @@ module riscv_multicyc
     );
 
 	// memory mapper, little endian
-	// signal: MemWrite
-	// signal: MemRead
-	// signal: MemReady
 	reg [31:0]mem_addr;
 	reg [31:0]memwrite_data;
 	reg [31:0]memread_data;
@@ -141,20 +136,24 @@ module riscv_multicyc
 	wire [31:0]csr_d = ALUOut;
 	reg csr_we;
 	wire [31:0]csr_spo;
+	wire interrupt;
 	privilege privilege_inst
 	(
 		.clk(clk),
 		.rst(rst),
+
 		.a(csr_a),
 		.d(csr_d),
 		.we(csr_we),
 		.spo(csr_spo)
+
+		//.interrupt(interrupt)
 	);
 	reg csrsave;
 	reg [31:0]csrr;
 	wire [31:0]csrimm = {26'b0, instruction[19:15]};
 
-	// RV32A
+	// RV32A not on todo list now
 
 	localparam OP_LUI	=	7'b0110111;
 	localparam OP_AUIPC	=	7'b0010111;
@@ -165,12 +164,10 @@ module riscv_multicyc
 	localparam OP_STORE	=	7'b0100011;
 	localparam OP_R_I	=	7'b0010011;
 	localparam OP_R		=	7'b0110011; // including RV32M
-	localparam OP_FENCE	=	7'b0001111;
-	localparam OP_ENV	=	7'b1110011;
-	localparam OP_CSR	=	7'b1110011;
+	localparam OP_FENCE	=	7'b0001111; // FENCE(nop), FENCE.I(nop)
+	localparam OP_PRIV	=	7'b1110011; // ENV, CSR, WFI(nop), SFENCE.VMA(nop)
 	localparam OP_AMO	=	7'b0101111;
 	// TODO: ECALL, EBREAK(?), 
-	// no effect: FENCE, FENCE.I, SFENCE.VMA
 	wire [7:0]op = instruction[6:0];
 	wire nse = instruction[14];
 	reg [31:0]imm;
@@ -181,6 +178,7 @@ module riscv_multicyc
 	wire [31:0]imm_u = {instruction[31:12], 12'b0};
 	wire [31:0]imm_s = {{21{instruction[31]}}, instruction[30:25], instruction[11:7]};
 
+	// unaligned memory access
 	wire store_unaligned = ~instruction[13];
 	wire [31:0]loadbyte;
 	wire [31:0]loadhalf;
@@ -218,6 +216,13 @@ module riscv_multicyc
 	endcase end
 	assign loadbyte = nse ? {24'b0, loadbyte_byte}: {{24{loadbyte_byte[7]}}, loadbyte_byte};
 	assign loadhalf = nse ? {16'b0, loadhalf_half}: {{16{loadhalf_half[15]}}, loadhalf_half};
+
+	// privileged instructions
+	wire priv_csr = instruction[14:12] != 3'b0;
+	wire priv_wfi = instruction[14:12] == 3'b0 & instruction[28] & !instruction[25];
+	wire priv_sfencevma = instruction[14:12] == 3'b0 & instruction[28] & instruction[25];
+	wire priv_ecall = instruction[14:12] == 3'b0 & !instruction[28] & !instruction[20];
+	wire priv_ebreak = instruction[14:12] == 3'b0 & !instruction[28] & instruction[20];
 
 	assign RV32Mm = instruction[14:12];
 	wire is_RV32M = instruction[25];
@@ -291,7 +296,7 @@ module riscv_multicyc
 					ALUm = instruction[14] ? {2'b0, instruction[14:13]} : 4'b1000;
 				end else if (op == OP_LOAD | op == OP_STORE) begin
 					ALUSrcB = 1;
-				end else if (op == OP_CSR) begin
+				end else if (op == OP_PRIV & priv_csr) begin
 					ALUSrcA = instruction[14] ? 2 : 0;
 					ALUSrcB = 2;
 					ALUm = {2'b01, instruction[13:12]};
@@ -334,7 +339,7 @@ module riscv_multicyc
 					//PCWrite = !instruction[12] ^ |ALUOut; PCSrc = 1;
 				end else if (op == OP_LOAD) begin // LB, LH, LW, LBU, LHU
 					RegWrite = 1; RegSrc = {1'b1, instruction[13:12]};
-				end else if (op == OP_CSR) begin
+				end else if (op == OP_PRIV & priv_csr) begin
 					RegWrite = 1; RegSrc = 8;
 					csr_we = 1;
 				end
@@ -360,14 +365,15 @@ module riscv_multicyc
 				IF_REMEDY: phase <= ID_RF;
 				ID_RF: begin
 					//if (0) phase <= I_INT_END;
-					if (op == OP_ENV | 0) phase <= ID_RF;
-					else if (op == OP_FENCE) phase <= IF; // FENCE does nothing in our simple architecture
+					//if (op == OP_ENV | 0) phase <= ID_RF;
+					// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
+					if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
 					else if ( op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
 					else phase <= EX;
 				end
 				EX: begin
 					if (op == OP_STORE | op == OP_LOAD) phase <= MEM;
-					else if (op == OP_ENV) phase <= IF;
+					else if (op == OP_PRIV & priv_wfi) phase <= IF;
 					else if (op == OP_R & is_RV32M) phase <= RV32M_WAIT;
 					else phase <= WB;
 				end

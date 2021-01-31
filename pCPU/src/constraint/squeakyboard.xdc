@@ -14,6 +14,8 @@ set_property -dict {PACKAGE_PIN T19 IOSTANDARD LVCMOS33} [get_ports {led[1]}]
 set_property -dict {PACKAGE_PIN U17 IOSTANDARD LVCMOS33} [get_ports {led[2]}]
 set_property -dict {PACKAGE_PIN V17 IOSTANDARD LVCMOS33} [get_ports {led[3]}]
 
+#set_property PULLUP TRUE [get_ports sw[0]]
+#set_property PULLUP TRUE [get_ports sw[1]]
 
 ## PMOD1
 set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports uart_tx]
@@ -69,7 +71,12 @@ set_property -dict {PACKAGE_PIN N20 IOSTANDARD TMDS_33} [get_ports {TMDSp[2]}]
 #set_property -dict {PACKAGE_PIN P15 IOSTANDARD LVCMOS33} [get_ports uart_tx]
 #set_property -dict {PACKAGE_PIN P14 IOSTANDARD LVCMOS33} [get_ports uart_rx]
 
+# CH375b
+
 # USB PS2
+set_property -dict {PACKAGE_PIN J18 IOSTANDARD LVCMOS33} [get_ports ch375_tx]
+set_property -dict {PACKAGE_PIN J19 IOSTANDARD LVCMOS33} [get_ports ch375_rx]
+set_property -dict {PACKAGE_PIN H18 IOSTANDARD LVCMOS33} [get_ports ch375_nint]
 
 #set_property -dict {PACKAGE_PIN J20 IOSTANDARD LVCMOS33} [get_ports usbdp]
 #set_property -dict {PACKAGE_PIN H20 IOSTANDARD LVCMOS33} [get_ports usbdn]

@@ -51,12 +51,16 @@ module sdcard
         input [15:0]a,
         input [31:0]d,
         input we,
-        output reg [31:0]spo,
+        output [31:0]spo,
 
         output reg irq = 0
     );
 
+	reg [31:0]regspo;
 	wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
+	//wire [31:0]data = d;
+	assign spo = regspo;
+	//assign spo = {regspo[7:0], regspo[15:8], regspo[23:16], regspo[31:24]};
 
     // slow clock
     reg [4:0]clkcounter = 0;
@@ -64,7 +68,7 @@ module sdcard
         if (rst) clkcounter <= 5'b0;
         else clkcounter <= clkcounter + 1;
     end
-    wire clk_pulse_slow = (clkcounter == 5'b0);
+    wire clk_pulse_slow = (clkcounter[0:0] == 1'b0);
 
     assign sd_dat1 = 1;
     assign sd_dat2 = 1;
@@ -142,6 +146,7 @@ module sdcard
             if (sd_ready_real) begin
                 if (we) begin
                     case (a[15:0])
+						// pay attention to endian here
                         16'h1000: sd_address <= data;
                         16'h1004: sd_rd <= data[0];
                         16'h1008: sd_wr <= data[0];
@@ -202,13 +207,13 @@ module sdcard
 		blockcounterspo <= block[counter[8:2]];
 	end
     always @ (*) begin
-        spo = 0;
-        if (a[15:12] == 0) spo = blockaspo;
+        regspo = 0;
+        if (a[15:12] == 0) regspo = blockaspo;
         else case (a[15:0])
-            16'h1000: spo = sd_address;
-            16'h2000: spo = sd_ncd;
-            16'h2010: spo = sd_ready_real;
-            16'h2014: spo = dirty;
+            16'h1000: regspo = {sd_address[7:0], sd_address[15:8], sd_address[23:16], sd_address[31:24]};
+            16'h2000: regspo = {7'b0, sd_ncd, 24'b0};
+            16'h2010: regspo = {7'b0, sd_ready_real, 24'b0};
+            16'h2014: regspo = {7'b0, dirty, 24'b0};
             default: ;
         endcase
     end
