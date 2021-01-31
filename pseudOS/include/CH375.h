@@ -1,6 +1,7 @@
 // https://github.com/xeecos/CH375-Keyboard-Arduino
 #ifndef CH375_H
 #define CH375_H
+#include "stdio.h"
 #define USB2_0 1
 #define USB1_0 0
 // #define CH375_DBG 1
@@ -247,8 +248,9 @@
 #define DEF_USB_GET_INTERF  0x0A
 #define DEF_USB_SET_INTERF  0x0B
 #define DEF_USB_SYNC_FRAME  0x0C
-#define uint8_t unsigned char
-#define int8_t char
+//#define uint8_t unsigned char
+//#define int8_t char
+
 typedef struct _USB_DEVICE_DEscriptOR {
     uint8_t bLength;
     uint8_t bDescriptorType;
