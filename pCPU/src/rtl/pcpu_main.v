@@ -76,6 +76,33 @@ module pcpu_main
     // reset
     wire rst = sw_d[0];
 
+	wire [31:0]rst_d = 0;
+	wire rst_we = 0;
+	wire rst_gpio;
+	wire rst_uart;
+	wire rst_sdcard;
+	wire rst_video;
+	wire rst_usb;
+	wire rst_psram;
+	wire rst_interrupt;
+	wire rst_timer;
+	wire rst_mmu;
+	reset reset_unit(
+		.rst_globl(rst),
+		.d(rst_d),
+		.we(rst_we),
+
+		.rst_gpio(rst_gpio),
+		.rst_uart(rst_uart),
+		.rst_sdcard(rst_sdcard),
+		.rst_video(rst_video),
+		.rst_usb(rst_usb),
+		.rst_psram(rst_psram),
+		.rst_interrupt(rst_interrupt),
+		.rst_timer(rst_timer),
+		.rst_mmu(rst_mmu)
+	);
+
 
     // bootrom 1024*32
     wire [9:0]bootm_a;
@@ -125,7 +152,7 @@ module pcpu_main
 `ifdef GPIO_EN
     gpio gpio_inst(
         .clk(clk_main),
-        .rst(rst),
+        .rst(rst_gpio),
 
         .a(gpio_a),
         .d(gpio_d),
@@ -152,7 +179,7 @@ module pcpu_main
 `ifdef UART_EN
     uart uart_inst(
         .clk(clk_main),
-        .rst(rst),
+        .rst(rst_uart),
 
         .a(uart_a),
         .d(uart_d),
@@ -180,7 +207,7 @@ module pcpu_main
 `ifdef SDCARD_EN
     sdcard sdcard_inst(
         .clk(clk_main),
-        .rst(rst),
+        .rst(rst_sdcard),
 
         .a(sd_a),
         .d(sd_d),
@@ -218,7 +245,7 @@ module pcpu_main
 	ch375b ch375b_inst
 	(
 		.clk(clk_main),
-		.rst(rst),
+		.rst(rst_usb),
 
 		.a(usb_a),
 		.d(usb_d),
@@ -247,8 +274,8 @@ module pcpu_main
 `ifdef PSRAM_EN
 	memory_controller memory_controller_inst
 	(
-		.rst(rst),
 		.clk(clk_main),
+		.rst(rst_psram),
 
 		.a(mainm_a),
 		.d(mainm_d),
@@ -280,7 +307,7 @@ module pcpu_main
 		.clk(clk_main),
 		.clk_pix(clk_hdmi_25),
 		.clk_tmds(clk_hdmi_250),
-		.rst(rst),
+		.rst(rst_video),
 
 		.a(video_a),
 		.d(video_d),
@@ -330,15 +357,15 @@ module pcpu_main
 `ifdef IRQ_EN
     // timer interrupt
     wire irq_timer;
-    timer_interrupt timer_interrupt_inst(
-        .clk_125M(clk_main),
-        .rst(rst),
+    timer timer_inst(
+        .clk(clk_main),
+        .rst(rst_timer),
         .irq(irq_timer)
     );
 
     interrupt_unit interrupt_unit_inst(
         .clk(clk_main),
-        .rst(rst),
+        .rst(rst_interrupt),
 
         .iack(iack),
         .irq(irq),
@@ -367,23 +394,16 @@ module pcpu_main
     wire we;
     wire rd;
 
-	wire [1:0]ring;
 	riscv_multicyc riscv_multicyc_inst(
 		.clk(clk_main),
 		.rst(rst),
-
-		.irq(irq),
-		.icause(icause),
-		.iack(iack),
 
 		.spo(spo),
 		.ready(ready),
 		.a(a),
 		.d(d),
 		.we(we),
-		.rd(rd),
-
-		.ring(ring)
+		.rd(rd)
 	);
 
 
@@ -400,7 +420,7 @@ module pcpu_main
 `ifdef MMU_EN
     mmu mmu_inst(
         .clk(clk_main),
-        .rst(rst),
+        .rst(rst_mmu),
 
         .ring(ring),
 

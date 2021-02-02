@@ -17,24 +17,40 @@ module privilege
 		input we,
 		output reg [31:0]spo,
 
-		input meip,
-		input mtip,
+		// from interrupt.v
+		input eip,
+		output reg eip_reply,
+		// from timer.v
+		input tip,
+		output reg tip_reply,
 
-		input [31:0]mepc_d,
-		input mepc_we,
+		//input mcause_we,
+		//input mcause_iore,
+		//input [4:0]mcause_d_e,
+		//// mcause_d_i is determined inside privilege module
 
-		input mcause_we,
-		input mcause_iore,
-		input [4:0]mcause_d_e,
-		// mcause_d_i is determined inside privilege module
+		//input mtval_we,
+		//input [31:0]mtval_d,
 
-		input mtval_we,
-		input [31:0]mtval_d,
+		// handle mie & mpie when exception begins or ends
+		input on_exc_enter,
+		input on_exc_leave,
 
-		output mcause_isinterrupt,
-		//output mstatus_mpp,
-		output mstatus_mie,
-		output mstatus_mpie
+		// for CPU exception
+		input [31:0]pc_in,
+		output [31:0]mtvec_out,
+		// for CPU mret
+		output [31:0]mepc_out,
+
+		//output mcause_isinterrupt,
+		////output mstatus_mpp,
+		//output mstatus_mie,
+		//output mstatus_mpie,
+
+
+		// interrupt that goes into CPU directly
+		output reg interrupt,
+		input int_reply
     );
 
 	// Control State Registers
@@ -48,6 +64,9 @@ module privilege
 	reg [31:0]mtval;
 	reg [31:0]mip;
 
+	assign mepc_out = mepc;
+	assign mtvec_out = mtvec;
+
 	//reg [63:0]mtime;
 	//reg [63:0]mtimecmp;
 
@@ -59,7 +78,7 @@ module privilege
 	wire [31:0]mtvec_read_val		= 32'bxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx00;
 	wire [31:0]mtvec_write_mask		= 32'b00000000000000000000000000000011;
 	wire [31:0]mip_read_mask		= 32'b11111111111111111111111111110111;
-	wire [31:0]mip_read_val			= {20'b0, meip, 3'b0, mtip, 3'b0, 1'bx, 3'b0};
+	wire [31:0]mip_read_val			= {20'b0, eip, 3'b0, tip, 3'b0, 1'bx, 3'b0};
 	wire [31:0]mip_write_mask		= 32'b11111111111111111111111111110111; // WARL otherwise
 	wire [31:0]mie_read_mask		= 32'b00000000000000000000100010001000;
 	wire [31:0]mie_read_val			= 32'b00000000000000000000x000x000x000;
@@ -89,6 +108,9 @@ module privilege
 	assign mstatus_mie = mstatus[3];
 	assign mstatus_mpie = mstatus[7];
 	
+	wire meie = mie[11];
+	wire mtie = mie[7];
+	wire msie = mie[3];
 
 	always @ (*) begin
 		case (a)
@@ -133,13 +155,70 @@ module privilege
 				12'h344: mip		<= mip & mip_write_mask + d & ~mip_write_mask;
 				default: ;
 			endcase
-			else if (mepc_we)
-				mepc <= mepc_d;
-			else if (mcause_we)
-				mcause <= mcause_iore ? {1'b1, 31'b0} : {1'b0, 26'b0, mcause_d_e}; // TODO
-			else if (mtval_we)
-				mtval <= mtval_d;
+			else if (on_exc_enter) begin
+				mstatus <= {mstatus[31:8], mstatus[3], mstatus[6:4], 1'b0, mstatus[2:0]};
+				mepc <= pc_in;
+			end else if (on_exc_leave) begin
+				mstatus <= {mstatus[31:8], 1'b1, mstatus[6:4], mstatus[7], mstatus[2:0]};
+			end
+			//else if (mepc_we)
+				//mepc <= mepc_d;
+			//else if (mcause_we)
+				//mcause <= mcause_iore ? {1'b1, 31'b0} : {1'b0, 26'b0, mcause_d_e}; // TODO
+			//else if (mtval_we)
+				//mtval <= mtval_d;
 		end
+	end
+
+	reg int_reply_reg;
+	reg int_pending;
+	reg eip_reg;
+	reg tip_reg;
+	reg [1:0]int_source;
+	always @ (posedge clk) begin
+		int_reply_reg <= int_reply;
+		int_pending <= mstatus_mie & (eip&meie | tip&mtie | msie);
+		eip_reg <= eip;
+		tip_reg <= tip;
+	end
+
+	localparam IDLE = 2'b00;
+	localparam BUSY = 2'b01;
+	localparam END = 2'b11;
+	reg [1:0]state = IDLE;
+	always @ (posedge clk) begin
+		if (rst) begin
+			state <= IDLE;
+			interrupt <= 0;
+			eip_reply <= 0;
+			tip_reply <= 0;
+		end else begin
+			case (state)
+				IDLE: begin
+					if (int_pending) begin
+						int_source <= {eip&meie, tip&mtie};
+						interrupt <= 1;
+						state <= BUSY;
+					end
+				end
+				BUSY: begin
+					if (int_reply_reg) begin
+						interrupt <= 0;
+						if (int_source[1]) eip_reply <= 1;
+						else if (int_source[0]) tip_reply <= 1;
+						//else 0; // handle sie
+						state <= END;
+					end
+				end
+				END: begin
+					if (int_source[1]) eip_reply <= 0;
+					else if (int_source[0]) tip_reply <= 0;
+					state <= IDLE;
+				end
+				default: state <= IDLE;
+			endcase
+		end
+
 	end
 
 endmodule

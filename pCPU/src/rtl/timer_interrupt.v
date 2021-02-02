@@ -1,10 +1,11 @@
 `timescale 1ns / 1ps
 // pComputer timer interrupt unit
 // 50ms interval under 125MHz clock
+`include "pCPU.vh"
 
-module timer_interrupt
+module timer
     (
-        input clk_125M,
+        input clk,
         input rst,
 
         output reg irq
@@ -13,7 +14,7 @@ module timer_interrupt
     localparam CNTMAX = 80000000;
     //localparam CNTMAX = 500;
     reg [31:0]counter = 0;
-    always @ (posedge clk_125M) begin
+    always @ (posedge clk) begin
         if (rst) begin
             counter <= 0;
             irq <= 0;

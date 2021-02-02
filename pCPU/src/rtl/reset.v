@@ -25,6 +25,7 @@ module reset
 		output reg rst_usb,
 		output reg rst_psram,
 		output reg rst_interrupt,
+		output reg rst_timer,
 		output reg rst_mmu
     );
 
@@ -34,11 +35,11 @@ module reset
 
 	always @ (posedge clk) begin
 		if (rst_globl) begin
-			{rst_gpio, rst_uart, rst_sdcard, rst_video, rst_usb, rst_psram, rst_interrupt, rst_mmu} <= 8'b1;
+			{rst_gpio, rst_uart, rst_sdcard, rst_video, rst_usb, rst_psram, rst_interrupt, rst_timer, rst_mmu} <= 9'b1;
 			rst_globl_reg <= 1;
-		end else if (we) {rst_gpio, rst_uart, rst_sdcard, rst_video, rst_usb, rst_psram, rst_interrupt, rst_mmu} <= data[7:0];
+		end else if (we) {rst_gpio, rst_uart, rst_sdcard, rst_video, rst_usb, rst_psram, rst_interrupt, rst_timer, rst_mmu} <= data[8:0];
 		else if (rst_globl_reg) begin
-			{rst_gpio, rst_uart, rst_sdcard, rst_video, rst_usb, rst_psram, rst_interrupt, rst_mmu} <= 8'b0;
+			{rst_gpio, rst_uart, rst_sdcard, rst_video, rst_usb, rst_psram, rst_interrupt, rst_timer, rst_mmu} <= 9'b0;
 			rst_globl_reg <= 0;
 		end
 	end
