@@ -7,6 +7,9 @@
  */
 `timescale 1ns / 1ps
 
+// exception: CPU issued and write data to privilege. CPU gives mcause
+// interrupt: privilege issued, CPU only gets a signal and gives pc. privilege maintains mcause
+// then in exception/interrupt handler, CPU assembly gets all required info from privilege
 module privilege
 	(
 		input clk,
@@ -35,9 +38,11 @@ module privilege
 		// handle mie & mpie when exception begins or ends
 		input on_exc_enter,
 		input on_exc_leave,
+		input on_exc_isint,
 
 		// for CPU exception
 		input [31:0]pc_in,
+		input [3:0]mcause_code_in,
 		output [31:0]mtvec_out,
 		// for CPU mret
 		output [31:0]mepc_out,

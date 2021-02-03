@@ -138,11 +138,12 @@ module riscv_multicyc
 
 	reg on_exc_enter;
 	reg on_exc_leave;
-
-	wire [31:0]mtvec_in;
-	wire [31:0]mepc_in;
+	reg on_exc_isint;
 
 	reg [31:0]pc_out;
+	wire [3:0]mcause_code_out;
+	wire [31:0]mtvec_in;
+	wire [31:0]mepc_in;
 
 	wire interrupt;
 	reg int_reply;
@@ -158,8 +159,10 @@ module riscv_multicyc
 
 		.on_exc_enter(on_exc_enter),
 		.on_exc_leave(on_exc_leave),
+		.on_exc_isint(on_exc_isint),
 
 		.pc_in(pc_out),
+		.mcause_code_in(mcause_code_out),
 		.mtvec_out(mtvec_in),
 		.mepc_out(mepc_in),
 
@@ -412,7 +415,7 @@ module riscv_multicyc
 					//if (op == OP_ENV | 0) phase <= ID_RF;
 					// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
 					if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
-					if (op == OP_PRIV & (priv_mret)) phase <= MRET_END;
+					if (op == OP_PRIV & (priv_mret)) phase <= MRET;
 					else if ( op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
 					else phase <= EX;
 				end
@@ -472,7 +475,7 @@ module riscv_multicyc
 		2: newpc = ALUOut; // JAL
 		3: newpc = ALUOut & ~1; // JALR
 		4: newpc = {mtvec_in[31:2], 2'b0}; // exception, interrupt
-		5: newpc = mepc_out;
+		5: newpc = mepc_in;
 		// exception TODO
 		default: newpc = 0;
 	endcase end
