@@ -6,124 +6,111 @@ module interrupt_unit
         input clk,
         input rst,
 
-        input iack,
-        output reg irq,
-        output reg [3:0]icause,
+        output interrupt,
+		output int_istimer,
+        input int_reply,
 
-        input irq_timer,
-        input irq_keyboard,
-        input irq_sdcard,
+        input i_timer,
+        input i_uart,
+        input i_gpio,
+        //input irq_sdcard,
 
-        input [31:0]a,
+        input [2:0]a,
         input [31:0]d,
         input we,
         output reg [31:0]spo
     );
 
 
-    // 128*32 ISR ROM, address 0x80000000
-    wire [31:0]spo_mem;
-	simple_rom #(
-		.WIDTH(32),
-		.DEPTH(9),
-		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_exception.dat")
-	) isr_memory(
-		.a(a[10:2]),
-		.spo(spo_mem)
-	);
-
-    // ISR handler address, the data contained is the address
-    // of user-writen handler, default is a dummy return(jr $ra)
-    // ISR ROM will check the interrupt type and jump to 
-    // corresponding locations
-    // eret at 0x8000f000
-    wire [31:0]instr_eret = 32'h03e00008;
-    // timer: 0x80001000, mask 0x80001004
-    reg [31:0]isr_timer_addr;
-    reg isr_timer_mask;
-    // keyboard: 0x80002000, mask 0x80002004
-    reg [31:0]isr_keyboard_addr;
-    reg isr_keyboard_mask;
-    // sdcard: 0x80003000, mask 0x80003004
-    reg [31:0]isr_sdcard_addr;
-    reg isr_sdcard_mask;
-    // syscall: 0x80008000, mask 0x80008004
-    reg [31:0]isr_syscall_addr;
-    reg isr_syscall_mask;
+	reg i_timer_mask;
+	reg i_uart_mask;
+	reg i_gpio_mask;
 
     // handler & memory control
     always @ (*) begin
-        case (a[15:0])
-            16'h1000: spo = isr_timer_addr;
-            16'h1004: spo = isr_timer_mask;
-            16'h2000: spo = isr_keyboard_addr;
-            16'h2004: spo = isr_keyboard_mask;
-            16'h3000: spo = isr_sdcard_addr;
-            16'h3004: spo = isr_sdcard_mask;
-            16'h8000: spo = isr_syscall_addr;
-            16'h8004: spo = isr_syscall_mask;
-            16'hf000: spo = instr_eret;
-            default: spo = spo_mem;
+        case (a[2:0])
+			3'b0: spo = {29'b0, i_gpio_mask, i_uart_mask, i_timer_mask};
+			default: spo = 0;
         endcase
     end
     always @ (posedge clk) begin
         if (rst) begin
             // default no interrupt
-            isr_timer_addr <= 32'h8000f000;
-            isr_timer_mask <= 1;
-            isr_keyboard_addr <= 32'h8000f000;
-            isr_keyboard_mask <= 1;
-            isr_sdcard_addr <= 32'h8000f000;
-            isr_sdcard_mask <= 1;
-            isr_syscall_addr <= 32'h8000f000;
-            isr_syscall_mask <= 1;
+            i_timer_mask <= 1;
+            i_uart_mask <= 1;
+            i_gpio_mask <= 1;
         end
         else begin
-            if (we & (a == 32'h80001000)) isr_timer_addr <= d;
-            if (we & (a == 32'h80001004)) isr_timer_mask <= d[0];
-            if (we & (a == 32'h80002000)) isr_keyboard_addr <= d;
-            if (we & (a == 32'h80002004)) isr_keyboard_mask <= d[0];
-            if (we & (a == 32'h80003000)) isr_sdcard_addr <= d;
-            if (we & (a == 32'h80003004)) isr_sdcard_mask <= d[0];
-            if (we & (a == 32'h80008000)) isr_syscall_addr <= d;
-            if (we & (a == 32'h80008004)) isr_syscall_mask <= d[0];
+			if (we) case (a[2:0])
+				3'b0: {i_gpio_mask, i_uart_mask, i_timer_mask} <= d[26:24];
+				default: ;
+			endcase
         end
     end
 
-    reg irq_timer_save;
-    reg irq_keyboard_save;
-    reg irq_sdcard_save;
+	reg int_reply_reg;
+	reg i_timer_reg;
+	reg i_uart_reg;
+	reg i_gpio_reg;
+	always @ (posedge clk) begin
+		int_reply_reg <= int_reply;
+		i_timer_reg <= i_timer;
+		i_uart_reg <= i_uart;
+		i_gpio_reg <= i_gpio;
+	end
 
-    // interrupt sendout control
+    reg i_timer_save = 0;
+    reg i_uart_save = 0;
+    reg i_gpio_save = 0;
+
+	reg int_istimer_reg = 0;
+
+	localparam IDLE = 1'b0;
+	localparam ISSUE = 1'b1;
+	//localparam REPLY = 2'b10;
+	//localparam END = 2'b11;
+	reg [0:0]state = IDLE;
+
+    // interrupt sendout & receive control
     always @ (posedge clk) begin
         if (rst) begin
-            irq <= 0;
-            icause <= 0;
-            irq_timer_save <= 0;
-            irq_keyboard_save <= 0;
-            irq_sdcard_save <= 0;
+            i_timer_save <= 0;
+            i_uart_save <= 0;
+            i_gpio_save <= 0;
+			int_istimer_reg <= 0;
+			state <= IDLE;
         end
         else begin
-            if (irq_timer) irq_timer_save <= 1;
-            if (irq_keyboard) irq_keyboard_save <= 1;
-            if (irq_sdcard) irq_sdcard_save <= 1;
+            if (i_timer_reg & !i_timer_mask) i_timer_save <= 1;
+            if (i_uart_reg & !i_uart_mask) i_uart_save <= 1;
+            if (i_gpio_reg & !i_gpio_mask) i_gpio_save <= 1;
 
-            if (irq_timer_save & !isr_timer_mask) begin
-                icause <= 8;
-                irq <= 1;
-                if (iack) irq_timer_save <= 0;
-            //end else if (irq_keyboard_save & !isr_keyboard_mask) begin
-                //icause <= 9;
-                //irq <= 1;
-                //if (iack) irq_keyboard_save <= 0;
-            //end else if (irq_sdcard_save & !isr_sdcard_mask) begin
-                //icause <= 10;
-                //irq <= 1;
-                //if (iack) irq_sdcard_save <= 0;
-            end else begin
-                icause <= 0;
-                irq <= 0;
-            end
+			case (state) 
+				IDLE: begin
+					// priority defined here
+					if (i_timer_save) begin
+						state <= ISSUE;
+						i_timer_save <= 0;
+						int_istimer_reg <= 1;
+					end else if (i_uart_save) begin
+						state <= ISSUE;
+						i_uart_save <= 0;
+					end else if (i_gpio_save) begin
+						state <= ISSUE;
+						i_gpio_save <= 0;
+					end
+				end
+				ISSUE: begin
+					if (int_reply_reg) begin
+						int_istimer_reg <= 0;
+						state <= IDLE;
+					end
+				end
+			endcase
         end
     end
+
+	assign interrupt = (state == ISSUE); 
+	assign int_istimer = int_istimer_reg;
+	
 endmodule

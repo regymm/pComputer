@@ -88,6 +88,7 @@ module pcpu_main
 	wire rst_timer;
 	wire rst_mmu;
 	reset reset_unit(
+		.clk(clk_main),
 		.rst_globl(rst),
 		.d(rst_d),
 		.we(rst_we),
@@ -149,6 +150,7 @@ module pcpu_main
     wire [31:0]gpio_d;
     wire gpio_we;
     wire [31:0]gpio_spo;
+	wire irq_gpio;
 `ifdef GPIO_EN
     gpio gpio_inst(
         .clk(clk_main),
@@ -161,11 +163,14 @@ module pcpu_main
 
         .btn(btn_d),
         .sw(sw_d),
-        .led(led)
+        .led(led),
+
+		.irq(irq_gpio)
     );
 `else
 	assign gpio_spo = 0;
 	assign led = 4'b0;
+	assign irq_gpio = 0;
 `endif
 
 
@@ -194,6 +199,7 @@ module pcpu_main
 `else
 	assign uart_spo = 0;
 	assign uart_tx = 1;
+	assign irq_uart = 0;
 `endif
 
 
@@ -346,14 +352,14 @@ module pcpu_main
 
 
     // interrupt unit
-    wire iack;
-    wire irq;
-    wire [3:0]icause;
+    wire cpu_eip;
+    wire cpu_eip_istimer;
+    wire cpu_eip_reply;
 
-    wire [31:0]isr_a;
-    wire [31:0]isr_d;
-    wire isr_we;
-    wire [31:0]isr_spo;
+    wire [2:0]int_a;
+    wire [31:0]int_d;
+    wire int_we;
+    wire [31:0]int_spo;
 `ifdef IRQ_EN
     // timer interrupt
     wire irq_timer;
@@ -367,23 +373,23 @@ module pcpu_main
         .clk(clk_main),
         .rst(rst_interrupt),
 
-        .iack(iack),
-        .irq(irq),
-        .icause(icause),
+        .interrupt(cpu_eip),
+		.int_istimer(eip_istimer),
+        .int_reply(cpu_eip_reply),
 
-        .irq_timer(irq_timer),
-        .irq_keyboard(irq_uart),
-        .irq_sdcard(irq_sd),
+        .i_timer(irq_timer),
+        .i_uart(irq_uart),
+        .i_gpio(irq_gpio),
 
-        .a(isr_a),
-        .d(isr_d),
-        .we(isr_we),
-        .spo(isr_spo)
+        .a(int_a),
+        .d(int_d),
+        .we(int_we),
+        .spo(int_spo)
     );
 `else
-	assign irq = 0;
-	assign icause = 0;
-	assign isr_spo = 0;
+	assign cpu_eip = 0;
+	assign cpu_eip_istimer = 0;
+	assign int_spo = 0;
 `endif
 
     // cpu-multi-cycle
@@ -397,6 +403,10 @@ module pcpu_main
 	riscv_multicyc riscv_multicyc_inst(
 		.clk(clk_main),
 		.rst(rst),
+
+		.eip(cpu_eip),
+		.eip_istimer(cpu_eip_istimer),
+		.eip_reply(cpu_eip_reply),
 
 		.spo(spo),
 		.ready(ready),
@@ -458,11 +468,6 @@ module pcpu_main
         .spo(pspo),
         .ready(pready),
 
-        .isr_a(isr_a),
-        .isr_d(isr_d),
-        .isr_we(isr_we),
-        .isr_spo(isr_spo),
-
         .bootm_a(bootm_a),
 		.bootm_rd(bootm_rd),
         .bootm_spo(bootm_spo),
@@ -506,6 +511,11 @@ module pcpu_main
         .video_a(video_a),
         .video_d(video_d),
         .video_we(video_we),
+
+        .int_spo(int_spo),
+        .int_a(int_a),
+        .int_d(int_d),
+        .int_we(int_we),
 
         .irq(pirq)
     );

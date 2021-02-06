@@ -43,14 +43,6 @@ module mmapper
         //input [31:0]special_spo,
 
 
-        // interrupt service routine: 0x80000000
-        // there's another mapper inside the ISR unit
-        // so pass the full address
-        output reg [31:0]isr_a,
-        output reg [31:0]isr_d,
-        output reg isr_we,
-        input [31:0]isr_spo,
-
         // MMIO devices
         // 
         // gpio: 0x92000000
@@ -85,6 +77,11 @@ module mmapper
 		output reg usb_we,
 		input [31:0]usb_spo,
 
+        // interrupt unit: 0x98000000
+        output reg [2:0]int_a,
+        output reg [31:0]int_d,
+        output reg int_we,
+        input [31:0]int_spo,
         
         // 0xe0000000 MMU control
 
@@ -114,12 +111,11 @@ module mmapper
         sd_d = d;
 		usb_a = a[4:2];
 		usb_d = d;
-        isr_a = a;
-        isr_d = d;
+        int_a = a[4:2];
+        int_d = d;
     end
 
     always @ (*) begin
-        irq = 0;
         distm_we = 0;
 		mainm_we = 0;
 		mainm_rd = 0;
@@ -128,8 +124,9 @@ module mmapper
         video_we = 0;
         sd_we = 0;
 		usb_we = 0;
-        isr_we = 0;
+        int_we = 0;
 		bootm_rd = 0;
+        irq = 0;
         spo = 0;
         ready = 1;
         if (a[31:28] == 4'h1) begin
@@ -142,9 +139,6 @@ module mmapper
             mainm_rd = rd;
             spo = mainm_spo;
 			ready = mainm_ready;
-        end else if (a[31:28] == 4'h8) begin
-            spo = isr_spo;
-            isr_we = we;
         end else if (a[31:28] == 4'h9) begin
             case (a[27:24])
                 4'h2: begin
@@ -166,6 +160,10 @@ module mmapper
                 4'h7: begin
                     spo = usb_spo;
                     usb_we = we;
+				end
+				4'h8: begin
+					spo = int_spo;
+					int_we = we;
                 end
                 default: irq = 1;
             endcase

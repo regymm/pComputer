@@ -3,6 +3,22 @@
 .globl c_start
 
 _start:
+	j interrupt_tests
+interrupt_tests: 
+	la a0, 0x92000000
+	li a1, 0
+	sw a1, 24(a0)
+	sw a1, 28(a0)
+	li a1, 2
+	sw a1, 40(a0)
+	li a1, 1
+	sw a1, 44(a0)
+	# timer only
+	la a0, 0x98000000
+	li a1, 0x6 # 0b110
+	sw a1, 0(a0)
+	j main_tests
+main_tests:
 	#li t0, 0
 	#li t1, 127
 	#bge t1, t0, _start

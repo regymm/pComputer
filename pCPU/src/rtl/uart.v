@@ -39,7 +39,7 @@ module uart
 
     wire rxclk_en;
     wire txclk_en;
-    baud_rate_gen #(.BAUD_RATE(115200)) baud_rate_gen_inst
+    baud_rate_gen #(.BAUD_RATE(921600)) baud_rate_gen_inst
     (
         .clk(clk),
         .rst(rst),
@@ -76,6 +76,7 @@ module uart
 	always @ (posedge clk) begin
 		if (rst) irq <= 0;
 		else if (state_rx == RX_STATE_STOP & irq == 0) irq <= 1;
+		// TODO
 		else irq <= 0;
 	end
     always @ (posedge clk) begin

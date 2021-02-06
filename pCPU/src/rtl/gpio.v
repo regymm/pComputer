@@ -19,7 +19,9 @@ module gpio
 
         input [1:0]btn, 
 		input [1:0]sw,
-        output reg [3:0]led
+        output reg [3:0]led,
+
+		output reg irq = 0 // TODO
     );
 
 	wire [2:0]data = d[26:24];

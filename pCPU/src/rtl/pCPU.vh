@@ -1,5 +1,6 @@
 // clock freq
 `define CLOCK_FREQ = 62500000;
+//`define CLOCK_FREQ = 100000000;
 // CPU features
 `define RV32M
 

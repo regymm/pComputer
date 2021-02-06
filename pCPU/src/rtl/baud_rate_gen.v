@@ -3,6 +3,8 @@
  * Hacky baud rate generator to divide a 50MHz clock into a 115200 baud
  * rx/tx pair where the rx clcken oversamples by 16x.
  */
+`include "pCPU.vh"
+
 module baud_rate_gen
 	#(
 		parameter BAUD_RATE = 115200
@@ -14,9 +16,11 @@ module baud_rate_gen
         output wire txclk_en
     );
 
-	`ifndef CLOCK_FREQ
-		parameter CLOCK_FREQ = 62500000;
-	`endif
+	//`ifndef CLOCK_FREQ
+		//parameter CLOCK_FREQ = 62500000;
+	//`endif
+	//parameter CLOCK_FREQ = 100000000;
+	parameter CLOCK_FREQ = 62500000;
     parameter RX_ACC_MAX = CLOCK_FREQ / (BAUD_RATE * 16);
     parameter TX_ACC_MAX = CLOCK_FREQ / BAUD_RATE;
     parameter RX_ACC_WIDTH = 20;

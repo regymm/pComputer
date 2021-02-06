@@ -17,6 +17,10 @@ module riscv_multicyc
 		input clk,
 		input rst,
 
+		input eip,
+		input eip_istimer,
+		output eip_reply,
+
 		output reg [31:0]a,
 		output reg [31:0]d,
 		output reg we,
@@ -156,6 +160,10 @@ module riscv_multicyc
 		.d(csr_d),
 		.we(csr_we),
 		.spo(csr_spo),
+
+		.eip(eip),
+		.eip_istimer(eip_istimer),
+		.eip_reply(eip_reply),
 
 		.on_exc_enter(on_exc_enter),
 		.on_exc_leave(on_exc_leave),
@@ -451,6 +459,9 @@ module riscv_multicyc
 				INTERRUPT: begin
 					phase <= IF;
 				end
+				EXCEPTION: begin
+					phase <= IF;
+				end
 				MRET: begin
 					phase <= IF;
 				end
@@ -476,8 +487,7 @@ module riscv_multicyc
 		3: newpc = ALUOut & ~1; // JALR
 		4: newpc = {mtvec_in[31:2], 2'b0}; // exception, interrupt
 		5: newpc = mepc_in;
-		// exception TODO
-		default: newpc = 0;
+		default: newpc = INVALID_ADDR;
 	endcase end
 	always @ (*) begin case (ALUSrcA)
 		0: ALUIn1 = A;
