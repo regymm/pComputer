@@ -9,7 +9,7 @@
 // 0100: xor
 // 0110: or
 // 0111: and
-// 0101: pass a
+// 1111: pass a
 // 0010: slt
 // 0011: sltu
 
@@ -57,7 +57,7 @@ module alu
                 y = a ^ b;
             4'b0110: // or
                 y = a | b;
-			4'b0101: // pass a, for csrrw(i)
+			4'b1111: // pass a, for csrrw(i)
 				y = a; 
             4'b0111: // and
                 y = a & b;

@@ -374,7 +374,7 @@ module pcpu_main
         .rst(rst_interrupt),
 
         .interrupt(cpu_eip),
-		.int_istimer(eip_istimer),
+		.int_istimer(cpu_eip_istimer),
         .int_reply(cpu_eip_reply),
 
         .i_timer(irq_timer),

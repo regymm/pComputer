@@ -17,8 +17,17 @@ interrupt_tests:
 	la a0, 0x98000000
 	li a1, 0x6 # 0b110
 	sw a1, 0(a0)
+	# setup mtvec
+	la t0, timer_int
+	csrw mtvec, t0
+	# setup mstatus
+	li t0, 0x00000088
+	csrw mstatus, t0
+	li t0, 0x00000888
+	csrw mie, t0
 	j main_tests
 main_tests:
+	j main_tests
 	#li t0, 0
 	#li t1, 127
 	#bge t1, t0, _start
@@ -219,6 +228,9 @@ real_end:
 	j real_end
 fail:
 	j fail
+
+timer_int:
+	mret
 
 func_dummy:
 	ret

@@ -154,14 +154,14 @@ module privilege
 		end else begin
 			if (we) case (a)
 				// normal CSR command IO
-				12'h300: mstatus	<= mstatus & mstatus_write_mask + d & ~mstatus_write_mask;
-				12'h304: mie		<= mie & mie_write_mask + d & ~mie_write_mask;
-				12'h305: mtvec		<= mtvec & mtvec_write_mask + d & ~mtvec_write_mask;
+				12'h300: mstatus	<= (mstatus & mstatus_write_mask) + (d & ~mstatus_write_mask);
+				12'h304: mie		<= (mie & mie_write_mask) + (d & ~mie_write_mask);
+				12'h305: mtvec		<= (mtvec & mtvec_write_mask) + (d & ~mtvec_write_mask);
 				12'h340: mscratch	<= d;
-				12'h341: mepc		<= mepc & mepc_write_mask + d & ~mepc_write_mask;
+				12'h341: mepc		<= (mepc & mepc_write_mask) + (d & ~mepc_write_mask);
 				12'h342: mcause		<= d; // WLRL, should be taken care of but not now
 				12'h343: mtval		<= d; // should be taken care of
-				12'h344: mip		<= mip & mip_write_mask + d & ~mip_write_mask;
+				12'h344: mip		<= (mip & mip_write_mask) + (d & ~mip_write_mask);
 				default: ;
 			endcase
 			else if (on_exc_enter) begin
@@ -184,12 +184,16 @@ module privilege
 	reg int_pending;
 	reg eip_reg;
 	reg eip_istimer_reg;
+	reg meie_reg;
+	reg mtie_reg;
 	reg [1:0]int_source;
 	always @ (posedge clk) begin
 		int_reply_reg <= int_reply;
 		int_pending <= mstatus_mie & (eip&!eip_istimer&meie | eip&eip_istimer&mtie | mip_sip&msie);
 		eip_reg <= eip;
-		eip_istimer_reg <= eip_istimer_reg;
+		eip_istimer_reg <= eip_istimer;
+		meie_reg <= meie;
+		mtie_reg <= mtie;
 	end
 
 	localparam IDLE = 2'b00;
@@ -207,7 +211,7 @@ module privilege
 			case (state)
 				IDLE: begin
 					if (int_pending) begin
-						int_source <= {eip_reg&!eip_istimer_reg&meie, eip_reg&eip_istimer_reg&mtie};
+						int_source <= {eip_reg&!eip_istimer_reg&meie_reg, eip_reg&eip_istimer_reg&mtie_reg};
 						state <= ISSUE;
 					end
 				end

@@ -338,7 +338,7 @@ module riscv_multicyc
 				end else if (op == OP_PRIV & priv_csr) begin
 					ALUSrcA = instruction[14] ? 2 : 0;
 					ALUSrcB = 2;
-					ALUm = {2'b01, instruction[13:12]};
+					ALUm = instruction[13] ? {3'b011, instruction[12]} : {4'b1111};
 					csrsave = 1;
 				end
 			end
@@ -422,9 +422,9 @@ module riscv_multicyc
 					//if (0) phase <= I_INT_END;
 					//if (op == OP_ENV | 0) phase <= ID_RF;
 					// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
-					if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
-					if (op == OP_PRIV & (priv_mret)) phase <= MRET;
-					else if ( op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
+					else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
+					else if (op == OP_PRIV & (priv_mret)) phase <= MRET;
+					else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
 					else phase <= EX;
 				end
 				EX: begin
@@ -518,6 +518,7 @@ module riscv_multicyc
 		0: memwrite_data = storebyte; // byte
 		1: memwrite_data = storehalf; // half
 		2: memwrite_data = ReadData2; // word
+		// TODO: keep write data when MEM_WAIT, no problem now though
 		default: memwrite_data = 0;
 	endcase end
 	always @ (*) begin case (PCOutSrc)
