@@ -54,4 +54,15 @@ module gpio
             endcase
         end
     end
+
+	reg [3:0]inputs_reg;
+	always @ (posedge clk) begin
+		inputs_reg <= {btn, sw};
+	end
+	always @ (posedge clk) begin
+		if (rst) irq <= 0;
+		else if ((inputs_reg != {btn, sw}) & irq == 0) irq <= 1;
+		else irq <= 0;
+	end
+
 endmodule

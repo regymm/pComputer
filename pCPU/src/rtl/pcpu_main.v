@@ -9,7 +9,13 @@
 // pComputer main block design
 `include "pCPU.vh"
 
-module pcpu_main
+module pcpu_main 
+	#(
+		parameter CLOCK_FREQ = 62500000,
+		parameter BAUD_RATE_UART = 921600,
+		parameter BAUD_RATE_CH375 = 9600,
+		parameter TIMER_COUNTER = 10000000
+	)
     (
         input sysclk,
         
@@ -45,6 +51,7 @@ module pcpu_main
         output TMDSp_clock,
         output TMDSn_clock
     );
+
 
 
     wire clk_main;
@@ -182,7 +189,10 @@ module pcpu_main
 
     wire irq_uart;
 `ifdef UART_EN
-    uart uart_inst(
+	uart #(
+		.CLOCK_FREQ(CLOCK_FREQ),
+		.BAUD_RATE(BAUD_RATE_UART)
+	) uart_inst (
         .clk(clk_main),
         .rst(rst_uart),
 
@@ -363,7 +373,7 @@ module pcpu_main
 `ifdef IRQ_EN
     // timer interrupt
     wire irq_timer;
-    timer timer_inst(
+    timer #(.TIMER_COUNTER(TIMER_COUNTER)) timer_inst(
         .clk(clk_main),
         .rst(rst_timer),
         .irq(irq_timer)

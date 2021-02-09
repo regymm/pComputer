@@ -66,7 +66,7 @@ module riscv_multicyc
 
 
     // register file
-    reg [4:0]WriteRegister;
+    //reg [4:0]WriteRegister;
     reg [31:0]WriteData;
     wire [31:0]ReadData1;
     wire [31:0]ReadData2;
@@ -133,7 +133,7 @@ module riscv_multicyc
 
 	// privilege 
 `ifdef IRQ_EN
-	reg csrsrc;
+	//reg csrsrc;
 
 	reg [31:0]csr_a;
 	reg [31:0]csr_d;
@@ -309,6 +309,7 @@ module riscv_multicyc
 		csrsave = 0;
 		on_exc_enter = 0;
 		on_exc_leave = 0;
+		on_exc_isint = 0;
 		int_reply = 0;
 		case (phase)
 			IF: begin

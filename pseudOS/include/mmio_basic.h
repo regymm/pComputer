@@ -18,6 +18,10 @@ extern volatile int* sd_do_write;
 extern volatile int* sd_ready;
 extern volatile int* sd_cache_dirty;
 
+extern volatile int* gpio_ctrl;
+
+extern volatile int* interrupt_ctrl;
+
 char uart_getchar();
 void uart_putchar(char c);
 void uart_putstr(const char* str);

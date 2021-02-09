@@ -16,6 +16,10 @@ volatile int* sd_do_write		= (int*) 0x96001008;
 volatile int* sd_ready			= (int*) 0x96002010;
 volatile int* sd_cache_dirty	= (int*) 0x96002014;
 
+volatile int* gpio_ctrl			= (int*) 0x92000000;
+
+volatile int* interrupt_ctrl	= (int*) 0x98000000;
+
 char uart_getchar()
 {
 	*uart_rx_reset = 1;

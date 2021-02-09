@@ -1,6 +1,8 @@
+//`define SIMULATION
+
 // clock freq
-`define CLOCK_FREQ = 62500000;
-//`define CLOCK_FREQ = 100000000;
+//parameter CLOCK_FREQ = 62500000;
+`define CLOCK_FREQ 62500000;
 // CPU features
 `define RV32M
 

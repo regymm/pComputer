@@ -4,15 +4,15 @@
 `include "pCPU.vh"
 
 module timer
+	#(
+		parameter TIMER_COUNTER = 4000
+	)
     (
         input clk,
         input rst,
 
         output reg irq
     );
-    //localparam CNTMAX = 150000000;
-    //localparam CNTMAX = 80000000;
-	localparam CNTMAX = 4000;
     reg [31:0]counter = 0;
     always @ (posedge clk) begin
         if (rst) begin
@@ -21,7 +21,7 @@ module timer
         end
         else begin
             counter <= counter + 1;
-            if (counter == CNTMAX) begin
+            if (counter == TIMER_COUNTER) begin
                 counter <= 0;
                 irq <= 1;
             end

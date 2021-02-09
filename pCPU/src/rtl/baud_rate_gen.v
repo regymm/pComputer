@@ -7,6 +7,7 @@
 
 module baud_rate_gen
 	#(
+		parameter CLOCK_FREQ = 62500000,
 		parameter BAUD_RATE = 115200
 	)
     (
@@ -20,7 +21,7 @@ module baud_rate_gen
 		//parameter CLOCK_FREQ = 62500000;
 	//`endif
 	//parameter CLOCK_FREQ = 100000000;
-	parameter CLOCK_FREQ = 62500000;
+	//parameter CLOCK_FREQ = 62500000;
     parameter RX_ACC_MAX = CLOCK_FREQ / (BAUD_RATE * 16);
     parameter TX_ACC_MAX = CLOCK_FREQ / BAUD_RATE;
     parameter RX_ACC_WIDTH = 20;

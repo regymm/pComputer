@@ -20,6 +20,10 @@
 `include "pCPU.vh"
 
 module uart
+	#(
+		parameter CLOCK_FREQ = 62500000,
+		parameter BAUD_RATE = 115200
+	)
     (
         input clk,
         input rst,
@@ -39,8 +43,11 @@ module uart
 
     wire rxclk_en;
     wire txclk_en;
-    baud_rate_gen #(.BAUD_RATE(921600)) baud_rate_gen_inst
-    (
+    baud_rate_gen
+	#(
+		.CLOCK_FREQ(CLOCK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
+	) baud_rate_gen_inst (
         .clk(clk),
         .rst(rst),
         .rxclk_en(rxclk_en),

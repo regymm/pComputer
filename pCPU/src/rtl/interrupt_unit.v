@@ -87,7 +87,8 @@ module interrupt_unit
 
 			case (state) 
 				IDLE: begin
-					// priority defined here
+					// priority defined here, software should also 
+					// follow this when quering
 					if (i_timer_save) begin
 						state <= ISSUE;
 						i_timer_save <= 0;

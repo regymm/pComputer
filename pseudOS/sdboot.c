@@ -19,6 +19,31 @@ int USBWaitReady()
 {
 	return false;
 }
+extern void isr_asm();
+void setupIRQ()
+{
+	*interrupt_ctrl = 0x0; // enable all
+	csrw_mscratch(0x10000000); // where regs are saved
+	csrw_mtvec(isr_asm);
+	csrw_mstatus(0x00000088); // global enable
+	csrw_mie(0x00000888); // enable ext/time/sft
+	/*setupIRQ_asm();*/
+}
+void interrupt_service_routine()
+{
+	static int a = 0;
+	if (a == 0) a = 1;
+	else a = 0;
+	// +1 means addr+4 for int*
+	*(gpio_ctrl + 9) = a;
+	*(gpio_ctrl + 8) = !a;
+	/**(gpio_ctrl + 7) = a;*/
+	/**(gpio_ctrl + 6) = !a;*/
+	static int c = 0;
+	c = c + 1;
+	/*uart_putchar('I');*/
+	printf("Got interrupt %d \r\n", c);
+}
 void sd_c_start()
 /*void main()*/
 {
@@ -28,7 +53,7 @@ void sd_c_start()
 	printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);
 
 	int i;
-	for(i = 0; i < 4; i++) {
+	for(i = 0; i < 2; i++) {
 		uart_putstr("Input a character: ");
 		int c = uart_getchar();
 		printf("You typed: %x\r\n", c);
@@ -44,24 +69,30 @@ void sd_c_start()
 			/*asm("nop");*/
 	/*}*/
 
-	*usb_rx_reset = 1;
+	/**usb_rx_reset = 1;*/
 
-	/*setupUSBDisk();*/
-	setupUSB();
-	printf("setupUSB done. \r\n");
+	/*[>setupUSBDisk();<]*/
+	/*setupUSB();*/
+	/*printf("setupUSB done. \r\n");*/
 
-	while(1){
-		int len = host_recv();
-		if(len>0){
-			for(int i=0;i<len;i++){
-				printf("%x, ", recv_buffer[i]);
-			}
-			uart_putstr("\r\n");
-		}else{
-		}
-		toggle_recv();   
-		while(issue_token( ( endp_in_addr << 4 ) | DEF_USB_PID_IN )!=USB_INT_SUCCESS);
-	}
+	/*while(1){*/
+		/*int len = host_recv();*/
+		/*if(len>0){*/
+			/*for(int i=0;i<len;i++){*/
+				/*printf("%x, ", recv_buffer[i]);*/
+			/*}*/
+			/*uart_putstr("\r\n");*/
+		/*}else{*/
+		/*}*/
+		/*toggle_recv();   */
+		/*while(issue_token( ( endp_in_addr << 4 ) | DEF_USB_PID_IN )!=USB_INT_SUCCESS);*/
+	/*}*/
 	
-	while(1);
+	setupIRQ();
+	while(1){
+		/*i = 1; */
+		/*for(i = 1; i < 10000; i++);*/
+		printf(".");
+		/*uart_putchar('.');*/
+	}
 }
