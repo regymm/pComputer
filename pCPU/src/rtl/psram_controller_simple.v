@@ -6,23 +6,24 @@
  * Last Modified Date: 2020.12.01
  */
 // pComputer SPI PSRAM(ESP-PSRAM64H) controller
-// simple SPI mode, slow read, maximum 33 MHz clk_pulse_slow
 // 64Mbit, A[22:0]
+// QPI mode, high clock freq
 
 `timescale 1ns / 1ps
 //`define SIMULATION
 
-module psram_controller(
+module psram_controller_fast(
 	input rst,
     input clk, 
-    input clk_pulse_slow, 
+	input clk_mem,
+    //input clk_pulse_slow, 
 
-    (*mark_debug = "true"*) output reg ce = 1, 
-    (*mark_debug = "true"*) inout mosi, 
-    (*mark_debug = "true"*) inout miso, 
-    (*mark_debug = "true"*) inout sio2, 
-    (*mark_debug = "true"*) inout sio3, 
     (*mark_debug = "true"*) output reg sclk = 0, 
+    (*mark_debug = "true"*) output reg ce = 1, 
+    inout mosi, 
+    inout miso, 
+    inout sio2, 
+    inout sio3, 
 
     input rd, 
 	input rend,
@@ -41,80 +42,148 @@ module psram_controller(
 
 	localparam INIT = 0;
 	localparam RSTEN = 1;
-	localparam BTWN_RST = 2;
+	localparam BTWN_RSTEN_RST = 2;
 	localparam RST = 3;
-	localparam IDLE = 4;
-	localparam SEND = 5;
-	localparam READING = 6;
-	localparam WRITING_PREPARE = 7;
-	localparam WRITING = 8;
+	localparam BTWN_RST_QE = 4;
+	localparam QPI_ENTER = 5;
+	localparam BTWN_QPI_IDLE = 6;
+	localparam IDLE = 7;
+	localparam SEND = 8;
+	localparam SEND_QUAD = 9;
+	localparam READING_PREPARE_QUAD = 10;
+	localparam READING_QUAD = 11;
+	localparam WRITING_PREPARE_QUAD = 12;
+	localparam WRITING_QUAD = 13;
+	localparam BTWN_READ_IDLE = 14;
+	localparam BTWN_WRITE_IDLE = 15;
 
-	reg [4:0]state_return;
+
+	reg [4:0]state_return = 0;
 	reg [15:0]boot_counter = 2000;
 	reg [31:0]sendbits = 0;
-	reg [7:0]sendcnt;
+	reg [7:0]sendcnt = 0;
+	reg [2:0]cecnt = 0;
+	reg [3:0]read_p_cnt = 0;
 	//reg sendmode; // 1: send cmd, 0: send data
 
 	reg [7:0]databyte = 0;
-	reg [2:0]bytecnt; // auto-overflow from 7 to 0
-
-    wire mosi_out = (state == IDLE) ? 0 : 
-		(state == WRITING) ?
-		databyte[7] : sendbits[31];
-    assign ready = (state == IDLE);
+	reg [2:0]bytecnt = 0; // auto-overflow from 7 to 0
 
 	reg reseting = 1;
+	wire spi_or_qpi = state < SEND_QUAD;
+	wire r_or_w = (state == READING_PREPARE_QUAD | state == READING_QUAD); // r: input, w: output
 
-	assign miso = (state == INIT) ? 1'b0 : 1'bz;
-	`ifdef SIMULATION
-		wire miso_out = 1;
-	`else
-		wire miso_out = miso;
-	`endif
-	assign mosi = (state == INIT) ? 1'b0 : mosi_out;
-	assign sio2 = (state == INIT) ? 1'b0 : 1'bz;
-	assign sio3 = (state == INIT) ? 1'b0 : 1'bz;
+	// state != INIT ? z : out
+    //wire mosi_out = (state == IDLE) ? 0 : 
+		//(state == WRITING) ?
+		//databyte[7] : sendbits[31];
+	//wire miso_out = 1'b0;
+	//wire sio2_out = 1'b0;
+	//wire sio3_out = 1'b0;
+	(*mark_debug = "true"*)reg mosi_out;
+	(*mark_debug = "true"*)reg miso_out;
+	(*mark_debug = "true"*)reg sio2_out;
+	(*mark_debug = "true"*)reg sio3_out;
+	always @ (*) begin
+		if (state == INIT) begin
+			{mosi_out, miso_out, sio2_out, sio3_out} = 4'b0;
+		end else if (state != IDLE) begin
+			if (spi_or_qpi) begin
+				mosi_out = (state == WRITING_QUAD) ? databyte[7] : sendbits[31];
+				{miso_out, sio2_out, sio3_out} = 3'bz;
+			end else begin
+				{mosi_out, miso_out, sio2_out, sio3_out} = (state == WRITING_QUAD) ? 
+					{databyte[4], databyte[5], databyte[6], databyte[7]} :
+					{sendbits[28], sendbits[29], sendbits[30], sendbits[31]};
+			end
+		end else begin
+			{mosi_out, miso_out, sio2_out, sio3_out} = 4'bz;
+		end
+	end
+
+	(*mark_debug = "true"*)wire miso_in;
+	(*mark_debug = "true"*)wire mosi_in;
+	(*mark_debug = "true"*)wire sio2_in;
+	(*mark_debug = "true"*)wire sio3_in;
+	IOBUF miso_inout
+	(
+		.T(r_or_w),
+		.I(miso_out),
+		.O(miso_in),
+		.IO(miso)
+	);
+	IOBUF mosi_inout
+	(
+		.T(r_or_w),
+		.I(mosi_out),
+		.O(mosi_in),
+		.IO(mosi)
+	);
+	IOBUF sio2_inout
+	(
+		.T(r_or_w),
+		.I(sio2_out),
+		.O(sio2_in),
+		.IO(sio2)
+	);
+	IOBUF sio3_inout
+	(
+		.T(r_or_w),
+		.I(sio3_out),
+		.O(sio3_in),
+		.IO(sio3)
+	);
+
+	//reg sclk_en = 0;
+	//assign sclk = sclk_en ? clk : 0;
 
 	reg rend_latch = 0;
-	always @ (posedge clk) begin
+	always @ (posedge clk_mem) begin
 		if (rst) rend_latch <= 0;
-		else if (state == READING & rend) rend_latch <= 1;
-		else if (state != READING) rend_latch <= 0;
+		else if (state == READING_QUAD & rend) rend_latch <= 1;
+		else if (state != READING_QUAD) rend_latch <= 0;
 	end
 	reg wend_latch = 0;
-	always @ (posedge clk) begin
+	always @ (posedge clk_mem) begin
 		if (rst) wend_latch <= 0;
-		else if (state == WRITING & wend) wend_latch <= 1;
-		else if (state != WRITING) wend_latch <= 0;
+		else if (state == WRITING_QUAD & wend) wend_latch <= 1;
+		else if (state != WRITING_QUAD) wend_latch <= 0;
 	end
 	reg we_latch = 0;
-	always @ (posedge clk) begin
-		if (we) we_latch <= 1;
-		else if (state == IDLE & clk_pulse_slow & !reseting) we_latch <= 0;
+	always @ (posedge clk_mem) begin
+		if (rst) we_latch <= 1;
+		else if (we) we_latch <= 1;
+		else if (state == BTWN_WRITE_IDLE) we_latch <= 0;
 	end
 	reg rd_latch = 0;
-	always @ (posedge clk) begin
-		if (rd) rd_latch <= 1;
-		else if (state == IDLE & clk_pulse_slow & !reseting) rd_latch <= 0;
+	always @ (posedge clk_mem) begin
+		if (rst) rd_latch <= 0;
+		else if (rd) rd_latch <= 1;
+		else if (state == BTWN_READ_IDLE) rd_latch <= 0;
 	end
 
-    always @(posedge clk) begin
+    always @(posedge clk_mem) begin
 		if(rst) begin // >150us, CE high, CLK low, SI/SO/SIO[3:0] low
 			ce <= 1;
 			sclk <= 0;
+			//sclk_en <= 0;
 			`ifdef SIMULATION
 				boot_counter <= 10;
 			`else
-				boot_counter <= 2000;
+				boot_counter <= 20000;
 			`endif
 			state <= INIT;
 			byte_available <= 0;
 			ready_for_next_byte <= 0;
-			reseting <= 1;
-			databyte <= 0;
 			sendbits <= 0;
+			//sendcnt <= 0;
+			//cecnt <= 0;
+			//read_p_cnt <= 0;
+			databyte <= 0;
+			bytecnt <= 0;
+			reseting <= 1;
         end
-        else if (clk_pulse_slow) case(state)
+        else case(state)
 				// initialization >150us, CLK low, CE# high
                 INIT: begin
                     if(boot_counter == 0) state <= RSTEN;
@@ -125,18 +194,39 @@ module psram_controller(
 					sendcnt <= 8;
 					ce <= 0;
 					state <= SEND;
-					state_return <= BTWN_RST;
+					state_return <= BTWN_RSTEN_RST;
+					cecnt <= 7;
 				end
-				BTWN_RST: begin
-					ce <= 1;
-					if (ce == 1) state <= RST;
+				BTWN_RSTEN_RST: begin
+					if (cecnt != 7) ce <= 1;
+					if (cecnt == 0) state <= RST;
+					cecnt <= cecnt - 1;
 				end
 				RST: begin
 					sendbits <= {8'b10011001, 24'b0};
 					sendcnt <= 8;
 					ce <= 0;
 					state <= SEND;
-					state_return <= IDLE;
+					state_return <= BTWN_RST_QE;
+					cecnt <= 7; // actually don't need cos 0-1=7
+				end
+				BTWN_RST_QE: begin
+					if (cecnt != 7) ce <= 1;
+					if (cecnt == 0) state <= QPI_ENTER;
+					cecnt <= cecnt - 1;
+				end
+				QPI_ENTER: begin
+					sendbits <= {8'b00110101, 24'b0};
+					sendcnt <= 8;
+					ce <= 0;
+					cecnt <= 7;
+					state <= SEND;
+					state_return <= BTWN_QPI_IDLE;
+				end
+				BTWN_QPI_IDLE: begin
+					if (cecnt != 7) ce <= 1;
+					if (cecnt == 0) state <= IDLE;
+					cecnt <= cecnt - 1;
 				end
                 IDLE: begin
 					sclk <= 0;
@@ -144,19 +234,19 @@ module psram_controller(
 						reseting <= 0;
 						ce <= 1;
 					end else if (we_latch) begin
-						sendbits <= {8'b0000010, a[23:0]};
+						sendbits <= {8'h38, a[23:0]};
 						//sendbits <= {8'b10011111, a[23:0]};
 						sendcnt <= 8 + 24;
-						state <= SEND;
-						state_return <= WRITING_PREPARE;
+						state <= SEND_QUAD;
+						state_return <= WRITING_PREPARE_QUAD;
 						bytecnt <= 0;
 						ce <= 0;
-					end
-					else if (rd_latch) begin
-						sendbits <= {8'b0000011, a[23:0]};
+					end else if (rd_latch) begin
+						sendbits <= {8'hEB, a[23:0]};
 						sendcnt <= 8 + 24;
-						state <= SEND;
-						state_return <= READING;
+						state <= SEND_QUAD;
+						state_return <= READING_PREPARE_QUAD;
+						read_p_cnt <= 12;
 						bytecnt <= 0;
 						ce <= 0;
 					end
@@ -173,46 +263,76 @@ module psram_controller(
 						sendbits <= {sendbits[30:0], 1'b1};
 						if (sendcnt == 1) begin
 							state <= state_return;
-							if (state_return == WRITING_PREPARE)
-								ready_for_next_byte <= 1;
 						end
 					end
 				end
-				READING: begin
+				SEND_QUAD: begin
+					sclk <= ~sclk;
+					if (sclk) begin
+						sendcnt <= sendcnt - 4;
+						sendbits <= {sendbits[27:0], 4'b1};
+						if (sendcnt == 4) begin
+							state <= state_return;
+						end
+					end
+					if (state_return == WRITING_PREPARE_QUAD)
+						ready_for_next_byte <= 1;
+				end
+				READING_PREPARE_QUAD: begin
+					// 6 cycles
+					sclk <= ~sclk;
+					read_p_cnt <= read_p_cnt - 1;
+					if (read_p_cnt == 0) state <= READING_QUAD;
+				end
+				READING_QUAD: begin
 					if (rend_latch & sclk == 0 & bytecnt == 0) begin
-						state <= IDLE;
-						ce <= 1;
+						state <= BTWN_READ_IDLE;
+						cecnt <= 7;
 					end
 					else sclk <= ~sclk;
 					if (sclk) begin
-						bytecnt <= bytecnt + 1;
-						databyte <= {databyte[6:0], miso_out};
-						if (bytecnt == 7) begin
+						bytecnt <= bytecnt + 4;
+						databyte <= {databyte[3:0], miso_in}; //TODO
+						if (bytecnt == 4) begin
 							byte_available <= 1;
-							dout <= {databyte[6:0], miso_out};
+							dout <= {databyte[3:0], miso_in};
 						end
 						else byte_available <= 0;
 					end
 				end
-				WRITING_PREPARE: begin
+				WRITING_PREPARE_QUAD: begin
 					databyte <= din;
 					ready_for_next_byte <= 0;
-					state <= WRITING;
+					state <= WRITING_QUAD;
 				end
-				WRITING: begin
+				WRITING_QUAD: begin
 					sclk <= ~sclk;
 					if (sclk) begin
-						databyte <= bytecnt == 7 ?
-							din : {databyte[6:0], 1'b1};
-						bytecnt <= bytecnt + 1;
-						if (bytecnt == 6) ready_for_next_byte <= 1;
+						databyte <= bytecnt == 4 ?
+							din : {databyte[3:0], 4'b1};
+						bytecnt <= bytecnt + 4;
+						if (bytecnt == 0) ready_for_next_byte <= 1;
 						else ready_for_next_byte <= 0;
-						if (wend_latch & bytecnt == 7) begin
-							state <= IDLE;
-							ce <= 1;
+						if (wend_latch & bytecnt == 4) begin
+							state <= BTWN_WRITE_IDLE;
+							cecnt <= 7;
 						end
 					end
 				end
+				BTWN_READ_IDLE: begin
+					if (cecnt != 7) ce <= 1;
+					if (cecnt == 0) state <= IDLE;
+					cecnt <= cecnt - 1;
+					byte_available <= 0;
+				end
+				BTWN_WRITE_IDLE: begin
+					if (cecnt != 7) ce <= 1;
+					if (cecnt == 0) state <= IDLE;
+					cecnt <= cecnt - 1;
+					ready_for_next_byte <= 0;
+				end
 		endcase
     end
+
+    assign ready = (state == IDLE);
 endmodule

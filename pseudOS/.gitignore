@@ -5,3 +5,4 @@ coe/
 *.c_o
 *.bin
 *.out
+*.dat

@@ -55,11 +55,13 @@ module pcpu_main
 
 
     wire clk_main;
+	wire clk_mem;
     wire clk_hdmi_25;
     wire clk_hdmi_250;
     clock_wizard clock_wizard_inst(
         .clk_in1(sysclk),
         .clk_main(clk_main),
+		.clk_mem(clk_mem),
         .clk_hdmi_25(clk_hdmi_25),
         .clk_hdmi_250(clk_hdmi_250)
     );
@@ -291,6 +293,7 @@ module pcpu_main
 	memory_controller memory_controller_inst
 	(
 		.clk(clk_main),
+		.clk_mem(clk_mem),
 		.rst(rst_psram),
 
 		.a(mainm_a),

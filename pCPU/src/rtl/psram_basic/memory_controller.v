@@ -13,7 +13,6 @@ module memory_controller
 	(
 		input rst, 
 		input clk, 
-		input clk_mem,
 
 		input [21:0]a, 
 		input [31:0]d, 
@@ -32,7 +31,7 @@ module memory_controller
 		output psram_sclk
     );
 
-	(*mark_debug = "true"*)reg [31:0]regspo;
+	reg [31:0]regspo;
 	wire [31:0]data = d;
 	assign spo = regspo;
 	//wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
@@ -42,7 +41,7 @@ module memory_controller
 	assign ready = ready_r & !(rd | we);
 
 	reg [21:0]rega;
-	(*mark_debug = "true"*)reg [7:0]regbuf[3:0];
+	reg [7:0]regbuf[3:0];
 
 	reg [5:0]count;
 
@@ -57,20 +56,19 @@ module memory_controller
 	wire m_ready_for_next_byte;
 	wire m_ready;
 
-    //// slow clock
-    //reg [4:0]clkcounter = 0;
-    //always @ (posedge clk) begin
-        //if (rst) clkcounter <= 5'b0;
-        //else clkcounter <= clkcounter + 1;
-    //end
-    //wire clk_pulse_slow = (clkcounter[1:0] == 2'b0);
+    // slow clock
+    reg [4:0]clkcounter = 0;
+    always @ (posedge clk) begin
+        if (rst) clkcounter <= 5'b0;
+        else clkcounter <= clkcounter + 1;
+    end
+    wire clk_pulse_slow = (clkcounter[1:0] == 2'b0);
 
-	psram_controller_fast psram_controller_fast_inst
+	psram_controller psram_controller_inst
 	(
 		.rst(rst), 
 		.clk(clk), 
-		.clk_mem(clk_mem), 
-		//.clk_pulse_slow(clk_pulse_slow),
+		.clk_pulse_slow(clk_pulse_slow),
 
 		.ce(psram_ce), 
 		.mosi(psram_mosi), 
@@ -94,39 +92,29 @@ module memory_controller
 
     reg m_byte_available_old = 0;
     reg m_ready_for_next_byte_old = 0;
-	(*mark_debug = "true"*)reg byte_available_posedge;
-	(*mark_debug = "true"*)reg ready_for_next_byte_posedge;
-    always @ (posedge clk_mem) begin
-		if (rst) begin
-			m_byte_available_old <= 0;
-			m_ready_for_next_byte_old <= 0;
-		end else begin
-			m_byte_available_old <= m_byte_available;
-			m_ready_for_next_byte_old <= m_ready_for_next_byte;
-		end
+    always @ (posedge clk) begin
+		m_byte_available_old <= m_byte_available;
+		m_ready_for_next_byte_old <= m_ready_for_next_byte;
     end
-	always @ (*) begin
-		byte_available_posedge = !m_byte_available_old & m_byte_available;
-		ready_for_next_byte_posedge = !m_ready_for_next_byte_old & m_ready_for_next_byte;
-	end
+    wire byte_available_posedge = !m_byte_available_old & m_byte_available;
+    wire ready_for_next_byte_posedge = !m_ready_for_next_byte_old & m_ready_for_next_byte;
 
 	localparam	IDLE		=	0;
 	localparam	WE_BEGIN	=	5;
 	localparam	WE			=	10;
 	localparam	RD_BEGIN	=	15;
 	localparam	RD			=	20;
-	(*mark_debug = "true"*)reg [5:0]state;
+	reg [5:0]state;
 
 
-	always @ (posedge clk_mem) begin
+	always @ (posedge clk) begin
 		if (rst) begin
 			m_rd <= 0; 
-			//m_rend <= 0;
+			m_rend <= 0;
 			m_we <= 0;
-			//m_wend <= 0;
+			m_wend <= 0;
 			state <= IDLE;
 			ready_r <= m_ready;
-			//count <= 0;
 		end else begin
 			case (state)
 				// go IDLE right after reset, but first memory operation will
@@ -135,11 +123,9 @@ module memory_controller
 					if (we) begin
 						state <= WE_BEGIN;
 						ready_r <= 0;
-						count <= 4;
 					end else if (rd) begin
 						state <= RD_BEGIN;
 						ready_r <= 0;
-						count <= 4;
 					end else ready_r <= m_ready;
 					rega <= a[21:0];
 					regbuf[3] <= data[31:24];
@@ -148,7 +134,7 @@ module memory_controller
 					regbuf[0] <= data[7:0];
 					m_wend <= 0;
 					m_rend <= 0;
-					//count <= 4;
+					count <= 4;
 				end
 				WE_BEGIN: begin
 					if (m_ready) begin
@@ -159,7 +145,7 @@ module memory_controller
 				WE: begin
 					m_we <= 0;
 					if (ready_for_next_byte_posedge) count <= count - 1;
-					if (count == 6'b000000) begin
+					if (count == 6'b111111) begin
 						state <= IDLE;
 						m_wend <= 1;
 					end
@@ -176,11 +162,10 @@ module memory_controller
 						count <= count - 1;
 						regbuf[count - 1] <= m_dout;
 					end
-					if (count == 6'b000001) m_rend <= 1;
 					if (count == 6'b000000) begin
 						regspo <= {regbuf[3], regbuf[2], regbuf[1], regbuf[0]};
 						state <= IDLE;
-						//m_rend <= 1;
+						m_rend <= 1;
 					end
 				end
 			endcase

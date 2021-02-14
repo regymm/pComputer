@@ -42,6 +42,7 @@ module riscv_multicyc
 	reg [31:0]ALUOut2;
 	reg [31:0]RV32MOut;
 	reg [31:0]mar;
+	reg [31:0]mwr;
 	reg [31:0]mdr;
 
 	// control signals
@@ -386,6 +387,7 @@ module riscv_multicyc
 			end
 			MEM_WAIT: begin
 				IorDorW = 2;
+				MemSrc = 3;
 			end
 			INTERRUPT: begin
 				on_exc_enter = 1;
@@ -519,7 +521,7 @@ module riscv_multicyc
 		0: memwrite_data = storebyte; // byte
 		1: memwrite_data = storehalf; // half
 		2: memwrite_data = ReadData2; // word
-		// TODO: keep write data when MEM_WAIT, no problem now though
+		3: memwrite_data = mwr; // wait
 		default: memwrite_data = 0;
 	endcase end
 	always @ (*) begin case (PCOutSrc)
@@ -537,7 +539,7 @@ module riscv_multicyc
 		//1:
 		default: csr_d = ALUOut;
 	endcase end
-	// CPU main
+	// CPU main TODO: move out of if-else
 	always @ (posedge clk) begin
 		if (rst) begin
 			pc <= START_ADDR;
@@ -550,6 +552,7 @@ module riscv_multicyc
 			RV32MOut <= RV32MResult;
 
 			mdr <= memread_data;
+			mwr <= memwrite_data;
 			mar <= mem_addr;
 
 			if (csrsave) csrr <= csr_spo;
