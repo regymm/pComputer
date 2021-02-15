@@ -3,6 +3,11 @@
 .globl c_start
 
 _start:
+#	la a0, 0x20000aa8
+#	li a1, 0x12345678
+#	sw a1, (a0)
+#	lw t0, (a0)
+#	j _start
 	j interrupt_tests
 interrupt_tests: 
 	la a0, 0x92000000

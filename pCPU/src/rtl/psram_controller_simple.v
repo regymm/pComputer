@@ -37,7 +37,7 @@ module psram_controller_fast(
 
     output ready,
 
-    (*mark_debug = "true"*) output reg [4:0]state
+    /*(*mark_debug = "true"*)*/ output reg [4:0]state
 );
 
 	localparam INIT = 0;
@@ -292,10 +292,10 @@ module psram_controller_fast(
 					else sclk <= ~sclk;
 					if (sclk) begin
 						bytecnt <= bytecnt + 4;
-						databyte <= {databyte[3:0], miso_in}; //TODO
+						databyte <= {databyte[3:0], sio3_in, sio2_in, miso_in, mosi_in};
 						if (bytecnt == 4) begin
 							byte_available <= 1;
-							dout <= {databyte[3:0], miso_in};
+							dout <= {databyte[3:0], sio3_in, sio2_in, miso_in, mosi_in};
 						end
 						else byte_available <= 0;
 					end

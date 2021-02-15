@@ -88,11 +88,11 @@ void sd_c_start()
 		/*while(issue_token( ( endp_in_addr << 4 ) | DEF_USB_PID_IN )!=USB_INT_SUCCESS);*/
 	/*}*/
 	
-	setupIRQ();
+	/*setupIRQ();*/
 	while(1){
 		/*i = 1; */
-		/*for(i = 1; i < 10000; i++);*/
-		printf(".");
-		/*uart_putchar('.');*/
+		for(i = 1; i < 100000; i++);
+		/*printf(".\r\n");*/
+		uart_putchar('.');
 	}
 }

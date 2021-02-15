@@ -42,7 +42,7 @@ module memory_controller
 	assign ready = ready_r & !(rd | we);
 
 	reg [21:0]rega;
-	(*mark_debug = "true"*)reg [7:0]regbuf[3:0];
+	/*(*mark_debug = "true"*)*/reg [7:0]regbuf[3:0];
 
 	reg [5:0]count;
 
@@ -94,8 +94,8 @@ module memory_controller
 
     reg m_byte_available_old = 0;
     reg m_ready_for_next_byte_old = 0;
-	(*mark_debug = "true"*)reg byte_available_posedge;
-	(*mark_debug = "true"*)reg ready_for_next_byte_posedge;
+	/*(*mark_debug = "true"*)*/reg byte_available_posedge;
+	/*(*mark_debug = "true"*)*/reg ready_for_next_byte_posedge;
     always @ (posedge clk_mem) begin
 		if (rst) begin
 			m_byte_available_old <= 0;
@@ -115,7 +115,7 @@ module memory_controller
 	localparam	WE			=	10;
 	localparam	RD_BEGIN	=	15;
 	localparam	RD			=	20;
-	(*mark_debug = "true"*)reg [5:0]state;
+	/*(*mark_debug = "true"*)*/reg [5:0]state;
 
 
 	always @ (posedge clk_mem) begin
