@@ -1,6 +1,6 @@
 ## pComputer
 
-A simple "computer" from scratch, including CPU and OS, running on FPGA-based hardware. Currently developing on the PYNQ-Z1 board. 
+A simple "computer" from scratch, including RISC-V CPU and simple OS, running on self-designed FPGA dev board. 
 
 ### Gallery
 
@@ -27,45 +27,56 @@ A simple "computer" from scratch, including CPU and OS, running on FPGA-based ha
 
 **Processor**
 
-- [x] Multiple-cycle RISC-V like CPU @ 62.5MHz on SqueakyBoard(Zynq 7010 PL)
+- [x] Multiple-cycle RISC-V CPU @ 62.5MHz on SqueakyBoard(Zynq 7010 PL)
 - [x] RV32IM
-- [ ] M-mode CSR support (WIP)
-- [x] Memory-like bus interface
-- [ ] Exception and Interrupt support (WIP)
-- [ ] User/Privileged mode support
+- [x] M-mode CSR (partial support)
+- [x] Interrupt (timer, external, software)
+- [ ] Exception (WIP)
+- [ ] Supervisor/User privilege level support
 - [ ] Sv32 MMU
+- [ ] GDB debug over openocd JTAG
 
 **Hardware/Software**
+
+Bus
+
+- [x] Memory-mapped IO (1 host, multiple guests)
+- [ ] Arbitration (multiple hosts: GPU, debugger)
 
 Peripherals
 
 - [x] GPIO (LEDs, buttons, switches)
 - [x] UART
 - [x] SD card
-- [ ] PS/2 keyboard (WIP)
-- [ ] HDMI character terminal (WIP)
+- [ ] PS/2 keyboard (WIP w/ proof of concept)
+- [ ] HDMI character terminal (WIP w/ proof of concept)
 - [ ] Graphics unit
-- [ ] W5500 Internet module
+- [ ] CH375 USB disk (WIP)
+- [ ] W5500 ethernet module
+- [ ] ESP8266 Wifi module
 
 Memory
 
-- [x] ESP-PSRAM64H as main memory
+- [x] ESP-PSRAM64H as main memory, QPI mode @ 62.5M
 - [ ] Cache
 
-OS
+OS/Software
 
 - [x] Run RISC-V assembly
 - [x] Enough commands to run cross-compiled C code
+- [x] Use newlib for baremetal application
 - [x] Boot from SD card (raw)
 - [ ] Boot from SD card (FAT32)
 - [ ] Syscall interface
-- [ ] Process switching demo
-- [ ] Simple C library
+- [ ] Task manager
+- [ ] Memory manager
+- [ ] Filesystem
+- [ ] Run single process
 - [ ] (v)fork, exec
-- [ ] Filesystem (FAT or custom)
 - [ ] Shell
 - [ ] Text editor
 - [ ] Assembler
+- [ ] Multitasking
 - [ ] Port a C compiler
 
 Others

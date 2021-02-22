@@ -7,9 +7,9 @@ LD 		=	$(RISCV)ld
 #LDFLAGS	=	-m elf32lriscv --nostdlib
 LDFLAGS	=	-m elf32lriscv
 CC		=	$(RISCV)gcc
-CC_L_F	=	-march=rv32i -mabi=ilp32 -nostdlib -Os -static
+CC_L_F	=	-march=rv32i -mabi=ilp32 -nostdlib -O0 -static
 #CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -nostdlib -O0 -static
-CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -Os -static
+CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -O0 -static
 OBJCOPY	=	$(RISCV)objcopy
 #OBJDIR	=	obj
 
@@ -36,7 +36,7 @@ bootrom.elf: bootrom.o bootrom.c_o include/mmio_basic.c_o
 	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
 
 #sdboot.elf: sdboot.o sdboot.c_o include/mmio_basic.c_o include/printf.c_o 
-sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c include/mmio.h
+sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c include/mmio.h fs/fs.c
 	$(CC) $(CC_L_F) $^ -o $@ -T linker_$(basename $@).ld -lc -lgcc
 
 
