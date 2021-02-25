@@ -16,6 +16,8 @@
 .globl csrw_mcause
 .globl csrr_mscratch
 .globl csrw_mscratch
+.globl csrr_mepc
+.globl csrw_mepc
 
 .globl crit_enter
 .globl crit_leave
@@ -28,8 +30,10 @@ sd_start:
 	sw a1, 32(a0)
 	sw a1, 36(a0)
 
+	# stack
 	la sp, 0x200ffffc
 	j sd_c_start
+	# never here
 	j end
 end:
 	la a0, 0x92000000
@@ -70,6 +74,12 @@ csrr_mscratch:
 csrw_mscratch:
 	csrw mscratch, a0
 	ret
+csrr_mepc:
+	csrr a0, mepc
+	ret
+csrw_mepc:
+	csrw mepc, a0
+	ret
 # critical zone management
 crit_enter:
 	ret
@@ -87,78 +97,79 @@ isr_asm:
 #	csrr a1, mcause
 #	bgez a1, e
 	csrrw s0, mscratch, s0
-	sw a1, 0(s0)
-	sw a2, 4(s0)
-	sw a3, 8(s0)
-	sw a4, 12(s0)
-	sw a5, 16(s0)
-	sw a6, 20(s0)
-	sw a7, 24(s0)
+	sw a0, 0(s0)
+	sw a1, 4(s0)
+	sw a2, 8(s0)
+	sw a3, 12(s0)
+	sw a4, 16(s0)
+	sw a5, 20(s0)
+	sw a6, 24(s0)
+	sw a7, 28(s0)
 
-	sw a0, 28(s0)
+	# s0 in mscratch
+	sw s0, 32(s0)
+	sw s1, 36(s0)
+	sw s2, 40(s0)
+	sw s3, 44(s0)
+	sw s4, 48(s0)
+	sw s5, 52(s0)
+	sw s6, 56(s0)
+	sw s7, 60(s0)
+	sw s8, 64(s0)
+	sw s9, 68(s0)
+	sw s10, 72(s0)
+	sw s11, 76(s0)
 
-	sw s1, 32(s0)
-	sw s2, 36(s0)
-	sw s3, 40(s0)
-	sw s4, 44(s0)
-	sw s5, 48(s0)
-	sw s6, 52(s0)
-	sw s7, 56(s0)
-	sw s8, 60(s0)
-	sw s9, 64(s0)
-	sw s10, 68(s0)
-	sw s11, 72(s0)
+	sw t0, 80(s0)
+	sw t1, 84(s0)
+	sw t2, 88(s0)
+	sw t3, 92(s0)
+	sw t4, 96(s0)
+	sw t5, 100(s0)
+	sw t6, 104(s0)
 
-	sw t0, 78(s0)
-	sw t1, 80(s0)
-	sw t2, 84(s0)
-	sw t3, 88(s0)
-	sw t4, 92(s0)
-	sw t5, 96(s0)
-	sw t6, 100(s0)
-
-	sw ra, 104(s0)
-	sw sp, 108(s0)
-	sw gp, 112(s0)
-	sw tp, 116(s0)
+	sw ra, 108(s0)
+	sw sp, 112(s0)
+	sw gp, 116(s0)
+	sw tp, 120(s0)
 
 	# callee saved s0
-
+	# still on old(may be process) stack here
 	jal interrupt_service_routine
 
-	lw s1, 0(s0)
-	lw s2, 4(s0)
-	lw s3, 8(s0)
-	lw s4, 12(s0)
-	lw s5, 16(s0)
-	lw s6, 20(s0)
-	lw s7, 24(s0)
+	lw a0, 0(s0)
+	lw a1, 4(s0)
+	lw a2, 8(s0)
+	lw a3, 12(s0)
+	lw a4, 16(s0)
+	lw a5, 20(s0)
+	lw a6, 24(s0)
+	lw a7, 28(s0)
 
-	lw a0, 28(s0)
+	lw s0, 32(s0)
+	lw s1, 36(s0)
+	lw s2, 40(s0)
+	lw s3, 44(s0)
+	lw s4, 48(s0)
+	lw s5, 52(s0)
+	lw s6, 56(s0)
+	lw s7, 60(s0)
+	lw s8, 64(s0)
+	lw s9, 68(s0)
+	lw s10, 72(s0)
+	lw s11, 76(s0)
 
-	lw s1, 32(s0)
-	lw s2, 36(s0)
-	lw s3, 40(s0)
-	lw s4, 44(s0)
-	lw s5, 48(s0)
-	lw s6, 52(s0)
-	lw s7, 56(s0)
-	lw s8, 60(s0)
-	lw s9, 64(s0)
-	lw s10, 68(s0)
-	lw s11, 72(s0)
+	lw t0, 80(s0)
+	lw t1, 84(s0)
+	lw t2, 88(s0)
+	lw t3, 92(s0)
+	lw t4, 96(s0)
+	lw t5, 100(s0)
+	lw t6, 104(s0)
 
-	lw t0, 76(s0)
-	lw t1, 80(s0)
-	lw t2, 84(s0)
-	lw t3, 88(s0)
-	lw t4, 92(s0)
-	lw t5, 96(s0)
-	lw t6, 100(s0)
-
-	lw ra, 104(s0)
-	lw sp, 108(s0)
-	lw gp, 112(s0)
-	lw tp, 116(s0)
+	lw ra, 108(s0)
+	lw sp, 112(s0)
+	lw gp, 116(s0)
+	lw tp, 120(s0)
 	csrrw s0, mscratch, s0
 	mret

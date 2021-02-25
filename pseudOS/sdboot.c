@@ -3,6 +3,8 @@
 #include "fs/fs.h"
 #include "include/mmio_basic.h"
 #include "stdio.h"
+#include "kernel/global.h"
+#include "kernel/process.h"
 #define false 0
 #define true 1
 /*void setupUSBDisk()*/
@@ -21,16 +23,25 @@
 /*{*/
 	/*return false;*/
 /*}*/
-extern void isr_asm();
+
+extern void proc1();
+extern void proc2();
+extern void proc3();
+extern void _proc_schedule(ProcManager* pm);
+extern unsigned short _proc_getnext(ProcManager* pm);
+extern void _proc_switch(ProcManager* pm, unsigned short pid);
+
 void setupIRQ()
 {
 	*interrupt_ctrl = 0x0; // enable all
-	csrw_mscratch(0x10000000); // where regs are saved
+	csrw_mscratch(REGS_SAVE_ADDR); // where regs are saved
 	csrw_mtvec(isr_asm);
 	csrw_mstatus(0x00000088); // global enable
 	csrw_mie(0x00000888); // enable ext/time/sft
 	/*setupIRQ_asm();*/
 }
+
+// called by isr_asm, main ISR
 void interrupt_service_routine()
 {
 	static int a = 0;
@@ -41,10 +52,17 @@ void interrupt_service_routine()
 	*(gpio_ctrl + 8) = !a;
 	/**(gpio_ctrl + 7) = a;*/
 	/**(gpio_ctrl + 6) = !a;*/
-	static int c = 0;
-	c = c + 1;
+
 	/*uart_putchar('I');*/
-	printf("Got interrupt %d \r\n", c);
+	ticks++;
+	printf("Got interrupt %d \r\n", ticks);
+
+	if (ticks % 100 == 0) {
+		printf("Switch process\r\n");
+		procmanager.schedule(&procmanager);
+	}
+
+
 }
 void usb_test()
 {
@@ -68,7 +86,7 @@ void usb_test()
 	/*}*/
 
 }
-void sdcard_fs_test()
+void sdcard_fs_test() // put aside fs, do multitasking demo first
 {
 	SDCard sd;
 
@@ -82,8 +100,28 @@ void sdcard_fs_test()
 	sdcard_wait_for_ready(&sd);
 	sdcard_cleanup(&sd);
 }
-void sd_c_start()
+
+void prepare_processes()
+{
+	procmanager.proc_table = proc_table;
+	procmanager.proc_number = 3;
+	procmanager.proc_running = 1;
+	procmanager.proc_max = PROC_NUM_MAX;
+	procmanager.schedule = _proc_schedule;
+	procmanager.get_next = _proc_getnext;
+	proc_table[0].pid = 1;
+	proc_table[0].pc = proc1;
+	proc_table[0].regs.sp = 0x2008fffc;
+	proc_table[1].pid = 2;
+	proc_table[1].pc = proc2;
+	proc_table[0].regs.sp = 0x2009fffc;
+	proc_table[2].pid = 3;
+	proc_table[2].pc = proc3;
+	proc_table[0].regs.sp = 0x200afffc;
+}
+
 /*void main()*/
+void sd_c_start() // the current "kernel"
 {
 	uart_putstr("[sdcard]sd_c_start\r\n");
 	/*uart_putstr("[sdcard]halt.\r\n");*/
@@ -96,24 +134,18 @@ void sd_c_start()
 		int c = uart_getchar();
 		printf("You typed: %x\r\n", c);
 	}
-	/*uart_putstr("\r\nYou typed: ");*/
-	/*uart_putchar(c);*/
 	uart_putstr("\r\n\r\n");
 	
-	/*while(1) {*/
-		/*printf("rx: %x \r\n", *uart_rx_data);*/
-		/*int i;*/
-		/*for (i = 0; i < 100000; i++)*/
-			/*asm("nop");*/
-	/*}*/
-
-	
 	/*setupIRQ();*/
-	sdcard_fs_test();
+	/*sdcard_fs_test();*/
+
+	prepare_processes();
+	setupIRQ();
+
+
+
 	while(1){
-		/*i = 1; */
 		for(i = 1; i < 100000; i++);
-		/*printf(".\r\n");*/
 		uart_putchar('.');
 	}
 }
