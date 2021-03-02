@@ -33,4 +33,7 @@ extern int csrr_mstatus();
 extern int csrr_mie();
 extern int csrr_mepc();
 
+void cli(); // disable interrupt
+void sti(); // enable interrupt
+
 #endif

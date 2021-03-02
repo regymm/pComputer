@@ -56,7 +56,7 @@ typedef struct {
 	char name[16];
 
 	unsigned short state;
-	int pc;
+	void (* pc)();
 	StackFrame regs;
 
 	//unsigned int stacksize;
@@ -75,6 +75,7 @@ typedef struct ProcManagerStruct{
 	void (* schedule) (struct ProcManagerStruct* pm);
 	Process* (* find) (struct ProcManagerStruct* pm, unsigned short pid);
 	unsigned short (* get_next) (struct ProcManagerStruct* pm);
+	int do_start;
 
 }ProcManager;
 

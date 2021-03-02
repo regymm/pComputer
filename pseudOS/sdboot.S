@@ -22,6 +22,8 @@
 .globl crit_enter
 .globl crit_leave
 
+.equ REGS_SAVE_ADDR, 0x10000000
+
 sd_start:
 	la a0, 0x92000000
 	li a1, 0
@@ -96,7 +98,9 @@ isr_asm:
 #	
 #	csrr a1, mcause
 #	bgez a1, e
-	csrrw s0, mscratch, s0
+#	csrrw s0, mscratch, s0
+	csrw mscratch, s0
+	la s0, REGS_SAVE_ADDR
 	sw a0, 0(s0)
 	sw a1, 4(s0)
 	sw a2, 8(s0)
@@ -106,8 +110,12 @@ isr_asm:
 	sw a6, 24(s0)
 	sw a7, 28(s0)
 
-	# s0 in mscratch
-	sw s0, 32(s0)
+	la a0, REGS_SAVE_ADDR # a0 changed here, but already saved!
+	csrr s0, mscratch
+	sw s0, 32(a0)
+	la s0, REGS_SAVE_ADDR
+
+#	sw s0, 32(a0)
 	sw s1, 36(s0)
 	sw s2, 40(s0)
 	sw s3, 44(s0)
@@ -133,9 +141,11 @@ isr_asm:
 	sw gp, 116(s0)
 	sw tp, 120(s0)
 
-	# callee saved s0
-	# still on old(may be process) stack here
+	# still on old stack
 	jal interrupt_service_routine
+	# regs on REGS_SAVE_ADDR may already changed(proc switch)!
+	# so no re-entrant
+	# should use current stack to support re-entrant
 
 	lw a0, 0(s0)
 	lw a1, 4(s0)
@@ -146,7 +156,7 @@ isr_asm:
 	lw a6, 24(s0)
 	lw a7, 28(s0)
 
-	lw s0, 32(s0)
+	#	lw s0, 32(s0) TODO: make sure s0 works fine
 	lw s1, 36(s0)
 	lw s2, 40(s0)
 	lw s3, 44(s0)
@@ -171,5 +181,8 @@ isr_asm:
 	lw sp, 112(s0)
 	lw gp, 116(s0)
 	lw tp, 120(s0)
-	csrrw s0, mscratch, s0
+
+	# restore s0 at last
+	lw s0, 32(s0)
+#	csrrw s0, mscratch, s0
 	mret

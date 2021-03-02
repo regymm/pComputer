@@ -36,7 +36,7 @@ bootrom.elf: bootrom.o bootrom.c_o include/mmio_basic.c_o
 	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
 
 #sdboot.elf: sdboot.o sdboot.c_o include/mmio_basic.c_o include/printf.c_o 
-sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c include/mmio.h fs/fs.c
+sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c include/mmio.h fs/fs.c kernel/global.c kernel/process.c
 	$(CC) $(CC_L_F) $^ -o $@ -T linker_$(basename $@).ld -lc -lgcc
 
 

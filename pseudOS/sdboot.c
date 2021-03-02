@@ -30,6 +30,7 @@ extern void proc3();
 extern void _proc_schedule(ProcManager* pm);
 extern unsigned short _proc_getnext(ProcManager* pm);
 extern void _proc_switch(ProcManager* pm, unsigned short pid);
+extern Process* _proc_find(ProcManager* pm, unsigned short pid);
 
 void setupIRQ()
 {
@@ -55,14 +56,14 @@ void interrupt_service_routine()
 
 	/*uart_putchar('I');*/
 	ticks++;
-	printf("Got interrupt %d \r\n", ticks);
+	/*printf("Got interrupt %d \r\n", ticks);*/
 
-	if (ticks % 100 == 0) {
-		printf("Switch process\r\n");
+	if (ticks % 5 == 0) {
+		/*printf("Switch process\r\n");*/
 		procmanager.schedule(&procmanager);
 	}
-
-
+	/*printf("interrupt_service_routine C end. \r\n");*/
+	fflush(stdin);
 }
 void usb_test()
 {
@@ -109,15 +110,17 @@ void prepare_processes()
 	procmanager.proc_max = PROC_NUM_MAX;
 	procmanager.schedule = _proc_schedule;
 	procmanager.get_next = _proc_getnext;
+	procmanager.find = _proc_find;
+	procmanager.do_start = 1;
 	proc_table[0].pid = 1;
 	proc_table[0].pc = proc1;
 	proc_table[0].regs.sp = 0x2008fffc;
 	proc_table[1].pid = 2;
 	proc_table[1].pc = proc2;
-	proc_table[0].regs.sp = 0x2009fffc;
+	proc_table[1].regs.sp = 0x2009fffc;
 	proc_table[2].pid = 3;
 	proc_table[2].pc = proc3;
-	proc_table[0].regs.sp = 0x200afffc;
+	proc_table[2].regs.sp = 0x200afffc;
 }
 
 /*void main()*/

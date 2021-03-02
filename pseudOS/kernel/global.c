@@ -6,8 +6,19 @@
  * Last Modified Date: 2021.02.24
  */
 
+#include "global.h"
 #include "process.h"
 
 Process proc_table[PROC_NUM_MAX];
 ProcManager procmanager;
-int ticks = 0;
+unsigned int ticks = 0;
+
+void cli()
+{
+	csrw_mstatus(0x00000000);
+
+}
+void sti()
+{
+	csrw_mstatus(0x00000088);
+}
