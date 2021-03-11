@@ -3,6 +3,12 @@
 .globl c_start
 
 _start:
+#	la a0, 0x97000000
+#	li a1, 1
+#	sw a1, 0(a0)
+#	la a0, 0x93000000
+#	sw a1, 0(a0)
+
 #	la a0, 0x20000aa8
 #	li a1, 0x12345678
 #	sw a1, (a0)

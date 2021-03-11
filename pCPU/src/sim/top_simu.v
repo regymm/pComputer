@@ -15,6 +15,7 @@ module top_simu();
 	wire psram_sio2;
 	wire psram_sio3;
 	wire psram_sclk;
+	reg ch375_tx;
 
     pcpu_main pcpu_main_inst
     (
@@ -28,7 +29,8 @@ module top_simu();
 		.psram_miso(psram_miso),
 		.psram_sio2(psram_sio2),
 		.psram_sio3(psram_sio3),
-		.psram_sclk(psram_sclk)
+		.psram_sclk(psram_sclk),
+		.ch375_tx(ch375_tx)
 	);
     
     initial begin
@@ -37,6 +39,7 @@ module top_simu();
     end
 
     initial begin
+		ch375_tx = 1;
         //#400
         sw = 2'b01;
         //btn = 4'b0000;
@@ -51,10 +54,34 @@ module top_simu();
         //#1000
         //btn = 4'b0010;
 
-        #200000
-		sw = 2'b01;
+        #100000
+
+		ch375_tx = 0;
+		#52088
+		ch375_tx = 1;
+		#52088
+		ch375_tx = 0;
+		#52088
+		ch375_tx = 1;
+		#52088
+		ch375_tx = 0;
+		#52088
+		ch375_tx = 1;
+		#52088
+		ch375_tx = 0;
+		#52088
+		ch375_tx = 1;
+		#52088
+		ch375_tx = 1;
+		#52088
+		ch375_tx = 1;
+
+        #100000
+		//sw = 2'b01;
 		#4000
 		sw = 2'b00;
+		#200000;
+		#200000;
 		#200000
         $finish;
     end

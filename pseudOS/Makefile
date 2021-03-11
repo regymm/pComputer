@@ -28,27 +28,11 @@ all: bootrom.dat bootrom.bin sdboot.bin
 %.c_o: %.c
 	$(CC) -c $(CFLAGS) $*.c -o $*.c_o
 
-#exception.elf: exception.o
-	#$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
-
-#bootrom.elf: bootrom.o mylib/mylib.o
 bootrom.elf: bootrom.o bootrom.c_o include/mmio_basic.c_o
 	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
 
-#sdboot.elf: sdboot.o sdboot.c_o include/mmio_basic.c_o include/printf.c_o 
-sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c include/mmio.h fs/fs.c kernel/global.c kernel/process.c
+sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c fs/fs.c kernel/global.c kernel/process.c mmio_drivers/CH375.c kernel/isr.c kernel/misc.c
 	$(CC) $(CC_L_F) $^ -o $@ -T linker_$(basename $@).ld -lc -lgcc
-
-
-
-#pseudos.elf: pseudos.o mylib/mylib_big.o
-	#$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
-
-#sdbootloader.elf: sdbootloader.o
-	#$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
-
-#test.elf: test.o
-	#$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
 
 clean:
 	-rm -f *.elf

@@ -1,7 +1,8 @@
 // https://github.com/xeecos/CH375-Keyboard-Arduino
-#ifndef CH375_H
-#define CH375_H
+#ifndef CH375_LOW_H
+#define CH375_LOW_H
 #include "stdio.h"
+#include "../kernel/global.h"
 #define USB2_0 1
 #define USB1_0 0
 // #define CH375_DBG 1
@@ -251,72 +252,77 @@
 //#define uint8_t unsigned char
 //#define int8_t char
 
-typedef struct _USB_DEVICE_DEscriptOR {
-    uint8_t bLength;
-    uint8_t bDescriptorType;
-    unsigned short bcdUSB;
-    uint8_t bDeviceClass;
-    uint8_t bDeviceSubClass;
-    uint8_t bDeviceProtocol;
-    uint8_t bMaxPacketSize0;
-    unsigned short idVendor;
-    unsigned short idProduct;
-    unsigned short bcdDevice;
-    uint8_t iManufacturer;
-    uint8_t iProduct;
-    uint8_t iSerialNumber;
-    uint8_t bNumConfigurations;
-} USB_DEV_DESCR, *PUSB_DEV_DESCR;
+//typedef struct _USB_DEVICE_DEscriptOR {
+    //uint8_t bLength;
+    //uint8_t bDescriptorType;
+    //unsigned short bcdUSB;
+    //uint8_t bDeviceClass;
+    //uint8_t bDeviceSubClass;
+    //uint8_t bDeviceProtocol;
+    //uint8_t bMaxPacketSize0;
+    //unsigned short idVendor;
+    //unsigned short idProduct;
+    //unsigned short bcdDevice;
+    //uint8_t iManufacturer;
+    //uint8_t iProduct;
+    //uint8_t iSerialNumber;
+    //uint8_t bNumConfigurations;
+//} USB_DEV_DESCR, *PUSB_DEV_DESCR;
 
-typedef struct _USB_CONFIG_DEscriptOR {
-    uint8_t bLength;
-    uint8_t bDescriptorType;
-    unsigned short wTotalLength;
-    uint8_t bNumInterfaces;
-    uint8_t bConfigurationvalue;
-    uint8_t iConfiguration;
-    uint8_t bmAttributes;
-    uint8_t MaxPower;
-} USB_CFG_DESCR, *PUSB_CFG_DESCR;
+//typedef struct _USB_CONFIG_DEscriptOR {
+    //uint8_t bLength;
+    //uint8_t bDescriptorType;
+    //unsigned short wTotalLength;
+    //uint8_t bNumInterfaces;
+    //uint8_t bConfigurationvalue;
+    //uint8_t iConfiguration;
+    //uint8_t bmAttributes;
+    //uint8_t MaxPower;
+//} USB_CFG_DESCR, *PUSB_CFG_DESCR;
 
-typedef struct _USB_INTERF_DEscriptOR {
-    uint8_t bLength;
-    uint8_t bDescriptorType;
-    uint8_t bInterfaceNumber;
-    uint8_t bAlternateSetting;
-    uint8_t bNumEndpoints;
-    uint8_t bInterfaceClass;
-    uint8_t bInterfaceSubClass;
-    uint8_t bInterfaceProtocol;
-    uint8_t iInterface;
-} USB_ITF_DESCR, *PUSB_ITF_DESCR;
+//typedef struct _USB_INTERF_DEscriptOR {
+    //uint8_t bLength;
+    //uint8_t bDescriptorType;
+    //uint8_t bInterfaceNumber;
+    //uint8_t bAlternateSetting;
+    //uint8_t bNumEndpoints;
+    //uint8_t bInterfaceClass;
+    //uint8_t bInterfaceSubClass;
+    //uint8_t bInterfaceProtocol;
+    //uint8_t iInterface;
+//} USB_ITF_DESCR, *PUSB_ITF_DESCR;
 
-typedef struct _USB_ENDPOINT_DEscriptOR {
-    uint8_t bLength;
-    uint8_t bDescriptorType;
-    uint8_t bEndpointAddress;
-    uint8_t bmAttributes;
-    unsigned short wMaxPacketSize;
-    uint8_t bInterval;
-} USB_ENDP_DESCR, *PUSB_ENDP_DESCR;
+//typedef struct _USB_ENDPOINT_DEscriptOR {
+    //uint8_t bLength;
+    //uint8_t bDescriptorType;
+    //uint8_t bEndpointAddress;
+    //uint8_t bmAttributes;
+    //unsigned short wMaxPacketSize;
+    //uint8_t bInterval;
+//} USB_ENDP_DESCR, *PUSB_ENDP_DESCR;
 
-typedef struct _USB_CONFIG_DEscriptOR_LONG {
-    USB_CFG_DESCR cfg_descr;
-    USB_ITF_DESCR itf_descr;
-    USB_ENDP_DESCR endp_descr[4];
-} USB_CFG_DESCR_LONG, *PUSB_CFG_DESCR_LONG;
-uint8_t endp_out_addr;
-uint8_t endp_out_size;
-uint8_t endp_in_addr;
-uint8_t endp6_mode, endp7_mode;
+//typedef struct _USB_CONFIG_DEscriptOR_LONG {
+    //USB_CFG_DESCR cfg_descr;
+    //USB_ITF_DESCR itf_descr;
+    //USB_ENDP_DESCR endp_descr[4];
+//} USB_CFG_DESCR_LONG, *PUSB_CFG_DESCR_LONG;
 
-uint8_t recv_buffer[ CH375_MAX_DATA_LEN ];
-uint8_t *cmd_buf;
-uint8_t *ret_buf;
+//uint8_t endp_out_addr;
+//uint8_t endp_out_size;
+//uint8_t endp_in_addr;
+//uint8_t endp6_mode, endp7_mode;
 
-#define p_dev_descr ((PUSB_DEV_DESCR)recv_buffer)
-#define p_cfg_descr ((PUSB_CFG_DESCR_LONG)recv_buffer)
+//uint8_t recv_buffer[ CH375_MAX_DATA_LEN ];
+//uint8_t *cmd_buf;
+//uint8_t *ret_buf;
 
-PUSB_ENDP_DESCR tmpEp;
+//#define p_dev_descr ((PUSB_DEV_DESCR)recv_buffer)
+//#define p_cfg_descr ((PUSB_CFG_DESCR_LONG)recv_buffer)
 
+//PUSB_ENDP_DESCR tmpEp;
+
+// added by petergu
+#define CH375_BLOCK_SIZE 64
+#define	CMD_SET_PKT_P_SEC 0x0B
+#define CMD_DISK_R_SENSE 0x5A
 #endif

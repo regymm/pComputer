@@ -117,6 +117,7 @@ module mmapper
 
     always @ (*) begin
         distm_we = 0;
+		distm_rd = 0;
 		mainm_we = 0;
 		mainm_rd = 0;
         gpio_we = 0;

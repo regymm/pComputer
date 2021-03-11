@@ -31,7 +31,7 @@ module uart
         input [2:0]a,
         input [31:0]d,
         input we,
-        (*mark_debug = "true"*)output reg [31:0]spo,
+        output reg [31:0]spo,
 
         output reg irq = 0,
 

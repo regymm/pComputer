@@ -12,7 +12,14 @@
 
 #define PROC_STATE_READY 1
 #define PROC_STATE_RUNNING 2
-#define PROC_STATE_TERMINATE 3
+#define PROC_STATE_SENDING 3
+#define PROC_STATE_RECEIVING 4
+#define PROC_STATE_TERMINATE 5
+
+#define IPC_SEND 4444
+#define IPC_RECEIVE 7777777
+#define IPC_TARGET_ANY (-333)
+#define IPC_TARGET_NONE (-4444)
 
 typedef struct {
 	int a0;
@@ -52,12 +59,28 @@ typedef struct {
 } __attribute((packed)) StackFrame;
 
 typedef struct {
+	int source;
+	int type;
+	union {
+		int integer;
+		void* pointer;
+	} ;
+} Message;
+
+typedef struct ProcessStruct{
 	unsigned short pid; // 0 means end of processes
 	char name[16];
 
 	unsigned short state;
 	void (* pc)();
 	StackFrame regs;
+
+	// IPC
+	int p_sendto; // negative reserved for things like ANY
+	int p_recvfrom;
+	Message* p_msg;
+	struct ProcessStruct* queue_sending; // a linked list of procs sending to this proc
+	struct ProcessStruct* queue_sending_next;
 
 	//unsigned int stacksize;
 	//unsigned int ticks;
@@ -73,12 +96,17 @@ typedef struct ProcManagerStruct{
 	unsigned short proc_running;
 	unsigned short proc_max;
 	void (* schedule) (struct ProcManagerStruct* pm);
+	// find Process* using pid
 	Process* (* find) (struct ProcManagerStruct* pm, unsigned short pid);
+	// next process to run in schedule
 	unsigned short (* get_next) (struct ProcManagerStruct* pm);
 	int do_start;
 
 }ProcManager;
 
+void ProcManagerInit(ProcManager* pm, ProcTable pt);
+
+int sendrec(int function, int src_dest, Message* msg, Process* proc);
 
 
 #endif

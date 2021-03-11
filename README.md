@@ -29,7 +29,7 @@ A simple "computer" from scratch, including RISC-V CPU and simple OS, running on
 
 - [x] Multiple-cycle RISC-V CPU @ 62.5MHz on SqueakyBoard(Zynq 7010 PL)
 - [x] RV32IM
-- [x] M-mode CSR (partial support)
+- [x] M-mode CSR (partial)
 - [x] Interrupt (timer, external, software)
 - [ ] Exception (WIP)
 - [ ] Supervisor/User privilege level support
@@ -47,10 +47,10 @@ Peripherals
 
 - [x] GPIO (LEDs, buttons, switches)
 - [x] UART
-- [x] SD card
+- [x] SD card (SPI mode, SDHC)
 - [ ] PS/2 keyboard (WIP w/ proof of concept)
 - [ ] HDMI character terminal (WIP w/ proof of concept)
-- [ ] Graphics unit
+- [ ] HDMI frame buffer graphics
 - [ ] CH375 USB disk (WIP)
 - [ ] W5500 ethernet module
 - [ ] ESP8266 Wifi module
@@ -67,16 +67,15 @@ OS/Software
 - [x] Use newlib for baremetal application
 - [x] Boot from SD card (raw)
 - [ ] Boot from SD card (FAT32)
+- [ ] Multitasking w/o MMU(WIP w/ proof of concept)
+- [ ] Microkernel and IPC
 - [ ] Syscall interface
-- [ ] Task manager
 - [ ] Memory manager
 - [ ] Filesystem
-- [ ] Run single process
 - [ ] (v)fork, exec
 - [ ] Shell
 - [ ] Text editor
 - [ ] Assembler
-- [ ] Multitasking
 - [ ] Port a C compiler
 
 Others

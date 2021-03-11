@@ -93,6 +93,7 @@ void _exit(int exit_status)
 {
     /**(volatile int *)EXIT_REG = exit_status;*/
     asm volatile("wfi");
+	while (1);
 }
 
 int _faccessat(int dirfd, const char *file, int mode, int flags)

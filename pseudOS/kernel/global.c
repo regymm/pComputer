@@ -12,13 +12,3 @@
 Process proc_table[PROC_NUM_MAX];
 ProcManager procmanager;
 unsigned int ticks = 0;
-
-void cli()
-{
-	csrw_mstatus(0x00000000);
-
-}
-void sti()
-{
-	csrw_mstatus(0x00000088);
-}

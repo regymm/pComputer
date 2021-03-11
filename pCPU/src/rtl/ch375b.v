@@ -26,7 +26,7 @@ module ch375b
         input [2:0]a,
         input [31:0]d,
         input we,
-        output reg [31:0]spo,
+        (*mark_debug = "true"*)output reg [31:0]spo,
 
         output reg irq = 0,
 
@@ -44,7 +44,10 @@ module ch375b
 
     wire rxclk_en;
     wire txclk_en;
-    baud_rate_gen #(.BAUD_RATE(9600)) baud_rate_gen_inst
+    baud_rate_gen #(
+		.CLOCK_FREQ(62500000),
+		.BAUD_RATE(9600)
+	) baud_rate_gen_inst
     (
         .clk(clk),
         .rst(rst),
@@ -72,8 +75,8 @@ module ch375b
 	reg cmd_or_data = 1'b1;
 
     reg read_enabled = 0;
-    reg [7:0]data_rx = 0;
-	reg rx_new = 0;
+    (*mark_debug = "true"*)reg [7:0]data_rx = 0;
+	(*mark_debug = "true"*)reg rx_new = 0;
 
     always @ (*) begin
         if (a == 3'b000) spo = {data_rx, 24'b0};

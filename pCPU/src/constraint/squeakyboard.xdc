@@ -88,6 +88,7 @@ set_property -dict {PACKAGE_PIN N20 IOSTANDARD TMDS_33} [get_ports {TMDSp[2]}]
 set_property -dict {PACKAGE_PIN J18 IOSTANDARD LVCMOS33} [get_ports ch375_tx]
 set_property -dict {PACKAGE_PIN J19 IOSTANDARD LVCMOS33} [get_ports ch375_rx]
 set_property -dict {PACKAGE_PIN H18 IOSTANDARD LVCMOS33} [get_ports ch375_nint]
+#set_property PULLUP TRUE [get_ports ch375_tx]
 
 # USB PS2
 #set_property -dict {PACKAGE_PIN J20 IOSTANDARD LVCMOS33} [get_ports usbdp]
