@@ -9,6 +9,5 @@
 #include "global.h"
 #include "process.h"
 
-Process proc_table[PROC_NUM_MAX];
 ProcManager procmanager;
 unsigned int ticks = 0;

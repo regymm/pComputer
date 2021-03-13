@@ -8,13 +8,14 @@
 #ifndef PSEUDOS_PROCESS_H
 #define PSEUDOS_PROCESS_H
 
-#define PROC_NUM_MAX 10
+#define PROC_NUM_MAX 256
 
 #define PROC_STATE_READY 1
 #define PROC_STATE_RUNNING 2
 #define PROC_STATE_SENDING 3
 #define PROC_STATE_RECEIVING 4
 #define PROC_STATE_TERMINATE 5
+#define PROC_STATE_UNDEF 6
 
 #define IPC_SEND 4444
 #define IPC_RECEIVE 7777777
@@ -68,7 +69,7 @@ typedef struct {
 } Message;
 
 typedef struct ProcessStruct{
-	unsigned short pid; // 0 means end of processes
+	short pid; // minus no such process
 	char name[16];
 
 	unsigned short state;
@@ -90,21 +91,26 @@ typedef struct ProcessStruct{
 
 typedef Process* ProcTable;
 
+// global singleton ProcManager -- procmanager
+// functions inside use procmanager directly
 typedef struct ProcManagerStruct{
-	ProcTable proc_table;
+	// process hash table, use pid as index
+	Process proc_table[PROC_NUM_MAX];
 	unsigned short proc_number;
 	unsigned short proc_running;
 	unsigned short proc_max;
-	void (* schedule) (struct ProcManagerStruct* pm);
-	// find Process* using pid
-	Process* (* find) (struct ProcManagerStruct* pm, unsigned short pid);
+	// main scheduler
+	void (* schedule) ();
+	// Process* and pid conversion
+	Process* (* pid2proc) (short pid);
+	short (* proc2pid) (Process* proc);
 	// next process to run in schedule
-	unsigned short (* get_next) (struct ProcManagerStruct* pm);
+	short (* get_next) ();
 	int do_start;
 
 }ProcManager;
 
-void ProcManagerInit(ProcManager* pm, ProcTable pt);
+void ProcManagerInit();
 
 int sendrec(int function, int src_dest, Message* msg, Process* proc);
 

@@ -17,10 +17,10 @@ void proc1()
 	int i = 0;
 	/*uart_putchar('a');*/
 	/*uart_putchar('S');*/
-	printf("proc1 begin ...\r\n");
+	printk("proc1 begin ...\r\n");
 	while (1) {
 		for (i = 0; i < 10000; i++);
-		printf("A");
+		printk("A");
 		/*uart_putchar('A');*/
 	}
 }
@@ -29,10 +29,10 @@ void proc2()
 	int i = 0;
 	/*uart_putchar('b');*/
 	/*uart_putchar('S');*/
-	printf("proc2 begin ...\r\n");
+	printk("proc2 begin ...\r\n");
 	while (1) {
 		for (i = 0; i < 20000; i++);
-		printf("B");
+		printk("B");
 		/*uart_putchar('B');*/
 	}
 }
@@ -41,14 +41,15 @@ void proc3()
 	int i = 0;
 	/*uart_putchar('c');*/
 	/*uart_putchar('S');*/
-	printf("proc3 begin ...\r\n");
+	printk("proc3 begin ...\r\n");
 	while (1) {
 		for (i = 0; i < 30000; i++);
-		printf("C");
+		printk("C");
 		/*uart_putchar('C');*/
 	}
 }
 
+// save/load stack frame in memory to/from Process* regs
 void _stackframe_save(volatile StackFrame* stack, Process* proc)
 {
 	// copy 31 integers
@@ -67,18 +68,20 @@ void _stackframe_load(Process* proc, volatile StackFrame* stack)
 		/*printf("%x %x\r\n", (to + i),  to[i]);*/
 	}
 }
+
 // main process scheduling, run when interrupt disabled
 // must finish immediately w/o blocking
-void _proc_schedule(ProcManager* pm)
+void _proc_schedule()
 {
-	unsigned short pid_to = pm->get_next(pm);
-	printf("Switch to %d\r\n", pid_to);
-	fflush(stdin);
-	Process* p_from = pm->find(pm, pm->proc_running);
-	Process* p_to = pm->find(pm, pid_to);
+	ProcManager* pm = &procmanager;
+	short pid_to = pm->get_next(pm);
+	printk("Switch from %d to %d\r\n", pm->proc_running, pid_to);
+	/*short pid_from = pm->proc_running;*/
+	Process* p_from = pm->pid2proc(pm->proc_running);
+	/*Process* p_from = pm->pid2proc(pid_from);*/
+	Process* p_to = pm->pid2proc(pid_to);
 	if (pm->do_start) {
-		printf("First schedule: load process only\r\n");
-		fflush(stdin);
+		printk("First schedule: load process only\r\n");
 		pm->do_start = 0;
 	}
 	else {
@@ -87,11 +90,15 @@ void _proc_schedule(ProcManager* pm)
 		_stackframe_save((StackFrame *)REGS_SAVE_ADDR, p_from);
 		p_from->state = PROC_STATE_READY;
 		p_from->pc = (void *)csrr_mepc();
+		/*printk("p_from: %08x, ", p_from);*/
+		/*printk("old pc: %08x\r\n", p_from->pc);*/
 	}
 	// 2. load context of p_to, update new Process
 	_stackframe_load(p_to, (StackFrame *)REGS_SAVE_ADDR);
 	p_to->state = PROC_STATE_RUNNING;
 	csrw_mepc((int)p_to->pc);
+	/*printk("p_to  : %08x, :", p_to);*/
+	/*printk("new pc: %08x\r\n", p_to->pc);*/
 
 	// 3. update ProcManager data
 	pm->proc_running = pid_to;
@@ -101,13 +108,11 @@ void _proc_schedule(ProcManager* pm)
 	/*printf("Schedule end. \r\n");*/
 	/*fflush(stdin);*/
 }
-void _proc_switch(ProcManager* pm, unsigned short pid)
-{
 
-}
 // next process to be run
-unsigned short _proc_getnext(ProcManager* pm)
+short _proc_getnext()
 {
+	ProcManager* pm = &procmanager;
 	switch (pm->proc_running) {
 		case 1:
 			return 2;
@@ -119,12 +124,15 @@ unsigned short _proc_getnext(ProcManager* pm)
 	return 0;
 }
 // finding Process* PCB using pid
-Process* _proc_find(ProcManager* pm, unsigned short pid)
+Process* _pid2proc(short pid)
 {
-	int i = 0;
-	while((i < pm->proc_max) && pm->proc_table[i].pid != pid) i++;
-	if (i == pm->proc_max) return NULL;
-	return pm->proc_table + i;
+	/*printk("_pid2proc: %d\r\n", pid);*/
+	/*printk("_pid2proc: %08x, %08x\r\n", procmanager.proc_table, procmanager.proc_table + pid);*/
+	return procmanager.proc_table + pid;
+}
+short _proc2pid(Process* proc)
+{
+	return proc->pid;
 }
 
 int _msg_send(Process* current, int dest, Message* msg);
@@ -151,7 +159,7 @@ int sendrec(int function, int src_dest, Message* msg, Process* proc)
 int _msg_send(Process* current, int dest, Message* msg)
 {
 	Process* p_send = current;
-	Process* p_dest = procmanager.find(&procmanager, dest);
+	Process* p_dest = procmanager.pid2proc(dest);
 
 	assert(p_send->pid != p_dest->pid);
 
@@ -198,27 +206,39 @@ int _msg_receive(Process* current, int src, Message* msg)
 
 }
 
-void ProcManagerInit(ProcManager* pm, ProcTable pt)
+void ProcManagerInit()
 {
-	pm->proc_table = pt;
+	ProcManager* pm = &procmanager;
+	Process* pt = procmanager.proc_table;
+	int i;
+	for (i = 0; i < PROC_NUM_MAX; i++) {
+		pm->proc_table[i].pid = -1;
+		pm->proc_table[i].name[0] = '\0';
+		pm->proc_table[i].state = PROC_STATE_UNDEF;
+
+		pm->proc_table[i].p_msg = NULL;
+		pm->proc_table[i].p_recvfrom = IPC_TARGET_NONE;
+		pm->proc_table[i].p_sendto = IPC_TARGET_NONE;
+	}
 
 	pm->proc_max = PROC_NUM_MAX;
 	pm->proc_number = 3;
 	pm->proc_running = 1;
 
 	pm->schedule = _proc_schedule;
-	pm->find = _proc_find;
+	pm->proc2pid = _proc2pid;
+	pm->pid2proc = _pid2proc;
 	pm->get_next=  _proc_getnext;
 
 	pm->do_start = 1;
 
-	pt[0].pid = 1;
-	pt[0].pc = proc1;
-	pt[0].regs.sp = 0x2008fffc;
-	pt[1].pid = 2;
-	pt[1].pc = proc2;
-	pt[1].regs.sp = 0x2009fffc;
-	pt[2].pid = 3;
-	pt[2].pc = proc3;
-	pt[2].regs.sp = 0x200afffc;
+	pt[1].pid = 1;
+	pt[1].pc = proc1;
+	pt[1].regs.sp = 0x2008fffc;
+	pt[2].pid = 2;
+	pt[2].pc = proc2;
+	pt[2].regs.sp = 0x2009fffc;
+	pt[3].pid = 3;
+	pt[3].pc = proc3;
+	pt[3].regs.sp = 0x200afffc;
 }

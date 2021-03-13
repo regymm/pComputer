@@ -199,11 +199,13 @@ module riscv_multicyc
 	localparam OP_PRIV	=	7'b1110011; // ENV(ecall, ebreak), CSR, WFI(aka nop), SFENCE.VMA(aka nop), MRET
 	localparam OP_AMO	=	7'b0101111;
 	// TODO: ECALL, EBREAK(?), 
+	// TODO: simplify this
+	wire inst_srai = instruction[14:12] == 3'b101 & op == OP_R_I;
 	wire [7:0]op = instruction[6:0];
 	wire nse = instruction[14];
 	reg [31:0]imm;
 	wire [31:0]imm_i = {{21{instruction[31]}}, instruction[30:20]};
-	wire [31:0]imm_i_nse = {20'b0, instruction[31:20]};
+	wire [31:0]imm_i_nse = {20'b0, instruction[31], instruction[30:20]};
 	wire [31:0]imm_b = {{20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
 	wire [31:0]imm_j = {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
 	wire [31:0]imm_u = {instruction[31:12], 12'b0};
@@ -329,7 +331,7 @@ module riscv_multicyc
 				if (op == OP_R) begin
 					ALUm = {instruction[30], instruction[14:12]};
 				end else if (op == OP_R_I) begin
-					ALUm = {1'b0, instruction[14:12]};
+					ALUm = {inst_srai ? 1'b1: 1'b0, instruction[14:12]};
 					ALUSrcB = 1;
 				end else if (op == OP_JALR) begin
 					ALUSrcB = 1;

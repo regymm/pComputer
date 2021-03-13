@@ -14,8 +14,9 @@ set_property -dict {PACKAGE_PIN T19 IOSTANDARD LVCMOS33} [get_ports {led[1]}]
 set_property -dict {PACKAGE_PIN U17 IOSTANDARD LVCMOS33} [get_ports {led[2]}]
 set_property -dict {PACKAGE_PIN V17 IOSTANDARD LVCMOS33} [get_ports {led[3]}]
 
-#set_property PULLUP TRUE [get_ports sw[0]]
-#set_property PULLUP TRUE [get_ports sw[1]]
+# use a small resistor R71 R72 and use this to fix unstable problem
+set_property PULLUP TRUE [get_ports sw[0]]
+set_property PULLUP TRUE [get_ports sw[1]]
 
 ## PMOD1
 #set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports uart_tx]

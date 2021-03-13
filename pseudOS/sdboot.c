@@ -4,6 +4,7 @@
 #include "kernel/global.h"
 #include "kernel/process.h"
 #include "kernel/isr.h"
+#include "kernel/misc.h"
 #define false 0
 #define true 1
 /*int USBWaitReady()*/
@@ -12,16 +13,18 @@
 /*}*/
 
 // process management
-extern void proc1();
-extern void proc2();
-extern void proc3();
-extern void _proc_schedule(ProcManager* pm);
-extern unsigned short _proc_getnext(ProcManager* pm);
-extern void _proc_switch(ProcManager* pm, unsigned short pid);
-extern Process* _proc_find(ProcManager* pm, unsigned short pid);
+/*extern void proc1();*/
+/*extern void proc2();*/
+/*extern void proc3();*/
+/*extern void _proc_schedule(ProcManager* pm);*/
+/*extern unsigned short _proc_getnext(ProcManager* pm);*/
+/*extern void _proc_switch(ProcManager* pm, unsigned short pid);*/
+/*extern Process* _proc_find(ProcManager* pm, unsigned short pid);*/
 // TODO: don't extern these
 
 extern void usb_test();
+
+extern void sd_test_asm();
 
 void setupIRQ()
 {
@@ -50,7 +53,7 @@ void sdcard_fs_test() // put aside fs, do multitasking demo first
 
 void prepare_processes()
 {
-	ProcManagerInit(&procmanager, proc_table);
+	ProcManagerInit();
 	/*procmanager.proc_table = proc_table;*/
 	/*procmanager.proc_number = 3;*/
 	/*procmanager.proc_running = 1;*/
@@ -85,15 +88,26 @@ void sd_c_start() // the current "kernel"
 		printf("You typed: %x\r\n", c);
 	}
 	uart_putstr("\r\n\r\n");
+
+	unsigned short a = 1;
+	printk("%d\r\n", a);
+	printk("%d\r\n", (short)a);
+	unsigned int b = 1;
+	printk("%d\r\n", b);
+	printk("%d\r\n", (int)b);
+	short c = 1;
+	printk("%d\r\n", c);
+	printk("%d\r\n", (unsigned short)c);
 	
 
-	/*prepare_processes();*/
-	/*setupIRQ();*/
+	prepare_processes();
+	setupIRQ();
 
 	/*sdcard_fs_test();*/
-	usb_test();
+	/*usb_test();*/
 
 
+	/*sd_test_asm();*/
 
 	while(1){
 		for(i = 1; i < 100000; i++);

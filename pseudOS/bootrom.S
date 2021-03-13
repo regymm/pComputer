@@ -40,6 +40,13 @@ main_tests:
 	#li t0, 0x20000000
 	#jr t0
 	# arithmetic tests
+
+	li t0, 0x0000ff00
+	slli t0, t0, 0x10
+	srai t0, t0, 0x10
+	li t1, 0xffffff00
+	bne t1, t0, fail
+
 	li t2, 23
 	addi t3, zero, 4
 	addi t2, t2, 5

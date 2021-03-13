@@ -48,11 +48,11 @@ module alu
                 //of = (!a[WIDTH-1] & b[WIDTH-1] & y[WIDTH-1]) |
                  //(a[WIDTH-1] & !b[WIDTH-1] & !y[WIDTH-1]);
             4'b0001: // sll
-                y = a << b;
+                y = a << b[4:0];
             4'b0101: // srl
-                y = a >> b;
+                y = a >> b[4:0];
 			4'b1101: // sra
-				y = a_signed >>> b;
+				y = a_signed >>> b[4:0];
             4'b0100: // xor
                 y = a ^ b;
             4'b0110: // or
