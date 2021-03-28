@@ -260,7 +260,10 @@ module pcpu_main
 
 	wire irq_usb;
 `ifdef CH375B_EN
-	ch375b ch375b_inst
+	ch375b #(
+		.CLOCK_FREQ(CLOCK_FREQ),
+		.BAUD_RATE(BAUD_RATE_CH375)
+	) ch375b_inst
 	(
 		.clk(clk_main),
 		.rst(rst_usb),

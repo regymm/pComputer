@@ -7,10 +7,29 @@
  */
 #include "process.h"
 #include "global.h"
-#include "isr.h"
 #include "misc.h"
-#include "../include/mmio_basic.h"
 #include "stdio.h"
+#include "string.h"
+#include "ipc.h"
+
+void ksyscall()
+{
+	Message msg;
+	while (1) {
+		send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
+		int src = msg.source;
+		printk("ksyscall: call from proc %d\r\n", src);
+		switch (msg.type) {
+			case SYSCALL_GET_TICKS:
+				msg.integer = ticks;
+				send_recv(IPC_SEND, src, &msg);
+				break;
+			default:
+				panic("ksyscall: Unknown message type!\r\n");
+				break;
+		}
+	}
+}
 
 void proc1()
 {
@@ -142,6 +161,7 @@ int _msg_receive(Process* current, int src, Message* msg);
 // src_dest: to/from 
 // msg: message to send/recv
 // proc: caller proc
+// is a wrapper of real _msg_send and _msg_receive
 int sendrec(int function, int src_dest, Message* msg, Process* proc)
 {
 	int caller = proc->pid;
@@ -165,17 +185,22 @@ int _msg_send(Process* current, int dest, Message* msg)
 
 	// TODO: check for deadlock
 	
-	// send directly
+	// p_dest is waiting for p_send(or any): send directly
 	if ((p_dest->state == PROC_STATE_RECEIVING) && 
 			(p_dest->p_recvfrom == p_send->pid || 
 			p_dest->p_recvfrom == IPC_TARGET_ANY)) {
+		// copy the message
+		memcpy(p_dest->p_msg, msg, sizeof(Message));
+		// not receiving any more, so clear p_msg pointer(not content!)
 		p_dest->p_msg = NULL;
 		p_dest->state &= ~PROC_STATE_RECEIVING;
 		p_dest->p_recvfrom = IPC_TARGET_NONE;
 		/*procmanager.unblock(p_dest);*/
 
+		// TODO: asserts
+
 	}
-	// p_dest is not waiting from p_send(or ANY)
+	// p_dest is not waiting from p_send, so block sender
 	else {
 		p_send->state |= PROC_STATE_SENDING;
 		assert(p_send->state == PROC_STATE_SENDING);
@@ -196,14 +221,122 @@ int _msg_send(Process* current, int dest, Message* msg)
 		/*procmanager.block(p_send);*/
 
 		// TODO: assert
+		assert(p_send->state == PROC_STATE_SENDING);
+		assert(p_send->p_msg != 0);
+		assert(p_send->p_recvfrom == IPC_TARGET_NONE);
+		assert(p_send->p_sendto == dest);
 
 
 	}
 
+	return 0;
+
 }
 int _msg_receive(Process* current, int src, Message* msg)
 {
+	Process* p_recv = current;
+	Process* p_from = 0;
 
+	Process* prev = 0;
+
+	assert(p_recv->pid != src);
+
+	// receive from interrupt
+	if (0) {
+		return 0;
+	}
+
+	int block_recv = 1;
+
+	// receive from all processes, and some are sending to this
+	if (src == IPC_TARGET_ANY) {
+		if (p_recv->queue_sending) {
+			p_from = p_recv->queue_sending;
+			block_recv = 0;
+			assert(p_recv->p_msg == 0);
+			assert(p_recv->p_recvfrom == IPC_TARGET_NONE);
+			assert(p_recv->p_sendto == IPC_TARGET_NONE);
+			assert(p_from->p_msg != 0);
+			assert(p_from->p_recvfrom == IPC_TARGET_NONE);
+			assert(p_from->p_sendto == p_recv->pid);
+		}
+	}
+	// receive from specific sender proc
+	else {
+		// two way to find p_from: first just from procmanager's list, 
+		// another is p_recv's receiving queue(linked list)
+		p_from = procmanager.pid2proc(src);
+
+		if ((p_from->state & IPC_SEND) && (p_from->p_sendto == p_recv->pid)) {
+			// the specific sender proc(src) sends to p_recv -- ideal case
+			block_recv = 0;
+			Process* p = p_recv->queue_sending;
+			// sender must have been added to p_recv's receive queue
+			assert(p != 0);
+			while (p) {
+				if (p->pid == src) {
+					p_from = p;
+					break;
+				}
+				prev = p;
+				p = p->queue_sending_next;
+			}
+			// now prev->queue_sending_next is src aka p_from --
+			// required for queue operation
+			assert(p_recv->state == PROC_STATE_RUNNING);
+			assert(p_recv->p_msg == 0);
+			assert(p_recv->p_recvfrom == IPC_TARGET_NONE);
+			assert(p_recv->p_sendto == IPC_TARGET_NONE);
+			assert(p_from->p_recvfrom == IPC_TARGET_NONE);
+		}
+
+	}
+	// else have to block receiver processes(block_recv = 1)
+
+	// do and finish the IPC immediately
+	// TODO: merge similar cases
+	if (block_recv == 0) {
+		// sender to receive from is first in queue
+		if (p_from == p_recv->queue_sending) {
+			assert(prev == 0);
+			p_recv->queue_sending = p_from->queue_sending_next;
+			p_from->queue_sending_next = 0;
+		}
+		// otherwise -- remove p_from from p_recv's queue
+		else {
+			assert(prev != 0);
+			prev->queue_sending = p_from->queue_sending;
+			p_from->queue_sending = 0;
+		}
+
+		// copy the message and finish IPC
+		assert(msg);
+		memcpy(p_recv->p_msg, p_from->p_msg, sizeof(Message));
+		p_from->p_msg = 0;
+		p_from->p_sendto = IPC_TARGET_NONE;
+		p_from->state &= ~IPC_SEND;
+		/*procmanager.unblock(p_from);*/
+
+
+	}
+	// have to block receiver
+	else {
+		p_recv->state |= IPC_RECEIVE;
+		p_recv->p_msg = msg;
+		if (src == IPC_TARGET_ANY)
+			p_recv->p_recvfrom = IPC_TARGET_ANY;
+		else
+			p_recv->p_recvfrom = p_from->pid;
+		/*procmanager.block(p_recv);*/
+
+		assert(p_recv->state == PROC_STATE_RECEIVING);
+		assert(p_recv->p_msg != 0);
+		assert(p_recv->p_recvfrom != IPC_TARGET_NONE);
+		assert(p_recv->p_sendto == IPC_TARGET_NONE);
+
+	}
+	
+	return 0;
 }
 
 void ProcManagerInit()

@@ -1,3 +1,10 @@
+/**
+ * File              : sdboot.c
+ * License           : GPL-3.0-or-later
+ * Author            : Peter Gu <github.com/ustcpetergu>
+ * Date              : 202x.xx.xx
+ * Last Modified Date: 2021.03.28
+ */
 #include "fs/fs.h"
 #include "include/mmio_basic.h"
 #include "stdio.h"

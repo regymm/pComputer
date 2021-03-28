@@ -19,6 +19,10 @@
 `include "pCPU.vh"
 
 module ch375b
+	#(
+		parameter CLOCK_FREQ = 0,
+		parameter BAUD_RATE = 0
+	)
     (
         input clk,
         input rst,
@@ -45,8 +49,8 @@ module ch375b
     wire rxclk_en;
     wire txclk_en;
     baud_rate_gen #(
-		.CLOCK_FREQ(62500000),
-		.BAUD_RATE(9600)
+		.CLOCK_FREQ(CLOCK_FREQ),
+		.BAUD_RATE(BAUD_RATE)
 	) baud_rate_gen_inst
     (
         .clk(clk),

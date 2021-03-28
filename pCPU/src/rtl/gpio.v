@@ -21,7 +21,7 @@ module gpio
 		input [1:0]sw,
         output reg [3:0]led,
 
-		output reg irq = 0 // TODO
+		output reg irq = 0
     );
 
 	wire [3:0]data = d[27:24];
@@ -43,7 +43,7 @@ module gpio
 	generate
 		for(i = 0; i < 4; i = i + 1) begin
 			always @ (posedge clk) begin
-				if (led_r[i] > count | led_r[i] == 4'b0001) led[i] <= 1;
+				if (led_r[i] > count) led[i] <= 1;
 				else led[i] <= 0;
 			end
 		end
@@ -88,7 +88,7 @@ module gpio
 	end
 	always @ (posedge clk) begin
 		if (rst) irq <= 0;
-		else if ((inputs_reg != {btn, sw}) & irq == 0) irq <= 1;
+		else if ((inputs_reg != {btn_r, sw_r}) & irq == 0) irq <= 1;
 		else irq <= 0;
 	end
 

@@ -3,24 +3,26 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2021.02.24
- * Last Modified Date: 2021.02.24
+ * Last Modified Date: 2021.03.28
  */
 #ifndef PSEUDOS_PROCESS_H
 #define PSEUDOS_PROCESS_H
 
 #define PROC_NUM_MAX 256
 
-#define PROC_STATE_READY 1
-#define PROC_STATE_RUNNING 2
-#define PROC_STATE_SENDING 3
-#define PROC_STATE_RECEIVING 4
-#define PROC_STATE_TERMINATE 5
-#define PROC_STATE_UNDEF 6
+#define PROC_STATE_READY 0b000000
+#define PROC_STATE_RUNNING 0b000001
+#define PROC_STATE_SENDING 0b000010
+#define PROC_STATE_RECEIVING 0b000100
+#define PROC_STATE_TERMINATE 0b010000
+#define PROC_STATE_UNDEF 0b111111
 
-#define IPC_SEND 4444
-#define IPC_RECEIVE 7777777
-#define IPC_TARGET_ANY (-333)
-#define IPC_TARGET_NONE (-4444)
+#define IPC_SEND 34
+#define IPC_RECEIVE 37
+#define IPC_TARGET_ANY (-363)
+#define IPC_TARGET_NONE (-364)
+
+#define SYSCALL_GET_TICKS 735
 
 typedef struct {
 	int a0;
@@ -107,6 +109,9 @@ typedef struct ProcManagerStruct{
 	// next process to run in schedule
 	short (* get_next) ();
 	int do_start;
+
+	void (* block) (Process* proc);
+	void (* unblock) (Process* proc);
 
 }ProcManager;
 

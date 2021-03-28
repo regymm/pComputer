@@ -108,13 +108,13 @@ module riscv_multicyc
 		.y(ALUResult)
 	);
 
+`ifdef RV32M
 	// RV32M
 	reg RV32MStart;
 	wire [2:0]RV32Mm;
 	wire RV32MReady;
 	wire [31:0]RV32MResult;
 	wire RV32MException;
-`ifdef RV32M
 	rv32m rv32m_inst
 	(
 		.clk(clk),
@@ -127,9 +127,9 @@ module riscv_multicyc
 		.div0(RV32MException)
 	);
 `else
-	assign RV32MReady = 1;
-	assign RV32MException = 0;
-	assign RV32MResult = 0;
+	//assign RV32MReady = 1;
+	//assign RV32MException = 0;
+	//assign RV32MResult = 0;
 `endif
 
 	// privilege 
@@ -180,6 +180,7 @@ module riscv_multicyc
 	);
 	reg csrsave;
 	reg [31:0]csrr;
+	//TODO: check width
 	wire [31:0]csrimm = {26'b0, instruction[19:15]};
 `else
 `endif
@@ -200,12 +201,11 @@ module riscv_multicyc
 	localparam OP_AMO	=	7'b0101111;
 	// TODO: ECALL, EBREAK(?), 
 	// TODO: simplify this
-	wire inst_srai = instruction[14:12] == 3'b101 & op == OP_R_I;
-	wire [7:0]op = instruction[6:0];
+	wire inst_srai = instruction[14:12] == 3'b101 & op == OP_R_I & instruction[30] == 1'b1;
+	wire [6:0]op = instruction[6:0];
 	wire nse = instruction[14];
 	reg [31:0]imm;
 	wire [31:0]imm_i = {{21{instruction[31]}}, instruction[30:20]};
-	wire [31:0]imm_i_nse = {20'b0, instruction[31], instruction[30:20]};
 	wire [31:0]imm_b = {{20{instruction[31]}}, instruction[7], instruction[30:25], instruction[11:8], 1'b0};
 	wire [31:0]imm_j = {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
 	wire [31:0]imm_u = {instruction[31:12], 12'b0};
@@ -258,12 +258,13 @@ module riscv_multicyc
 	wire priv_ecall = instruction[14:12] == 3'b0 & !instruction[28] & !instruction[20];
 	wire priv_ebreak = instruction[14:12] == 3'b0 & !instruction[28] & instruction[20];
 
+	`ifdef RV32M
 	assign RV32Mm = instruction[14:12];
 	wire is_RV32M = instruction[25];
+	`endif
 	always @ (*) begin
 		if (op == OP_LUI | op == OP_AUIPC) imm = imm_u;
-		else if (op == OP_R_I) imm = nse ? imm_i_nse : imm_i;
-		else if (op == OP_LOAD | op == OP_JALR) imm = imm_i;
+		else if (op == OP_R_I | op == OP_LOAD | op == OP_JALR) imm = imm_i;
 		else if (op == OP_BR) imm = imm_b;
 		else if (op == OP_JAL) imm = imm_j;
 		else if (op == OP_STORE) imm = imm_s;
@@ -280,7 +281,9 @@ module riscv_multicyc
 	localparam MEMU			=	55;
 	localparam WB			=	60;
 	localparam MEM_WAIT		=	70;
+	`ifdef RV32M
 	localparam RV32M_WAIT	=	80;
+	`endif
 	localparam INTERRUPT	=	150;
 	localparam EXCEPTION	=	160;
 	localparam MRET			=	170;
@@ -307,7 +310,9 @@ module riscv_multicyc
 		PCOutSrc = 0;
 		CsrASrc = 0;
 		CsrDSrc = 0;
+		`ifdef RV32M
 		RV32MStart = 0;
+		`endif
 		csr_we = 0;
 		csrsave = 0;
 		on_exc_enter = 0;
@@ -327,11 +332,13 @@ module riscv_multicyc
 				ALUSrcA = 1; ALUSrcB = 1;
 			end
 			EX: begin
+				`ifdef RV32M
 				RV32MStart = 1;
+				`endif
 				if (op == OP_R) begin
 					ALUm = {instruction[30], instruction[14:12]};
 				end else if (op == OP_R_I) begin
-					ALUm = {inst_srai ? 1'b1: 1'b0, instruction[14:12]};
+					ALUm = {inst_srai ? 1'b1 : 1'b0, instruction[14:12]};
 					ALUSrcB = 1;
 				end else if (op == OP_JALR) begin
 					ALUSrcB = 1;
@@ -363,9 +370,12 @@ module riscv_multicyc
 				MemSrc = instruction[13:12]; // SB, SH
 			end
 			WB: begin
+				`ifdef RV32M
 				if (op == OP_R & is_RV32M) begin
 					RegWrite = 1; RegSrc = 7;
-				end else if (op == OP_R | op == OP_R_I) begin
+				end else
+				`endif
+					if (op == OP_R | op == OP_R_I) begin
 					RegWrite = 1;
 				end else if (op == OP_LUI) begin
 					RegWrite = 1; RegSrc = 2;
@@ -435,7 +445,9 @@ module riscv_multicyc
 				EX: begin
 					if (op == OP_STORE | op == OP_LOAD) phase <= MEM;
 					//else if (op == OP_PRIV & priv_wfi) phase <= IF;
+					`ifdef RV32M
 					else if (op == OP_R & is_RV32M) phase <= RV32M_WAIT;
+					`endif
 					else phase <= WB;
 				end
 				MEM: begin
@@ -458,9 +470,11 @@ module riscv_multicyc
 					if (MemReady) phase <= phase_return;
 					else phase <= MEM_WAIT;
 				end
+				`ifdef RV32M
 				RV32M_WAIT: begin
 					if (RV32MReady) phase <= WB;
 				end
+				`endif
 				INTERRUPT: begin
 					phase <= IF;
 				end
@@ -514,7 +528,9 @@ module riscv_multicyc
 		4: WriteData = loadbyte; // byte
 		5: WriteData = loadhalf; // half
 		6: WriteData = mdr;
+		`ifdef RV32M
 		7: WriteData = RV32MOut;
+		`endif
 		8: WriteData = csrr;
 		default: WriteData = 0;
 	endcase end
@@ -551,7 +567,9 @@ module riscv_multicyc
 			B <= ReadData2;
 			
 			ALUOut <= ALUResult; ALUOut2 <= ALUOut;
+			`ifdef RV32M
 			RV32MOut <= RV32MResult;
+			`endif
 
 			mdr <= memread_data;
 			mwr <= memwrite_data;

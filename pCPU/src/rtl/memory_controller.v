@@ -6,6 +6,7 @@
  * Last Modified Date: 2021.01.30
  */
 // Memory controller
+// TODO: check why doesn't work w/o manual reset
 
 `timescale 1ns / 1ps
 
