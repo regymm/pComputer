@@ -89,6 +89,7 @@ _start:
 	TEST(sub)
 	TEST(sll)
 	TEST(slt) // what is with sltu ?
+	TEST(sltiu)
 	TEST(xor)
 	TEST(srl)
 	TEST(sra)

@@ -1,0 +1,6 @@
+*.o
+*.log
+*.elf
+*.bin
+*.dat
+*.hex

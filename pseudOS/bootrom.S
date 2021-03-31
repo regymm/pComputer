@@ -47,6 +47,42 @@ main_tests:
 	li t1, 0xffffff00
 	bne t1, t0, fail
 
+#	li t0, 20
+#	li t1, 6
+#	div t2, t0, t1
+#	li a0, 3
+#	bne t2, a0, fail
+#	li t0, -20
+#	li t1, 6
+#	div t2, t0, t1
+#	li a0, -3
+#	bne t2, a0, fail
+#	li t0, 20
+#	li t1, -6
+#	div t2, t0, t1
+#	li a0, -3
+#	bne t2, a0, fail
+#	li t0, -20
+#	li t1, -6
+#	div t2, t0, t1
+#	li a0, 3
+#	bne t2, a0, fail
+#
+#	li t0, -1<<31
+#	li t1, 2
+#	div t2, t0, t1
+#
+#	li t0, -1<<31
+#	li t1, 1
+#	div t2, t0, t1
+#	li a0, -1<<31
+#	bne t2, a0, fail
+#
+#m_ok:
+#	j m_ok
+#
+
+
 	li t2, 23
 	addi t3, zero, 4
 	addi t2, t2, 5

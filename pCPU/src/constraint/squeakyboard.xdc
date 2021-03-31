@@ -19,9 +19,6 @@ set_property PULLUP TRUE [get_ports sw[0]]
 set_property PULLUP TRUE [get_ports sw[1]]
 
 ## PMOD1
-#set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports uart_tx]
-#set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports uart_rx]
-
 set_property -dict {PACKAGE_PIN D19 IOSTANDARD LVCMOS33} [get_ports sd_cmd]
 set_property -dict {PACKAGE_PIN D20 IOSTANDARD LVCMOS33} [get_ports sd_sck]
 set_property -dict {PACKAGE_PIN G19 IOSTANDARD LVCMOS33} [get_ports sd_dat1]
@@ -61,9 +58,6 @@ set_property -dict {PACKAGE_PIN F20 IOSTANDARD LVCMOS33} [get_ports sd_ncd]
 #set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports q4n]
 
 # W5500-Lite
-set_property -dict {PACKAGE_PIN R16 IOSTANDARD LVCMOS33} [get_ports uart_tx]
-set_property -dict {PACKAGE_PIN T17 IOSTANDARD LVCMOS33} [get_ports uart_rx]
-
 #set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports eth_cs]
 #set_property -dict {PACKAGE_PIN L20 IOSTANDARD LVCMOS33} [get_ports eth_sclk]
 #set_property -dict {PACKAGE_PIN V18 IOSTANDARD LVCMOS33} [get_ports eth_mosi]
@@ -82,8 +76,8 @@ set_property -dict {PACKAGE_PIN P20 IOSTANDARD TMDS_33} [get_ports {TMDSn[2]}]
 set_property -dict {PACKAGE_PIN N20 IOSTANDARD TMDS_33} [get_ports {TMDSp[2]}]
 
 # UART
-#set_property -dict {PACKAGE_PIN P15 IOSTANDARD LVCMOS33} [get_ports uart_tx]
-#set_property -dict {PACKAGE_PIN P14 IOSTANDARD LVCMOS33} [get_ports uart_rx]
+set_property -dict {PACKAGE_PIN P15 IOSTANDARD LVCMOS33} [get_ports uart_rx]
+set_property -dict {PACKAGE_PIN P14 IOSTANDARD LVCMOS33} [get_ports uart_tx]
 
 # CH375b
 set_property -dict {PACKAGE_PIN J18 IOSTANDARD LVCMOS33} [get_ports ch375_tx]

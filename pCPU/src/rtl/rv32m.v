@@ -27,7 +27,7 @@ module rv32m
 	reg [2:0]mreg;
 	reg [63:0]aext;
 	reg [63:0]bext;
-	reg [63:0]result;
+	reg [64:0]result;
 	reg [6:0]cnt;
 	wire mul_or_div = !mreg[2];
 	wire finish_cond = mul_or_div ? 
@@ -61,7 +61,7 @@ module rv32m
 			cnt <= 0;
 			finish <= 0;
 			div0 <= (b == 0) && m[2];
-			divfix <= a[31] ^ b[31] && !m[0];
+			divfix <= (a[31] ^ b[31]) && !m[0] && (a != 32'h80000000);
 			remfix <= b[31] && !m[0];
 		end
 		else begin

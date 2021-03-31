@@ -74,6 +74,8 @@ all:
 		-DTEST_FUNC_TXT='"sll"' -DTEST_FUNC_RET=sll_ret $(TESTS_PATH)/sll.S
 	$(RISCV_PATH)/riscv32-unknown-elf-gcc -c -march=rv32im -o $(TESTS_PATH)/slti.o -DTEST_FUNC_NAME=slti \
 		-DTEST_FUNC_TXT='"slti"' -DTEST_FUNC_RET=slti_ret $(TESTS_PATH)/slti.S
+	$(RISCV_PATH)/riscv32-unknown-elf-gcc -c -march=rv32im -o $(TESTS_PATH)/sltiu.o -DTEST_FUNC_NAME=sltiu \
+		-DTEST_FUNC_TXT='"sltiu"' -DTEST_FUNC_RET=sltiu_ret $(TESTS_PATH)/sltiu.S
 	$(RISCV_PATH)/riscv32-unknown-elf-gcc -c -march=rv32im -o $(TESTS_PATH)/slt.o -DTEST_FUNC_NAME=slt \
 		-DTEST_FUNC_TXT='"slt"' -DTEST_FUNC_RET=slt_ret $(TESTS_PATH)/slt.S
 	$(RISCV_PATH)/riscv32-unknown-elf-gcc -c -march=rv32im -o $(TESTS_PATH)/srai.o -DTEST_FUNC_NAME=srai \
@@ -94,8 +96,12 @@ all:
 		-DTEST_FUNC_TXT='"xor"' -DTEST_FUNC_RET=xor_ret $(TESTS_PATH)/xor.S
 	$(RISCV_PATH)/riscv32-unknown-elf-gcc -Os -ffreestanding -nostdlib -o firmware/firmware.elf \
 		-Wl,-Bstatic,-T,firmware/linker.ld \
-		firmware/start.o $(TESTS_PATH)/addi.o $(TESTS_PATH)/add.o $(TESTS_PATH)/andi.o $(TESTS_PATH)/and.o $(TESTS_PATH)/auipc.o $(TESTS_PATH)/beq.o $(TESTS_PATH)/bge.o $(TESTS_PATH)/bgeu.o $(TESTS_PATH)/blt.o $(TESTS_PATH)/bltu.o $(TESTS_PATH)/bne.o $(TESTS_PATH)/div.o $(TESTS_PATH)/divu.o $(TESTS_PATH)/jalr.o $(TESTS_PATH)/jal.o $(TESTS_PATH)/j.o $(TESTS_PATH)/lb.o $(TESTS_PATH)/lbu.o $(TESTS_PATH)/lh.o $(TESTS_PATH)/lhu.o $(TESTS_PATH)/lui.o $(TESTS_PATH)/lw.o $(TESTS_PATH)/mulh.o $(TESTS_PATH)/mulhsu.o $(TESTS_PATH)/mulhu.o $(TESTS_PATH)/mul.o $(TESTS_PATH)/ori.o $(TESTS_PATH)/or.o $(TESTS_PATH)/rem.o $(TESTS_PATH)/remu.o $(TESTS_PATH)/sb.o $(TESTS_PATH)/sh.o $(TESTS_PATH)/simple.o $(TESTS_PATH)/slli.o $(TESTS_PATH)/sll.o $(TESTS_PATH)/slti.o $(TESTS_PATH)/slt.o $(TESTS_PATH)/srai.o $(TESTS_PATH)/sra.o $(TESTS_PATH)/srli.o $(TESTS_PATH)/srl.o $(TESTS_PATH)/sub.o $(TESTS_PATH)/sw.o $(TESTS_PATH)/xori.o $(TESTS_PATH)/xor.o -lgcc
+		firmware/start.o $(TESTS_PATH)/*.o -lgcc
 	$(RISCV_PATH)/riscv32-unknown-elf-objcopy -O binary firmware/firmware.elf firmware/firmware.bin
 
 clean:
 	-rm firmware/*.o firmware/*.elf $(TESTS_PATH)/*.o
+
+
+
+
