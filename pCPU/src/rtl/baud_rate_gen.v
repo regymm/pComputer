@@ -17,7 +17,7 @@ module baud_rate_gen
         output wire txclk_en
     );
 
-    parameter RX_ACC_MAX = CLOCK_FREQ / (BAUD_RATE * 16);
+    parameter RX_ACC_MAX = CLOCK_FREQ / (BAUD_RATE * 8);
     parameter TX_ACC_MAX = CLOCK_FREQ / BAUD_RATE;
     parameter RX_ACC_WIDTH = 20;
     parameter TX_ACC_WIDTH = 20;

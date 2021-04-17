@@ -31,7 +31,7 @@ SECTIONS
 		/*KEEP (*(.text.start))*/
 	/*} >ram*/
 
-	. = 0x20000000;
+	. = 0x20001000;
 	.text : { *(.text.boot) }
 	.text : { *(.text) }
 	.data : { *(.data) }

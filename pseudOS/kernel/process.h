@@ -119,5 +119,12 @@ void ProcManagerInit();
 
 int sendrec(int function, int src_dest, Message* msg, Process* proc);
 
+// interface asm function for procs -- user(and kernel-side)
+// runs in user mode(if the cpu has), uses ecall
+// after this "returns"(may block some time before return), 
+//  the IPC has done
+// and literally the only syscall in pseudos
+extern int sendrec_syscall(int function, int src_dest, Message* msg);
+
 
 #endif

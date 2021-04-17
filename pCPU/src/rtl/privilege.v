@@ -9,10 +9,11 @@
 
 // exception: CPU issued and write data to privilege. CPU gives mcause
 // interrupt: privilege issued, CPU only gets a signal and gives pc. privilege maintains mcause
-// then in exception/interrupt handler, CPU assembly gets all required info from privilege
+// then in exception/interrupt handler, CPU assembly gets all required info(CSRs) from privilege
+//
 // a small naming convention:
-// irq means sending single pulse,
-// interrupt/int_reply means sending high until reply
+//  irq means sending single pulse,
+//  interrupt/int_reply means sending high until reply
 module privilege
 	(
 		input clk,

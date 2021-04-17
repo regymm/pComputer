@@ -146,7 +146,7 @@ module riscv_multicyc
 	reg on_exc_isint;
 
 	reg [31:0]pc_out;
-	wire [3:0]mcause_code_out;
+	reg [3:0]mcause_code_out;
 	wire [31:0]mtvec_in;
 	wire [31:0]mepc_in;
 
@@ -258,6 +258,10 @@ module riscv_multicyc
 	wire priv_ecall = instruction[14:12] == 3'b0 & !instruction[28] & !instruction[20];
 	wire priv_ebreak = instruction[14:12] == 3'b0 & !instruction[28] & instruction[20];
 
+	localparam EXC_ILLEGAL_INSTRUCTION = 4'd2;
+	localparam EXC_BREAKPOINT = 4'd3;
+	localparam EXC_ECALL_FROM_M_MODE = 4'd11;
+
 	`ifdef RV32M
 	assign RV32Mm = instruction[14:12];
 	wire is_RV32M = instruction[25];
@@ -287,6 +291,7 @@ module riscv_multicyc
 	localparam INTERRUPT	=	150;
 	localparam EXCEPTION	=	160;
 	localparam MRET			=	170;
+	//localparam ECALL		=	170;
 	localparam BAD			=	255;
 
 
@@ -403,6 +408,7 @@ module riscv_multicyc
 			end
 			INTERRUPT: begin
 				on_exc_enter = 1;
+				on_exc_isint = 1;
 				int_reply = 1;
 				PCWrite = 1; PCSrc = 4;
 				PCOutSrc = 0;
@@ -439,7 +445,13 @@ module riscv_multicyc
 					// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
 					else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
 					else if (op == OP_PRIV & (priv_mret)) phase <= MRET;
-					else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
+					else if (op == OP_PRIV & (priv_ecall)) begin
+						phase <= EXCEPTION;
+						mcause_code_out <= EXC_BREAKPOINT;
+					end else if (op == OP_PRIV & (priv_ecall)) begin
+						phase <= EXCEPTION;
+						mcause_code_out <= EXC_ECALL_FROM_M_MODE;
+					end else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
 					else phase <= EX;
 				end
 				EX: begin
@@ -543,8 +555,8 @@ module riscv_multicyc
 		default: memwrite_data = 0;
 	endcase end
 	always @ (*) begin case (PCOutSrc)
-		0: pc_out = oldpc; // interrupt
-		1: pc_out = pc; // exception
+		0: pc_out = oldpc; // interrupt -- redo current op
+		1: pc_out = pc; // exception -- go on to next op
 		default: pc_out = 0;
 	endcase end
 	always @ (*) begin case (CsrASrc)

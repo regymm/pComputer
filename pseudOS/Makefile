@@ -14,10 +14,10 @@ OBJCOPY	=	$(RISCV)objcopy
 #OBJDIR	=	obj
 
 #all: exception.dat bootrom.dat pseudos.bin sdbootloader.bin test.dat
-all: bootrom.dat bootrom.bin sdboot.bin
+all: coe/bootrom.dat boot/bootrom/bootrom.bin boot/uartbl/uartbl.bin sdboot.bin
 
-%.dat: %.bin
-	xxd -c 4 -p $*.bin > coe/result_$*.dat
+coe/bootrom.dat: boot/bootrom/bootrom.bin
+	xxd -c 4 -p boot/bootrom/bootrom.bin > coe/result_bootrom.dat
 
 %.bin: %.elf
 	$(OBJCOPY) -O binary $*.elf $*.bin
@@ -28,11 +28,14 @@ all: bootrom.dat bootrom.bin sdboot.bin
 %.c_o: %.c
 	$(CC) -c $(CFLAGS) $*.c -o $*.c_o
 
-bootrom.elf: bootrom.o bootrom.c_o include/mmio_basic.c_o
-	$(LD) $(LDFLAGS) $^ -o $@ --script linker_$(basename $@).ld
+boot/bootrom/bootrom.elf: boot/bootrom/bootrom.o boot/bootrom/bootrom.c_o include/mmio_basic.c_o
+	$(LD) $(LDFLAGS) $^ -o $@ --script boot/bootrom/linker_bootrom.ld
+
+boot/uartbl/uartbl.elf: boot/uartbl/uartbl.o boot/uartbl/uartbl.c_o include/mmio_basic.c_o
+	$(LD) $(LDFLAGS) $^ -o $@ --script boot/uartbl/linker_uartbl.ld
 
 sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c fs/fs.c kernel/global.c kernel/process.c mmio_drivers/CH375.c kernel/isr.c kernel/misc.c
-	$(CC) $(CC_L_F) $^ -o $@ -T linker_$(basename $@).ld -lc -lgcc
+	$(CC) $(CC_L_F) $^ -o $@ -T linker_sdboot.ld -lc -lgcc
 
 clean:
 	-rm -f *.elf
@@ -44,3 +47,11 @@ clean:
 	-rm -f include/*.c_o
 	-rm -f newlib/*.o
 	-rm -f newlib/*.c_o
+	-rm -f boot/uartbl/*.o
+	-rm -f boot/uartbl/*.c_o
+	-rm -f boot/uartbl/*.elf
+	-rm -f boot/uartbl/*.bin
+	-rm -f boot/bootrom/*.o
+	-rm -f boot/bootrom/*.c_o
+	-rm -f boot/bootrom/*.elf
+	-rm -f boot/bootrom/*.bin

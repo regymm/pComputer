@@ -12,10 +12,14 @@
 #include "process.h"
 
 #define REGS_SAVE_ADDR 0x10000000
+
 #ifdef NULL
 #undef NULL
 #define NULL ((void *) 0)
 #endif
+
+// PIDs of kernel procs handling syscall requests
+#define KPROC_PID_GET_TICKS 4
 
 //typedef unsigned char uint8_t;
 //typedef char int8_t;

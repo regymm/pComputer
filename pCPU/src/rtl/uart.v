@@ -10,6 +10,7 @@
 // input XXMHz, 16x oversampling
 // warning: not very reliable: read/write together case, ...
 // so need special software care(better to write one value and wait until idle)
+// 921600 baud seems the most this can go at 62.5M clk
 //
 // write 0x00: transmit data
 // read 0x00: received data
@@ -41,6 +42,11 @@ module uart
 
 	wire [7:0]data = d[31:24];
 
+	reg rx_r;
+	always @ (posedge clk) begin
+		rx_r <= rx;
+	end
+
     wire rxclk_en;
     wire txclk_en;
     baud_rate_gen
@@ -63,10 +69,11 @@ module uart
     reg [2:0]bitpos_tx = 3'b0;
 
     localparam RX_STATE_START = 2'b01;
+    localparam RX_STATE_START_REMEDY = 2'b00;
     localparam RX_STATE_DATA = 2'b10;
     localparam RX_STATE_STOP = 2'b11;
     reg [1:0]state_rx = RX_STATE_START;
-    reg [3:0]sample = 0;
+    reg [2:0]sample = 0;
     reg [3:0]bitpos_rx = 0;
     reg [7:0]scratch = 8'b0;
 
@@ -82,7 +89,7 @@ module uart
     end
 	always @ (posedge clk) begin
 		if (rst) irq <= 0;
-		else if (state_rx == RX_STATE_STOP & irq == 0) irq <= 1;
+		else if (state_rx == RX_STATE_STOP & sample == 7 & irq == 0) irq <= 1;
 		// TODO
 		else irq <= 0;
 	end
@@ -94,7 +101,7 @@ module uart
             bitpos_tx <= 3'b0;
 
             data_rx <= 0;
-			rx_new <= 0;
+			//rx_new <= 0;
             read_enabled <= 0;
             state_rx <= RX_STATE_START;
             sample <= 0;
@@ -121,42 +128,62 @@ module uart
                 end
             endcase
 
-			if (we & a == 3'b001) begin
-				rx_new <= 0;
-			end
+			//if (we & a == 3'b001) begin
+				//rx_new <= 0;
+			//end
 
             if (rxclk_en) begin
                 case (state_rx)
                     RX_STATE_START: begin
-                        if (!rx || sample != 0) sample <= sample + 1;
-                        if (sample == 15) begin
+                        if (!rx_r || sample != 0) sample <= sample + 1;
+                        if (sample == 7) begin
                             state_rx <= RX_STATE_DATA;
                             bitpos_rx <= 0;
                             sample <= 0;
                             scratch <= 0;
                         end
                     end
+					RX_STATE_START_REMEDY: begin // fix accumulated baud rate difference
+						sample <= sample + 1;
+                        if (sample == 7) begin
+                            state_rx <= RX_STATE_DATA;
+                            bitpos_rx <= 0;
+                            sample <= 0;
+                            scratch <= 0;
+                        end
+					end
                     RX_STATE_DATA: begin
                         sample <= sample + 1;
-                        if (sample == 8) begin
-                            scratch[bitpos_rx[2:0]] <= rx;
+                        if (sample == 4) begin
+                            scratch[bitpos_rx[2:0]] <= rx_r;
                             bitpos_rx <= bitpos_rx + 1;
                         end
-                        if (bitpos_rx == 8 && sample == 15) state_rx <= RX_STATE_STOP;
+                        if (bitpos_rx == 8 && sample == 7) state_rx <= RX_STATE_STOP;
                     end
                     RX_STATE_STOP: begin
-                        if (sample == 15 || (sample >= 8 && !rx)) begin
-                            state_rx <= RX_STATE_START;
+						if (sample == 7 || (sample >= 4 && !rx_r)) begin
+                            state_rx <= (sample == 7) ? RX_STATE_START : RX_STATE_START_REMEDY;
                             data_rx <= scratch;
-							rx_new <= 1;
+							//rx_new <= 1;
                             sample <= 0;
                         end else begin
                             sample <= sample + 1;
                         end
                     end
-                    default: state_rx <= RX_STATE_START;
+                    //default: state_rx <= RX_STATE_START;
                 endcase
             end
         end
     end
+
+	wire wire_rx_state_stop = rxclk_en && (state_rx == RX_STATE_STOP) && (sample == 7 || (sample >= 4 && !rx_r));
+	wire wire_rx_reset = we && (a == 3'b001);
+	always @ (posedge clk) begin
+		if (rst) begin
+			rx_new <= 0;
+		end else begin
+			if (wire_rx_state_stop) rx_new <= 1;
+			else if (wire_rx_reset) rx_new <= 0;
+		end
+	end
 endmodule

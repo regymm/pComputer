@@ -9,31 +9,55 @@
 #include "isr.h"
 #include "global.h"
 #include "stdio.h"
+#include "misc.h"
+
+static void isr_timer_i_handler()
+{
+
+}
+static void isr_external_i_handler()
+{
+
+}
+static void isr_ecall_e_handler()
+{
+
+}
 
 // called by isr_asm, main ISR
 // when this is called context is already on REGS_SAVE_ADDR
 void interrupt_service_routine()
 {
-	static int a = 0;
-	/*static int b = 0;*/
-	/*if (a == 0) a = 1;*/
-	/*else a = 0;*/
-	/*if (b > 1) b = 1;*/
-	/*if (a > 15) a = 0;*/
-
-	/*if (a == 15) b = 0;*/
-	/*if (a == 0) b = 1;*/
-	/*if (b) a++;*/
-	/*else a--;*/
-	/*if(a == 1) a = 2;*/
-
-	a = !a;
-	// +1 means addr+4 for int*
-	*(gpio_ctrl + 9) = a ? 2 : 0;
-	*(gpio_ctrl + 8) = !a ? 2 : 0;
-
 	ticks++;
+
+	// +1 means addr+4 for int*
+	*(gpio_ctrl + 9) = ticks % 2 ? 8 : 0;
+	*(gpio_ctrl + 8) = ticks % 2 ? 0 : 8;
+
+	int mcause = csrr_mcause();
+	switch (mcause) {
+		case 0x80000001:
+			panic("ISR: software interrupt not supported!\r\n");
+			break;
+		case 0x80000007:
+			printk("ISR: timer interrupt\r\n");
+			isr_timer_i_handler();
+			break;
+		case 0x8000000b:
+			printk("ISR: external interrupt\r\n");
+			isr_external_i_handler();
+			break;
+		case 0x00000003:
+			panic("ISR: breakpoint not supported!\r\n");
+			break;
+		case 0x0000000b:
+			printk("ISR: ecall\r\n");
+			isr_ecall_e_handler();
+			break;
+	}
+
 	/*printf("Got interrupt %d \r\n", ticks);*/
+	printk("mcause: %08x \r\n", mcause);
 
 	if (ticks % 5 == 0) {
 		/*printf("Switch process\r\n");*/

@@ -12,22 +12,32 @@
 #include "string.h"
 #include "ipc.h"
 
-void ksyscall()
+// a kernel-side process, handling requests from user procs
+void kproc_get_ticks()
 {
 	Message msg;
+	int count = 0;
 	while (1) {
-		send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
-		int src = msg.source;
-		printk("ksyscall: call from proc %d\r\n", src);
-		switch (msg.type) {
-			case SYSCALL_GET_TICKS:
-				msg.integer = ticks;
-				send_recv(IPC_SEND, src, &msg);
-				break;
-			default:
-				panic("ksyscall: Unknown message type!\r\n");
-				break;
+		count++;
+		if (count % 100000) {
+			printk("kproc_get_ticks: I'm still running!\r\n");
+			sendrec_syscall(0, 0, 0);
 		}
+		/*send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
+		int src = msg.source;
+		/*printk("kproc_get_ticks: call from proc %d\r\n", src);*/
+		msg.integer = ticks;
+		/*send_recv(IPC_SEND, src, &msg);*/
+
+		/*switch (msg.type) {*/
+			/*case SYSCALL_GET_TICKS:*/
+				/*msg.integer = ticks;*/
+				/*send_recv(IPC_SEND, src, &msg);*/
+				/*break;*/
+			/*default:*/
+				/*panic("ksyscall: Unknown message type!\r\n");*/
+				/*break;*/
+		/*}*/
 	}
 }
 
@@ -64,6 +74,7 @@ void proc3()
 	while (1) {
 		for (i = 0; i < 30000; i++);
 		printk("C");
+
 		/*uart_putchar('C');*/
 	}
 }
@@ -138,6 +149,8 @@ short _proc_getnext()
 		case 2:
 			return 3;
 		case 3:
+			return 4;
+		case 4:
 			return 1;
 	}
 	return 0;
@@ -162,6 +175,7 @@ int _msg_receive(Process* current, int src, Message* msg);
 // msg: message to send/recv
 // proc: caller proc
 // is a wrapper of real _msg_send and _msg_receive
+// this is called by kernel ISR after receiving ecall from processes
 int sendrec(int function, int src_dest, Message* msg, Process* proc)
 {
 	int caller = proc->pid;
@@ -232,6 +246,7 @@ int _msg_send(Process* current, int dest, Message* msg)
 	return 0;
 
 }
+
 int _msg_receive(Process* current, int src, Message* msg)
 {
 	Process* p_recv = current;
@@ -355,7 +370,7 @@ void ProcManagerInit()
 	}
 
 	pm->proc_max = PROC_NUM_MAX;
-	pm->proc_number = 3;
+	pm->proc_number = 4;
 	pm->proc_running = 1;
 
 	pm->schedule = _proc_schedule;
@@ -370,8 +385,11 @@ void ProcManagerInit()
 	pt[1].regs.sp = 0x2008fffc;
 	pt[2].pid = 2;
 	pt[2].pc = proc2;
-	pt[2].regs.sp = 0x2009fffc;
+	pt[2].regs.sp = 0x2008effc;
 	pt[3].pid = 3;
 	pt[3].pc = proc3;
-	pt[3].regs.sp = 0x200afffc;
+	pt[3].regs.sp = 0x2008dffc;
+	pt[4].pid = 4;
+	pt[4].pc = kproc_get_ticks;
+	pt[4].regs.sp = 0x2008cffc;
 }

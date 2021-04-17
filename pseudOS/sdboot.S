@@ -19,6 +19,8 @@
 .globl csrr_mepc
 .globl csrw_mepc
 
+.globl sendrec_syscall
+
 .globl crit_enter
 .globl crit_leave
 
@@ -26,6 +28,7 @@
 
 .equ REGS_SAVE_ADDR, 0x10000000
 
+# entry point
 sd_start:
 	la a0, 0x92000000
 	li a1, 0
@@ -48,6 +51,7 @@ end:
 	sw a1, 36(a0)
 	j end
 
+# see isr.h
 csrr_mstatus:
 	csrr a0, mstatus
 	ret
@@ -158,7 +162,7 @@ isr_asm:
 	lw a6, 24(s0)
 	lw a7, 28(s0)
 
-	#	lw s0, 32(s0) TODO: make sure s0 works fine
+	#	lw s0, 32(s0)
 	lw s1, 36(s0)
 	lw s2, 40(s0)
 	lw s3, 44(s0)
@@ -189,25 +193,34 @@ isr_asm:
 #	csrrw s0, mscratch, s0
 	mret
 
-sd_test_asm:
-	li t0, 0x0000ff00
-	slli t1, t0, 0x10
-	srai t2, t1, 0x10
-	la a0, 0x20022220
-	sw t2, (a0)
-#	li t3, 0xffffff00
-	li t3, 0x0000ff00
-	bne t3, t2, _sd_test_asm_1
-	la a0, 0x92000000
-	li a1, 1
-	sw a1, 24(a0)
-	sw a1, 28(a0)
-	j _sd_test_asm_end
-_sd_test_asm_1:
-	la a0, 0x92000000
-	li a1, 1
-	sw a1, 32(a0)
-#	sw a1, 36(a0)
-_sd_test_asm_end:
-	j _sd_test_asm_end
-	ret
+# see process.h
+sendrec_syscall:
+	addi sp, sp, -12
+	sw a0, 8(sp)
+	sw a1, 4(sp)
+	sw a2, 0(sp)
+	ecall
+	addi sp, sp, 12
+
+#sd_test_asm:
+#	li t0, 0x0000ff00
+#	slli t1, t0, 0x10
+#	srai t2, t1, 0x10
+#	la a0, 0x20022220
+#	sw t2, (a0)
+##	li t3, 0xffffff00
+#	li t3, 0x0000ff00
+#	bne t3, t2, _sd_test_asm_1
+#	la a0, 0x92000000
+#	li a1, 1
+#	sw a1, 24(a0)
+#	sw a1, 28(a0)
+#	j _sd_test_asm_end
+#_sd_test_asm_1:
+#	la a0, 0x92000000
+#	li a1, 1
+#	sw a1, 32(a0)
+##	sw a1, 36(a0)
+#_sd_test_asm_end:
+#	j _sd_test_asm_end
+#	ret

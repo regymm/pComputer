@@ -22,9 +22,10 @@ volatile int* interrupt_ctrl	= (int*) 0x98000000;
 
 char uart_getchar()
 {
-	*uart_rx_reset = 1;
+	/**uart_rx_reset = 1;*/
 	while(! *uart_rx_new);
 	char c = *uart_rx_data;
+	*uart_rx_reset = 1;
 	return c;
 	/*return *uart_rx_data;*/
 }

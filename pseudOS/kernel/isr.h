@@ -16,12 +16,14 @@ extern void csrw_mtvec(int);
 extern void csrw_mstatus(int);
 extern void csrw_mie(int);
 extern void csrw_mepc(int);
+extern void csrw_mcause(int);
 
 extern int csrr_mscratch();
 extern int csrr_mtvec();
 extern int csrr_mstatus();
 extern int csrr_mie();
 extern int csrr_mepc();
+extern int csrr_mcause();
 
 void cli(); // disable interrupt
 void sti(); // enable interrupt
