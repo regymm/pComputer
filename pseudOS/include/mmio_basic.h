@@ -9,6 +9,8 @@ extern volatile int* uart_rx_data;
 
 extern volatile int* psram_base;
 
+extern volatile int* video_base;
+
 extern volatile int* distram_base;
 
 extern volatile int* sd_cache_base;

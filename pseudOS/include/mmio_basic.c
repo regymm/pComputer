@@ -9,6 +9,8 @@ volatile int* psram_base		= (int*) 0x20000000;
 
 volatile int* distram_base		= (int*) 0x10000000;
 
+volatile int* video_base		= (int*) 0x94000000;
+
 volatile int* sd_cache_base		= (int*) 0x96000000;
 volatile int* sd_address		= (int*) 0x96001000;
 volatile int* sd_do_read		= (int*) 0x96001004;

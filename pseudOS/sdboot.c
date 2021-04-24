@@ -63,9 +63,22 @@ void hardware_test()
 	usb_test();
 }
 
+void hdmi_test()
+{
+	int i = 0;
+	int k = 0x0100;
+	int j;
+	for(j = 1; j <= 4096; j++) video_base[i++] = k++;
+	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0237;*/
+	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0338;*/
+	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0439;*/
+
+}
+
 // jumped from assembly to here
 void sd_c_start() // the current "kernel"
 {
+	hdmi_test();
 	hardware_init();
 	hardware_test();
 	uart_putstr("[sdcard]sd_c_start\r\n");
