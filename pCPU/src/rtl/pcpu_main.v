@@ -12,7 +12,7 @@
 module pcpu_main 
 	#(
 		parameter CLOCK_FREQ = 62500000,
-		parameter BAUD_RATE_UART = 38400,
+		parameter BAUD_RATE_UART = 921600,
 		parameter BAUD_RATE_CH375 = 9600,
 		parameter TIMER_COUNTER = 10000000
 	)
@@ -84,7 +84,6 @@ module pcpu_main
 
     // reset
     wire rst = sw_d[0];
-
 	wire [31:0]rst_d = 0;
 	wire rst_we = 0;
 	wire rst_gpio;
@@ -94,6 +93,7 @@ module pcpu_main
 	wire rst_usb;
 	wire rst_psram;
 	wire rst_interrupt;
+	wire rst_sb;
 	wire rst_timer;
 	wire rst_mmu;
 	reset reset_unit(
@@ -109,6 +109,7 @@ module pcpu_main
 		.rst_usb(rst_usb),
 		.rst_psram(rst_psram),
 		.rst_interrupt(rst_interrupt),
+		.rst_sb(rst_sb),
 		.rst_timer(rst_timer),
 		.rst_mmu(rst_mmu)
 	);
@@ -188,7 +189,8 @@ module pcpu_main
     wire [31:0]uart_d;
     wire uart_we;
     wire [31:0]uart_spo;
-
+	wire [7:0]sb_rxdata;
+	wire sb_rxnew;
     wire irq_uart;
 `ifdef UART_EN
 	uart #(
@@ -198,15 +200,19 @@ module pcpu_main
         .clk(clk_main),
         .rst(rst_uart),
 
+        .tx(uart_tx),
+        .rx(uart_rx),
+
         .a(uart_a),
         .d(uart_d),
         .we(uart_we),
         .spo(uart_spo), 
 
-        .tx(uart_tx),
-        .rx(uart_rx),
+        .irq(irq_uart),
 
-        .irq(irq_uart)
+		.override(sb_uart_override),
+		.rxnew(sb_rxnew),
+		.rxdata(sb_rxdata)
     );
 `else
 	assign uart_spo = 0;
@@ -257,7 +263,6 @@ module pcpu_main
 	wire [31:0]usb_d;
 	wire usb_we;
 	wire [31:0]usb_spo;
-
 	wire irq_usb;
 `ifdef CH375B_EN
 	ch375b #(
@@ -290,8 +295,11 @@ module pcpu_main
 	wire mainm_rd;
 	wire [31:0]mainm_spo;
 	wire mainm_ready;
-
 	wire mainm_irq;
+	wire sb_mem_override;
+	wire [31:0]sb_mem_a;
+	wire [31:0]sb_mem_d;
+	wire sb_mem_we;
 `ifdef PSRAM_EN
 	memory_controller memory_controller_inst
 	(
@@ -306,6 +314,11 @@ module pcpu_main
 		.spo(mainm_spo),
 		.ready(mainm_ready), 
 
+		.override(sb_mem_override),
+		.a2(sb_mem_a),
+		.d2(sb_mem_d),
+		.we2(sb_mem_we),
+
 		.irq(mainm_irq),
 
 		.psram_ce(psram_ce), 
@@ -316,6 +329,37 @@ module pcpu_main
 		.psram_sclk(psram_sclk)
 	);
 `else
+`endif
+
+	// serial boot
+	wire [2:0]sb_a;
+	wire [31:0]sb_d;
+	wire sb_we;
+	wire sb_uart_override;
+`ifdef SERIALBOOT_EN
+	serialboot serialboot_inst(
+		.clk(clk_main),
+		.rst(rst_sb),
+
+		.a(sb_a),
+		.d(sb_d),
+		.we(sb_we),
+		.ready(sb_ready),
+
+		.uart_override(sb_uart_override),
+		.uart_data(sb_rxdata),
+		.uart_ready(sb_rxnew),
+
+		.mem_override(sb_mem_override),
+		.mem_a(sb_mem_a),
+		.mem_d(sb_mem_d),
+		.mem_we(sb_mem_we),
+		.mem_ready(1'b1)
+	);
+`else
+	assign sb_uart_override = 0;
+	assign sb_mem_override = 0;
+	assign sb_ready = 1;
 `endif
 
 
@@ -415,7 +459,6 @@ module pcpu_main
     wire [31:0]d;
     wire we;
     wire rd;
-
 	riscv_multicyc riscv_multicyc_inst(
 		.clk(clk_main),
 		.rst(rst),
@@ -435,7 +478,6 @@ module pcpu_main
 
     // MMU
     wire virq;
-    
     wire [31:0]pspo;
     wire pready;
     wire pirq;
@@ -532,6 +574,12 @@ module pcpu_main
         .int_a(int_a),
         .int_d(int_d),
         .int_we(int_we),
+
+        .sb_spo(sb_spo),
+        .sb_a(sb_a),
+        .sb_d(sb_d),
+        .sb_we(sb_we),
+		.sb_ready(sb_ready),
 
         .irq(pirq)
     );

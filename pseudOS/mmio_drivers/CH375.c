@@ -335,9 +335,9 @@ void usb_test()
 	USBDiskInit(&udisk);
 	USBReadOneSector(&udisk, 0);
 	int i;
-	for(i = 0; i < 0x200; i++)
-		udisk.buf[i] = (unsigned char)i;
-	USBWriteBackBuf(&udisk);
+	/*for(i = 0; i < 0x200; i++)*/
+		/*udisk.buf[i] = (unsigned char)i;*/
+	/*USBWriteBackBuf(&udisk);*/
 
 	/*setupUSBDisk();*/
 	/*setupUSB();*/

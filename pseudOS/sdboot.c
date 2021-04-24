@@ -3,7 +3,7 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 202x.xx.xx
- * Last Modified Date: 2021.03.28
+ * Last Modified Date: 2021.04.24
  */
 #include "fs/fs.h"
 #include "include/mmio_basic.h"
@@ -12,22 +12,9 @@
 #include "kernel/process.h"
 #include "kernel/isr.h"
 #include "kernel/misc.h"
+#include "mmio_drivers/CH375.h"
 #define false 0
 #define true 1
-/*int USBWaitReady()*/
-/*{*/
-	/*return false;*/
-/*}*/
-
-// process management
-/*extern void proc1();*/
-/*extern void proc2();*/
-/*extern void proc3();*/
-/*extern void _proc_schedule(ProcManager* pm);*/
-/*extern unsigned short _proc_getnext(ProcManager* pm);*/
-/*extern void _proc_switch(ProcManager* pm, unsigned short pid);*/
-/*extern Process* _proc_find(ProcManager* pm, unsigned short pid);*/
-// TODO: don't extern these
 
 extern void usb_test();
 
@@ -61,30 +48,27 @@ void sdcard_fs_test() // put aside fs, do multitasking demo first
 void prepare_processes()
 {
 	ProcManagerInit();
-	/*procmanager.proc_table = proc_table;*/
-	/*procmanager.proc_number = 3;*/
-	/*procmanager.proc_running = 1;*/
-	/*procmanager.proc_max = PROC_NUM_MAX;*/
-	/*procmanager.schedule = _proc_schedule;*/
-	/*procmanager.get_next = _proc_getnext;*/
-	/*procmanager.find = _proc_find;*/
-	/*procmanager.do_start = 1;*/
-	/*proc_table[0].pid = 1;*/
-	/*proc_table[0].pc = proc1;*/
-	/*proc_table[0].regs.sp = 0x2008fffc;*/
-	/*proc_table[1].pid = 2;*/
-	/*proc_table[1].pc = proc2;*/
-	/*proc_table[1].regs.sp = 0x2009fffc;*/
-	/*proc_table[2].pid = 3;*/
-	/*proc_table[2].pc = proc3;*/
-	/*proc_table[2].regs.sp = 0x200afffc;*/
+}
+
+void hardware_init()
+{
+	printk("Hardware init...\r\n");
+	*uart_rx_reset = 1;
+}
+
+void hardware_test()
+{
+	printk("Hardware test...\r\n");
+	printk("CH375b USB: \r\n");
+	usb_test();
 }
 
 // jumped from assembly to here
 void sd_c_start() // the current "kernel"
 {
+	hardware_init();
+	hardware_test();
 	uart_putstr("[sdcard]sd_c_start\r\n");
-	/*uart_putstr("[sdcard]halt.\r\n");*/
 	
 	printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);
 

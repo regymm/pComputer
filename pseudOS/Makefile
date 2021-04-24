@@ -16,6 +16,9 @@ OBJCOPY	=	$(RISCV)objcopy
 #all: exception.dat bootrom.dat pseudos.bin sdbootloader.bin test.dat
 all: coe/bootrom.dat boot/bootrom/bootrom.bin boot/uartbl/uartbl.bin sdboot.bin
 
+uartboot: sdboot.bin
+	sudo ./uartboot.sh
+
 coe/bootrom.dat: boot/bootrom/bootrom.bin
 	xxd -c 4 -p boot/bootrom/bootrom.bin > coe/result_bootrom.dat
 

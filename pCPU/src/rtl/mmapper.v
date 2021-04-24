@@ -83,6 +83,13 @@ module mmapper
         output reg int_we,
         input [31:0]int_spo,
         
+		// serialboot: 0x99000000
+		output reg [2:0]sb_a,
+		output reg [31:0]sb_d,
+		output reg sb_we,
+		input [31:0]sb_spo,
+		input sb_ready,
+
         // 0xe0000000 MMU control
 
         // 1024*32(8KB) boot rom: 0xf0000000 to 0xf00007fc
@@ -105,6 +112,8 @@ module mmapper
         gpio_d = d;
         uart_a = a[4:2];
         uart_d = d;
+		sb_a = a[4:2];
+		sb_d = d;
         video_a = a;
         video_d = d;
         sd_a = a[31:0];
@@ -122,6 +131,7 @@ module mmapper
 		mainm_rd = 0;
         gpio_we = 0;
         uart_we = 0;
+		sb_we = 0;
         video_we = 0;
         sd_we = 0;
 		usb_we = 0;
@@ -166,6 +176,11 @@ module mmapper
 					spo = int_spo;
 					int_we = we;
                 end
+				4'h9: begin
+					spo = sb_spo;
+					sb_we = we;
+					ready = sb_ready;
+				end
                 default: irq = 1;
             endcase
         end else if (a[31:28] == 4'hf) begin

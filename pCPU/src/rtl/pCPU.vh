@@ -12,6 +12,7 @@
 `define PSRAM_EN
 `define SDCARD_EN
 `define CH375B_EN
+`define SERIALBOOT_EN
 //`define VIDEO_EN
 `define IRQ_EN
 //`define MMU_EN

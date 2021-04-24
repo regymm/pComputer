@@ -4,6 +4,10 @@ A simple "computer" from scratch, including RISC-V CPU and simple OS, running on
 
 ### Gallery
 
+**2021.04.24** Boot from SD card, then read assembly code from UART, which contains the current kernel. The kernel shows process switching demo and the mcause CSR. The system runs on SqueakyBoard now.
+
+![](./doc/src/gallery-2021-0424.png) 
+
 **2021.01.20** Migration to RISC-V is successful. Again boot from SD card, but this time cross-compiled C code is run. It reminds me of the time when the terminal fell into raw mode. 
 
 ![](./doc/src/gallery-2021-0120.jpg)
@@ -46,12 +50,12 @@ Bus
 Peripherals
 
 - [x] GPIO (LEDs, buttons, switches)
-- [x] UART
+- [x] UART (921600 baud)
 - [x] SD card (SPI mode, SDHC)
 - [ ] PS/2 keyboard (WIP w/ proof of concept)
 - [ ] HDMI character terminal (WIP w/ proof of concept)
 - [ ] HDMI frame buffer graphics
-- [ ] CH375 USB disk (WIP)
+- [ ] CH375 USB disk (WIP w/ proof of concept)
 - [ ] W5500 ethernet module
 - [ ] ESP8266 Wifi module
 
@@ -67,8 +71,9 @@ OS/Software
 - [x] Use newlib for baremetal application
 - [x] Boot from SD card (raw)
 - [ ] Boot from SD card (FAT32)
-- [ ] Multitasking w/o MMU(WIP w/ proof of concept)
-- [ ] Microkernel and IPC
+- [x] Boot from UART (921600 baud)
+- [x] Multitasking w/o MMU
+- [ ] Microkernel framework, IPC send/receive
 - [ ] Syscall interface
 - [ ] Memory manager
 - [ ] Filesystem
@@ -81,7 +86,6 @@ OS/Software
 Others
 
 - [ ] time, timecmp
-- [ ] RGB LED +100% performance
 
 ### Documents
 

@@ -13,12 +13,15 @@ volatile int* sd_cache_base		= (int*) 0x96000000;
 volatile int* sd_address		= (int*) 0x96001000;
 volatile int* sd_do_read		= (int*) 0x96001004;
 volatile int* sd_do_write		= (int*) 0x96001008;
+volatile int* sd_ncd			= (int*) 0x96002000;
 volatile int* sd_ready			= (int*) 0x96002010;
 volatile int* sd_cache_dirty	= (int*) 0x96002014;
 
 volatile int* gpio_ctrl			= (int*) 0x92000000;
 
 volatile int* interrupt_ctrl	= (int*) 0x98000000;
+
+volatile int* uart_dma_ctrl		= (int*) 0x99000000;
 
 char uart_getchar()
 {

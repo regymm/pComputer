@@ -50,7 +50,8 @@ module ch375b
     wire txclk_en;
     baud_rate_gen #(
 		.CLOCK_FREQ(CLOCK_FREQ),
-		.BAUD_RATE(BAUD_RATE)
+		.BAUD_RATE(BAUD_RATE),
+		.SAMPLE_MULTIPLIER(16)
 	) baud_rate_gen_inst
     (
         .clk(clk),

@@ -18,8 +18,8 @@ module psram_controller_fast(
 	input clk_mem,
     //input clk_pulse_slow, 
 
-    (*mark_debug = "true"*) output reg sclk = 0, 
-    (*mark_debug = "true"*) output reg ce = 1, 
+    output reg sclk = 0, 
+    output reg ce = 1, 
     inout mosi, 
     inout miso, 
     inout sio2, 

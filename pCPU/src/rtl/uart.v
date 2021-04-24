@@ -29,6 +29,9 @@ module uart
         input clk,
         input rst,
 
+        input rx,
+        output reg tx = 1,
+
         input [2:0]a,
         input [31:0]d,
         input we,
@@ -36,23 +39,29 @@ module uart
 
         output reg irq = 0,
 
-        input rx,
-        output reg tx = 1
+		input override,
+		output rxnew,
+		output [7:0]rxdata
     );
+
+	localparam SAMPLE_COUNT = 17;
+	localparam SAMPLE_SAMPLE = 6;
+	localparam SAMPLE_REMEDY = 4;
 
 	wire [7:0]data = d[31:24];
 
-	reg rx_r;
+	(*mark_debug = "true"*) reg rx_r;
 	always @ (posedge clk) begin
 		rx_r <= rx;
 	end
 
-    wire rxclk_en;
+    (*mark_debug = "true"*) wire rxclk_en;
     wire txclk_en;
     baud_rate_gen
 	#(
 		.CLOCK_FREQ(CLOCK_FREQ),
-		.BAUD_RATE(BAUD_RATE)
+		.BAUD_RATE(BAUD_RATE),
+		.SAMPLE_MULTIPLIER(32)
 	) baud_rate_gen_inst (
         .clk(clk),
         .rst(rst),
@@ -72,10 +81,10 @@ module uart
     localparam RX_STATE_START_REMEDY = 2'b00;
     localparam RX_STATE_DATA = 2'b10;
     localparam RX_STATE_STOP = 2'b11;
-    reg [1:0]state_rx = RX_STATE_START;
-    reg [2:0]sample = 0;
+    (*mark_debug = "true"*) reg [1:0]state_rx = RX_STATE_START;
+    (*mark_debug = "true"*) reg [4:0]sample = 0;
     reg [3:0]bitpos_rx = 0;
-    reg [7:0]scratch = 8'b0;
+    (*mark_debug = "true"*) reg [7:0]scratch = 8'b0;
 
     reg read_enabled = 0;
     (*mark_debug = "true"*)reg [7:0]data_rx = 0;
@@ -87,12 +96,12 @@ module uart
         else if (a == 3'b010) spo = {7'b0, (state_tx == IDLE), 24'b0};
         else spo = 32'b0;
     end
-	always @ (posedge clk) begin
-		if (rst) irq <= 0;
-		else if (state_rx == RX_STATE_STOP & sample == 7 & irq == 0) irq <= 1;
-		// TODO
-		else irq <= 0;
-	end
+	//always @ (posedge clk) begin
+		//if (rst) irq <= 0;
+		//else if (state_rx == RX_STATE_STOP & sample == 31 & irq == 0) irq <= 1;
+		//// TODO
+		//else irq <= 0;
+	//end
     always @ (posedge clk) begin
         if (rst) begin
             tx <= 1'b1;
@@ -136,7 +145,7 @@ module uart
                 case (state_rx)
                     RX_STATE_START: begin
                         if (!rx_r || sample != 0) sample <= sample + 1;
-                        if (sample == 7) begin
+                        if (sample == SAMPLE_COUNT) begin
                             state_rx <= RX_STATE_DATA;
                             bitpos_rx <= 0;
                             sample <= 0;
@@ -145,7 +154,7 @@ module uart
                     end
 					RX_STATE_START_REMEDY: begin // fix accumulated baud rate difference
 						sample <= sample + 1;
-                        if (sample == 7) begin
+                        if (sample == SAMPLE_COUNT) begin
                             state_rx <= RX_STATE_DATA;
                             bitpos_rx <= 0;
                             sample <= 0;
@@ -153,16 +162,18 @@ module uart
                         end
 					end
                     RX_STATE_DATA: begin
-                        sample <= sample + 1;
-                        if (sample == 4) begin
+						if (sample == SAMPLE_COUNT) sample <= 0;
+						else sample <= sample + 1;
+                        //sample <= sample + 1;
+                        if (sample == SAMPLE_SAMPLE) begin
                             scratch[bitpos_rx[2:0]] <= rx_r;
                             bitpos_rx <= bitpos_rx + 1;
                         end
-                        if (bitpos_rx == 8 && sample == 7) state_rx <= RX_STATE_STOP;
+                        if (bitpos_rx == 8 && sample == SAMPLE_COUNT) state_rx <= RX_STATE_STOP;
                     end
                     RX_STATE_STOP: begin
-						if (sample == 7 || (sample >= 4 && !rx_r)) begin
-                            state_rx <= (sample == 7) ? RX_STATE_START : RX_STATE_START_REMEDY;
+						if (sample == SAMPLE_COUNT || (sample >= SAMPLE_REMEDY && !rx_r)) begin
+                            state_rx <= (rx_r == 1) ? RX_STATE_START : RX_STATE_START_REMEDY;
                             data_rx <= scratch;
 							//rx_new <= 1;
                             sample <= 0;
@@ -176,7 +187,7 @@ module uart
         end
     end
 
-	wire wire_rx_state_stop = rxclk_en && (state_rx == RX_STATE_STOP) && (sample == 7 || (sample >= 4 && !rx_r));
+	wire wire_rx_state_stop = rxclk_en && (state_rx == RX_STATE_STOP) && (sample == SAMPLE_COUNT || (sample >= SAMPLE_REMEDY && !rx_r));
 	wire wire_rx_reset = we && (a == 3'b001);
 	always @ (posedge clk) begin
 		if (rst) begin
@@ -186,4 +197,21 @@ module uart
 			else if (wire_rx_reset) rx_new <= 0;
 		end
 	end
+
+	reg rxnew;
+	//reg rxnew_1;
+	always @ (posedge clk) begin
+		rxnew <= wire_rx_state_stop;
+		//rxnew_1 <= wire_rx_state_stop;
+		//rxnew <= rxnew_1;
+	end
+	//assign rxnew = wire_rx_state_stop;
+	assign rxdata = data_rx;
+	//reg override_old;
+	//always @ (posedge clk) begin
+		//override_old <= override;
+		//if (override && !override_old)
+			//rxdata <= 0;
+		//else rxdata <= data_rx;
+	//end
 endmodule

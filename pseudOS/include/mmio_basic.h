@@ -15,12 +15,15 @@ extern volatile int* sd_cache_base;
 extern volatile int* sd_address;
 extern volatile int* sd_do_read;
 extern volatile int* sd_do_write;
+extern volatile int* sd_ncd;
 extern volatile int* sd_ready;
 extern volatile int* sd_cache_dirty;
 
 extern volatile int* gpio_ctrl;
 
 extern volatile int* interrupt_ctrl;
+
+extern volatile int* uart_dma_ctrl;
 
 char uart_getchar();
 void uart_putchar(char c);
