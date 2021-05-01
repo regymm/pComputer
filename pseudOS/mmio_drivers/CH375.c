@@ -83,19 +83,21 @@ int getIrq()
   /*printf("getIRQ: First IRQ\r\n");*/
   /*return CH375_RD();*/
 /*}*/
-/*unsigned char get_descr( unsigned char type ) {*/
-  /*CH375_WR( CMD_GET_DESCR );*/
-  /*CH375_WR_DATA( type );*/
-  /*return getIrq();*/
-/*}*/
-/*uint8_t rd_usb_data( uint8_t *buf )*/
-/*{*/
-  /*uint8_t i, len;*/
-  /*CH375_WR( CMD_RD_USB_DATA );*/
-  /*len=CH375_RD();*/
-  /*for ( i=0; i!=len; i++ ) *buf++=CH375_RD();*/
-  /*return( len );*/
-/*}*/
+// HID
+unsigned char get_descr( unsigned char type ) {
+  CH375_WR( CMD_GET_DESCR );
+  CH375_WR_DATA( type );
+  return getIrq();
+}
+// HID
+unsigned char rd_usb_data( unsigned char *buf )
+{
+  unsigned char i, len;
+  CH375_WR( CMD_RD_USB_DATA );
+  len=CH375_RD();
+  for ( i=0; i!=len; i++ ) *buf++=CH375_RD();
+  return( len );
+}
 /*uint8_t host_recv()*/
 /*{*/
 	/*int len = rd_usb_data(recv_buffer);*/
@@ -325,6 +327,35 @@ void USBClearError()
 	printk("USBClearError: error occured before!\r\n");
 	CH375_WR(CMD_DISK_R_SENSE);
 	getIrq();
+}
+
+void usb_hid_test()
+{
+	printk("mmio_devices: USB HID test ...\r\n");
+	int i;
+	unsigned char c;
+	unsigned char recv_buffer[512];
+	CH375_WR(CMD_RESET_ALL);
+	for (i = 0; i < 10000; i++);
+
+	c = set_usb_mode(6);
+	printk("mmio_devices: set_usb_mode %x\r\n", c);
+	while((c = getIrq()) != USB_INT_CONNECT) { }
+	for (i = 0; i < 50000; i++);
+	c = set_usb_mode(7);
+	for (i = 0; i < 50000; i++);
+	/*printk("mmio_devices: set_usb_mode %x\r\n", c);*/
+	/*while((c = getIrq()) != USB_INT_CONNECT) { }*/
+	c = set_usb_mode(6);
+	printk("mmio_devices: set_usb_mode %x\r\n", c);
+	while((c = getIrq()) != USB_INT_CONNECT) { }
+	for (i = 0; i < 50000; i++);
+
+	c = get_descr(1);
+	int len = 0;
+	if (c == USB_INT_SUCCESS) len = rd_usb_data(recv_buffer);
+	printk("c: %d len: %d\r\n", c, len);
+
 }
 
 void usb_test()

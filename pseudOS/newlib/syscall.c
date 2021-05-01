@@ -233,9 +233,13 @@ ssize_t _write(int file, const void *ptr, size_t len)
         return -1;
     }
 
+	// UART
     const void *eptr = ptr + len;
-    while (ptr != eptr)
-		uart_putchar(*(char *)(ptr++));
+	while (ptr != eptr) {
+		uart_putchar(*(char *)(ptr));
+		hdmi_putchar(*(char *)(ptr));
+		ptr++;
+	}
     return len;
 }
 

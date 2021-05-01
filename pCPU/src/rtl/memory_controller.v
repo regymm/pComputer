@@ -56,9 +56,9 @@ module memory_controller
 
 	reg [5:0]count;
 
-	reg m_rd; 
+	reg m_rd = 0; 
 	reg m_rend; 
-	reg m_we; 
+	reg m_we = 0; 
 	reg m_wend; 
 	wire [23:0]m_a = {rega, 2'b0};
 	wire [7:0]m_dout; 
@@ -125,7 +125,7 @@ module memory_controller
 	localparam	WE			=	10;
 	localparam	RD_BEGIN	=	15;
 	localparam	RD			=	20;
-	/*(*mark_debug = "true"*)*/reg [5:0]state;
+	/*(*mark_debug = "true"*)*/reg [5:0]state = IDLE;
 
 
 	always @ (posedge clk_mem) begin

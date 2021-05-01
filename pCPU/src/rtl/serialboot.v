@@ -9,9 +9,9 @@
 // transfer UART input directly into PSRAM
 // CPU will hang waiting during the process
 // 
-// UART input format: hexadecimal 0-9a-f, all
-//  glued together, any illegal character stop
-//  transfer
+// UART input format: hexadecimal 0-9a-f, 
+// any illegal character is skipped
+// a blank(0x20) to end
 //
 // must keep sure memory writing is faster than
 // uart input

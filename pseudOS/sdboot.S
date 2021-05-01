@@ -19,7 +19,7 @@
 .globl csrr_mepc
 .globl csrw_mepc
 
-.globl sendrec_syscall
+.globl syscall_asm
 
 .globl crit_enter
 .globl crit_leave
@@ -194,13 +194,16 @@ isr_asm:
 	mret
 
 # see process.h
-sendrec_syscall:
+syscall_asm:
 	addi sp, sp, -12
 	sw a0, 8(sp)
 	sw a1, 4(sp)
 	sw a2, 0(sp)
 	ecall
+	# TODO: get a real return value
+	li a0, 0
 	addi sp, sp, 12
+	ret
 
 #sd_test_asm:
 #	li t0, 0x0000ff00

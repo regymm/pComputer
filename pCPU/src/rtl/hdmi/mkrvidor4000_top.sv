@@ -1,3 +1,4 @@
+`timescale 1ns / 1ps
 module mkrvidor4000_top
 (
   input clk,
@@ -42,13 +43,13 @@ module mkrvidor4000_top
 	//.level(audio_sample_word)
 //);
 
-logic [23:0] rgb;
+(*mark_debug = "true"*) logic [23:0] rgb;
 logic [10:0]cx;
 logic [9:0] cy;
-wire [10:0]cx_next;
-wire [9:0] cy_next;
+(*mark_debug = "true"*) wire [10:0]cx_next;
+(*mark_debug = "true"*) wire [9:0] cy_next;
 hdmi #(
-	.VIDEO_ID_CODE(3), 
+	.VIDEO_ID_CODE(1), 
 	.DVI_OUTPUT(1),
 	.DDRIO(0)
 	//.AUDIO_RATE(AUDIO_RATE), 
@@ -69,21 +70,60 @@ hdmi #(
 	.cy_next(cy_next)
 );
 
-// my VRAM interface
-// 30 rows, 90 columns
-reg [15:0]vram[4095:0];
-reg [15:0]vout;
-(*mark_debug = "true"*) wire [11:0]a2 = ({6'b0, cy[9:4]} - 3) * 90 + {5'b0, cx[8:3]} - 18;
-always @ (posedge clk) begin
-	if (we) vram[a[13:2]] <= d[15:0];
-	//spo <= {16'b0, vram[a[13:2]]};
-end
-always @ (posedge clk_pix) begin
-	vout <= vram[a2 + 1];
-end
-//assign vout = vram[a2];
+wire [10:0]cx_onscreen = cx_next - 160;
+wire [9:0] cy_onscreen = cy_next - 45;
 
-wire [7:0]character = vout[7:0];
+//// my VRAM interface
+//// 30 rows, 80 columns
+//reg [15:0]vram[4095:0];
+//reg [15:0]vout;
+//reg [31:0]a_reg;
+//reg [15:0]d_reg;
+//reg we_reg;
+(*mark_debug = "true"*) wire [11:0]a2 = ({6'b0, cy_onscreen[9:4]}) * 80 + {5'b0, cx_onscreen[9:3]};
+//always @ (posedge clk) begin
+	//a_reg <= a;
+	//d_reg <= {d[23:16], d[31:24]}; // endian problem again
+	//we_reg <= we;
+	//if (we_reg) vram[a_reg[13:2]] <= d_reg[15:0];
+	////spo <= {16'b0, vram[a[13:2]]};
+//end
+//always @ (posedge clk_pix) begin
+	//vout <= vram[a2 + 1];
+//end
+
+reg [13:0]a_reg;
+reg [15:0]d_reg;
+reg we_reg;
+wire [15:0]vram_spo;
+always @ (posedge clk) begin
+	we_reg <= we;
+	a_reg <= we ? a[13:2] : a2;
+	d_reg <= {d[23:16], d[31:24]};
+end
+
+simple_ram #(
+	.WIDTH(16),
+	.DEPTH(12)
+) video_ram (
+	.clk(clk),
+	.a(a_reg),
+	.d(d_reg),
+	.we(we_reg),
+	.spo(vram_spo)
+);
+
+//reg we_reg_reg;
+reg [15:0]vout;
+always @ (posedge clk_pix) begin
+	vout <= vram_spo;
+end
+//always @ (posedge clk) begin
+	//we_reg_reg <= we_reg;
+	//if (!we_reg_reg) vout <= vram_spo;
+	////vout <= vram_spo;
+//end
+
 
 //logic [7:0] character = 8'h30;
 //logic [5:0] prevcy = 6'd0;
@@ -103,11 +143,11 @@ wire [7:0]character = vout[7:0];
 
 console console(
 	.clk_pixel(clk_pix), 
-	.codepoint(character), 
-	.attribute(vout[15:0]), 
+	.codepoint(vout[7:0]), 
+	.attribute(vout[15:7]), 
 	//.attribute({cx[9], cy[8:6], cx[8:5]}), 
-	.cx(cx), 
-	.cy(cy), 
+	.cx(cx_onscreen), 
+	.cy(cy_onscreen), 
 	.rgb(rgb)
 );
 endmodule

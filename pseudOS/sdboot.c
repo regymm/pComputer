@@ -3,7 +3,7 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 202x.xx.xx
- * Last Modified Date: 2021.04.24
+ * Last Modified Date: 2021.05.01
  */
 #include "fs/fs.h"
 #include "include/mmio_basic.h"
@@ -18,7 +18,7 @@
 
 extern void usb_test();
 
-extern void sd_test_asm();
+/*extern void sd_test_asm();*/
 
 void setupIRQ()
 {
@@ -50,17 +50,23 @@ void prepare_processes()
 	ProcManagerInit();
 }
 
+
+extern int video_x;
+extern int video_y;
 void hardware_init()
 {
 	printk("Hardware init...\r\n");
 	*uart_rx_reset = 1;
+	video_x = 0;
+	video_y = 0;
 }
 
 void hardware_test()
 {
 	printk("Hardware test...\r\n");
-	printk("CH375b USB: \r\n");
-	usb_test();
+	/*printk("CH375b USB: \r\n");*/
+	/*usb_test();*/
+	/*usb_hid_test();*/
 }
 
 void hdmi_test()
@@ -87,11 +93,11 @@ void sd_c_start() // the current "kernel"
 
 	int i;
 	for(i = 0; i < 2; i++) {
-		uart_putstr("Input a character: ");
+		printk("Input a character: ");
 		int c = uart_getchar();
-		printf("You typed: %x\r\n", c);
+		printk("You typed: %x\r\n", c);
 	}
-	uart_putstr("\r\n\r\n");
+	printk("\r\n\r\n");
 
 	unsigned short a = 1;
 	printk("%d\r\n", a);

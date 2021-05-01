@@ -28,6 +28,9 @@ extern int csrr_mcause();
 void cli(); // disable interrupt
 void sti(); // enable interrupt
 
+#define IRQ_DEV_UART 2
+#define IRQ_DEV_GPIO 3
+
 // main interrupt service routine
 void interrupt_service_routine();
 

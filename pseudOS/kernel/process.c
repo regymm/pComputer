@@ -19,14 +19,16 @@ void kproc_get_ticks()
 	int count = 0;
 	while (1) {
 		count++;
-		if (count % 100000) {
+		if (count % 100000 == 0) {
 			printk("kproc_get_ticks: I'm still running!\r\n");
-			sendrec_syscall(0, 0, 0);
+			/*sendrec_syscall(0, 0, 0);*/
 		}
+		sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
 		/*send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
 		int src = msg.source;
 		/*printk("kproc_get_ticks: call from proc %d\r\n", src);*/
 		msg.integer = ticks;
+		sendrec_syscall(IPC_SEND, msg.source, &msg);
 		/*send_recv(IPC_SEND, src, &msg);*/
 
 		/*switch (msg.type) {*/
@@ -47,36 +49,53 @@ void proc1()
 	/*uart_putchar('a');*/
 	/*uart_putchar('S');*/
 	printk("proc1 begin ...\r\n");
+	Message msg;
 	while (1) {
-		for (i = 0; i < 10000; i++);
+		for (i = 0; i < 80000; i++);
 		printk("A");
-		/*uart_putchar('A');*/
+		printk("proc a: %x\r\n", &msg);
+		msg.type = SYSCALL_GET_TICKS;
+		/*msg.source = */
+		sendrec_syscall(IPC_BOTH, KPROC_PID_GET_TICKS, &msg);
+		printk("proc1: getticks: %d\r\n", msg.integer);
 	}
 }
 void proc2()
 {
 	int i = 0;
-	/*uart_putchar('b');*/
-	/*uart_putchar('S');*/
 	printk("proc2 begin ...\r\n");
 	while (1) {
 		for (i = 0; i < 20000; i++);
 		printk("B");
-		/*uart_putchar('B');*/
 	}
 }
 void proc3()
 {
 	int i = 0;
-	/*uart_putchar('c');*/
-	/*uart_putchar('S');*/
 	printk("proc3 begin ...\r\n");
 	while (1) {
 		for (i = 0; i < 30000; i++);
 		printk("C");
-
-		/*uart_putchar('C');*/
 	}
+}
+
+int sendrec_syscall(int function, int src_dest, Message* msg)
+{
+	if (function == IPC_BOTH) {
+		int ret = syscall_asm(IPC_SEND, src_dest, msg);
+		if (ret == 0)
+			ret = syscall_asm(IPC_RECEIVE, src_dest, msg);
+		else printk("sendrec_syscall: BOTH: send fail!\r\n");
+		return ret;
+	}
+	if (function == IPC_SEND)
+		return syscall_asm(IPC_SEND, src_dest, msg);
+	if (function == IPC_RECEIVE) {
+		memset(msg, 0, sizeof(Message));
+		return syscall_asm(IPC_RECEIVE, src_dest, msg);
+	}
+	panic("sendrec_syscall: unknown function!");
+	return -1;
 }
 
 // save/load stack frame in memory to/from Process* regs
@@ -104,21 +123,26 @@ void _stackframe_load(Process* proc, volatile StackFrame* stack)
 void _proc_schedule()
 {
 	ProcManager* pm = &procmanager;
-	short pid_to = pm->get_next(pm);
-	printk("Switch from %d to %d\r\n", pm->proc_running, pid_to);
+	Process* p_from;
+	Process* p_to;
 	/*short pid_from = pm->proc_running;*/
-	Process* p_from = pm->pid2proc(pm->proc_running);
 	/*Process* p_from = pm->pid2proc(pid_from);*/
-	Process* p_to = pm->pid2proc(pid_to);
 	if (pm->do_start) {
 		printk("First schedule: load process only\r\n");
 		pm->do_start = 0;
+		p_to = pm->pid2proc(1);
 	}
 	else {
+		short pid_to = pm->get_next(pm);
+		printk("Switch from %d to %d\r\n", pm->proc_running, pid_to);
+		p_from = pm->pid2proc(pm->proc_running);
+		p_to = pm->pid2proc(pid_to);
+
 		// do the context switch
 		// 1. save current context of p_from, update old Process
 		_stackframe_save((StackFrame *)REGS_SAVE_ADDR, p_from);
-		p_from->state = PROC_STATE_READY;
+		if (p_from->state == PROC_STATE_RUNNING)
+			p_from->state = PROC_STATE_READY;
 		p_from->pc = (void *)csrr_mepc();
 		/*printk("p_from: %08x, ", p_from);*/
 		/*printk("old pc: %08x\r\n", p_from->pc);*/
@@ -131,7 +155,7 @@ void _proc_schedule()
 	/*printk("new pc: %08x\r\n", p_to->pc);*/
 
 	// 3. update ProcManager data
-	pm->proc_running = pid_to;
+	pm->proc_running = p_to->pid;
 	/*printf("New PC: %x\r\n", p_to->pc);*/
 	/*printf("Stack: %x\r\n", p_to->regs.sp);*/
 	/*printf("Stack in mem: %x\r\n", *((volatile int *)0x10000070));*/
@@ -143,17 +167,32 @@ void _proc_schedule()
 short _proc_getnext()
 {
 	ProcManager* pm = &procmanager;
-	switch (pm->proc_running) {
-		case 1:
-			return 2;
-		case 2:
-			return 3;
-		case 3:
-			return 4;
-		case 4:
-			return 1;
+	int i;
+	for (i = pm->proc_running + 1; i < pm->proc_max; i++) {
+		Process* proc_next = pm->proc_table + i;
+		if (proc_next->pid != -1 && proc_next->state == PROC_STATE_READY)
+			return i;
 	}
-	return 0;
+	for (i = 0; i < pm->proc_running; i++) {
+		Process* proc_next = pm->proc_table + i;
+		if (proc_next->pid != -1 && proc_next->state == PROC_STATE_READY) {
+			/*printk("proc_getnext: %d\r\n", proc_next->state);*/
+			return i;
+
+		}
+	}
+	return pm->proc_running;
+	/*switch (pm->proc_running) {*/
+		/*case 1:*/
+			/*return 2;*/
+		/*case 2:*/
+			/*return 3;*/
+		/*case 3:*/
+			/*return 4;*/
+		/*case 4:*/
+			/*return 1;*/
+	/*}*/
+	/*return 0;*/
 }
 // finding Process* PCB using pid
 Process* _pid2proc(short pid)
@@ -178,6 +217,7 @@ int _msg_receive(Process* current, int src, Message* msg);
 // this is called by kernel ISR after receiving ecall from processes
 int sendrec(int function, int src_dest, Message* msg, Process* proc)
 {
+	printk("sendrec\r\n");
 	int caller = proc->pid;
 	msg->source = caller;
 	assert(msg->source != src_dest);
@@ -192,6 +232,7 @@ int sendrec(int function, int src_dest, Message* msg, Process* proc)
 // these should also finish immediately
 int _msg_send(Process* current, int dest, Message* msg)
 {
+	printk("_msg_send %d to %d\r\n", current->pid, dest);
 	Process* p_send = current;
 	Process* p_dest = procmanager.pid2proc(dest);
 
@@ -203,11 +244,13 @@ int _msg_send(Process* current, int dest, Message* msg)
 	if ((p_dest->state == PROC_STATE_RECEIVING) && 
 			(p_dest->p_recvfrom == p_send->pid || 
 			p_dest->p_recvfrom == IPC_TARGET_ANY)) {
+		printk("_msg_send: send directly\r\n");
 		// copy the message
 		memcpy(p_dest->p_msg, msg, sizeof(Message));
 		// not receiving any more, so clear p_msg pointer(not content!)
 		p_dest->p_msg = NULL;
 		p_dest->state &= ~PROC_STATE_RECEIVING;
+		p_dest->state |= PROC_STATE_READY;
 		p_dest->p_recvfrom = IPC_TARGET_NONE;
 		/*procmanager.unblock(p_dest);*/
 
@@ -216,6 +259,7 @@ int _msg_send(Process* current, int dest, Message* msg)
 	}
 	// p_dest is not waiting from p_send, so block sender
 	else {
+		printk("_msg_send: block sender %d\r\n", p_send->pid);
 		p_send->state |= PROC_STATE_SENDING;
 		assert(p_send->state == PROC_STATE_SENDING);
 		p_send->p_sendto = dest;
@@ -251,6 +295,7 @@ int _msg_receive(Process* current, int src, Message* msg)
 {
 	Process* p_recv = current;
 	Process* p_from = 0;
+	printk("_msg_receive %d from %d\r\n", p_recv->pid, src);
 
 	Process* prev = 0;
 
@@ -311,14 +356,17 @@ int _msg_receive(Process* current, int src, Message* msg)
 	// do and finish the IPC immediately
 	// TODO: merge similar cases
 	if (block_recv == 0) {
+		printk("_msg_receive: do receive now\r\n");
 		// sender to receive from is first in queue
 		if (p_from == p_recv->queue_sending) {
+			printk("first in queue\r\n");
 			assert(prev == 0);
 			p_recv->queue_sending = p_from->queue_sending_next;
 			p_from->queue_sending_next = 0;
 		}
 		// otherwise -- remove p_from from p_recv's queue
 		else {
+			printk("remove from queue\r\n");
 			assert(prev != 0);
 			prev->queue_sending = p_from->queue_sending;
 			p_from->queue_sending = 0;
@@ -326,17 +374,23 @@ int _msg_receive(Process* current, int src, Message* msg)
 
 		// copy the message and finish IPC
 		assert(msg);
-		memcpy(p_recv->p_msg, p_from->p_msg, sizeof(Message));
+		assert(p_from->p_msg);
+		/*printk("%x %x %d\r\n", msg, p_from->p_msg, sizeof(Message));*/
+		memcpy(msg, p_from->p_msg, sizeof(Message));
 		p_from->p_msg = 0;
 		p_from->p_sendto = IPC_TARGET_NONE;
-		p_from->state &= ~IPC_SEND;
+		/*printk("%d\r\n", p_from->state);*/
+		p_from->state &= ~PROC_STATE_SENDING;
+		p_from->state |= PROC_STATE_READY;
+		/*printk("%d\r\n", p_from->state);*/
 		/*procmanager.unblock(p_from);*/
 
 
 	}
 	// have to block receiver
 	else {
-		p_recv->state |= IPC_RECEIVE;
+		printk("_msg_receive: block receiver %d\r\n", p_recv->pid);
+		p_recv->state |= PROC_STATE_RECEIVING;
 		p_recv->p_msg = msg;
 		if (src == IPC_TARGET_ANY)
 			p_recv->p_recvfrom = IPC_TARGET_ANY;
@@ -367,6 +421,8 @@ void ProcManagerInit()
 		pm->proc_table[i].p_msg = NULL;
 		pm->proc_table[i].p_recvfrom = IPC_TARGET_NONE;
 		pm->proc_table[i].p_sendto = IPC_TARGET_NONE;
+		pm->proc_table[i].queue_sending = NULL;
+		pm->proc_table[i].queue_sending_next = NULL;
 	}
 
 	pm->proc_max = PROC_NUM_MAX;
@@ -383,13 +439,17 @@ void ProcManagerInit()
 	pt[1].pid = 1;
 	pt[1].pc = proc1;
 	pt[1].regs.sp = 0x2008fffc;
+	pt[1].state = PROC_STATE_RUNNING;
 	pt[2].pid = 2;
 	pt[2].pc = proc2;
 	pt[2].regs.sp = 0x2008effc;
+	pt[2].state = PROC_STATE_READY;
 	pt[3].pid = 3;
 	pt[3].pc = proc3;
 	pt[3].regs.sp = 0x2008dffc;
+	pt[3].state = PROC_STATE_READY;
 	pt[4].pid = 4;
 	pt[4].pc = kproc_get_ticks;
 	pt[4].regs.sp = 0x2008cffc;
+	pt[4].state = PROC_STATE_READY;
 }

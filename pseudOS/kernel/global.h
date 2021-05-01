@@ -27,6 +27,6 @@
 extern Process proc_table[];
 extern ProcManager procmanager;
 
-extern unsigned int ticks;
+extern volatile unsigned int ticks;
 
 #endif

@@ -10,15 +10,17 @@
 
 #define PROC_NUM_MAX 256
 
-#define PROC_STATE_READY 0b000000
-#define PROC_STATE_RUNNING 0b000001
+//#define PROC_STATE_READY 0b000000
+#define PROC_STATE_RUNNING 0b000000
 #define PROC_STATE_SENDING 0b000010
 #define PROC_STATE_RECEIVING 0b000100
 #define PROC_STATE_TERMINATE 0b010000
+#define PROC_STATE_READY 0b100000
 #define PROC_STATE_UNDEF 0b111111
 
 #define IPC_SEND 34
 #define IPC_RECEIVE 37
+#define IPC_BOTH 340
 #define IPC_TARGET_ANY (-363)
 #define IPC_TARGET_NONE (-364)
 
@@ -119,12 +121,16 @@ void ProcManagerInit();
 
 int sendrec(int function, int src_dest, Message* msg, Process* proc);
 
+// TODO: a unified syscall for all functions, with sendrec the
+// most basic one
+int sendrec_syscall(int function, int src_dest, Message* msg);
+
 // interface asm function for procs -- user(and kernel-side)
 // runs in user mode(if the cpu has), uses ecall
 // after this "returns"(may block some time before return), 
 //  the IPC has done
 // and literally the only syscall in pseudos
-extern int sendrec_syscall(int function, int src_dest, Message* msg);
+extern int syscall_asm(int function, int src_dest, Message* msg);
 
 
 #endif

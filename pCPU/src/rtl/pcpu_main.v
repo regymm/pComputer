@@ -33,6 +33,9 @@ module pcpu_main
         input uart_rx,
         output uart_tx,
 
+		input uart_rx_2,
+		output uart_tx_2,
+
         input sd_ncd,
         input sd_wp,
         input sd_dat0,
@@ -45,6 +48,9 @@ module pcpu_main
 		input ch375_tx,
 		output ch375_rx,
 		input ch375_nint,
+
+		input ps2_clk,
+		input ps2_data,
 
         output [2:0]TMDSp,
         output [2:0]TMDSn,
@@ -62,8 +68,8 @@ module pcpu_main
         .clk_in1(sysclk),
         .clk_main(clk_main),
 		.clk_mem(clk_mem),
-        .clk_hdmi_25(clk_hdmi_25),
-        .clk_hdmi_250(clk_hdmi_250)
+		.clk_hdmi_25(clk_hdmi_25),
+		.clk_hdmi_250(clk_hdmi_250)
     );
 
 
@@ -81,9 +87,17 @@ module pcpu_main
         .o_state(btn_d)
     );
 
+	// backup serial
+	assign uart_tx_2 = uart_tx;
+	wire uart_rx_in = sw_d[1] ? uart_rx : uart_rx_2;
 
-    // reset
-    wire rst = sw_d[0];
+
+
+    // reset signal
+	wire manual_rst = sw_d[0];
+    (*mark_debug = "true"*) wire rst = manual_rst | uart_rst;
+
+	// reset module
 	wire [31:0]rst_d = 0;
 	wire rst_we = 0;
 	wire rst_gpio;
@@ -198,10 +212,15 @@ module pcpu_main
 		.BAUD_RATE(BAUD_RATE_UART)
 	) uart_inst (
         .clk(clk_main),
-        .rst(rst_uart),
+		`ifdef UART_RST_EN
+			// avoid UART reset dead lock
+			.rst(manual_rst),
+		`else
+			.rst(rst_uart),
+		`endif
 
         .tx(uart_tx),
-        .rx(uart_rx),
+        .rx(uart_rx_in),
 
         .a(uart_a),
         .d(uart_d),
@@ -220,6 +239,20 @@ module pcpu_main
 	assign irq_uart = 0;
 `endif
 
+	// uart reset
+	wire uart_rst;
+`ifdef UART_RST_EN
+	uartreset uartreset_inst(
+		.clk(clk_main),
+
+		.uart_data(sb_rxdata),
+		.uart_ready(sb_rxnew),
+
+		.uart_rst(uart_rst)
+	);
+`else
+	assign uart_rst = 0;
+`endif
 
     // sdcard
     wire [15:0]sd_a;
@@ -369,6 +402,22 @@ module pcpu_main
     wire video_we;
     wire [31:0]video_spo;
 `ifdef VIDEO_EN
+	//hdmi_demo hdmi_demo_inst(
+		//.clk(clk),
+		//.rst(rst),
+
+		//.a(video_a),
+		//.d(video_d),
+		//.we(video_we),
+		//.spo(video_spo),
+
+		//.clk_pix(clk_hdmi_25),
+		//.clk_tmds(clk_hdmi_250),
+		//.TMDSp(TMDSp),
+		//.TMDSn(TMDSn),
+		//.TMDSp_clock(TMDSp_clock),
+		//.TMDSn_clock(TMDSn_clock)
+	//);
 	mkrvidor4000_top mkrvidor4000_top_inst(
 		.clk(clk_main),
 		.clk_pix(clk_hdmi_25),
@@ -409,7 +458,20 @@ module pcpu_main
 	);
 `endif
 
-
+	wire [31:0]ps2_spo;
+	wire ps2_irq;
+`ifdef PS2_EN
+	ps2 ps2_inst(
+		.clk(clk_main),
+		.rst(rst),
+		.spo(ps2_spo),
+		.kclk(ps2_clk),
+		.kdata(ps2_data),
+		.irq(ps2_irq)
+	);
+`else
+	assign ps2_irq = 0;
+`endif
 
     // interrupt unit
     wire cpu_eip;
@@ -580,6 +642,8 @@ module pcpu_main
         .sb_d(sb_d),
         .sb_we(sb_we),
 		.sb_ready(sb_ready),
+
+		.ps2_spo(ps2_spo),
 
         .irq(pirq)
     );

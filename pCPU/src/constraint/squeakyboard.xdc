@@ -47,6 +47,18 @@ set_property PULLUP true [get_ports {sw[1]}]
 #set_property -dict {PACKAGE_PIN G18 IOSTANDARD LVCMOS33} [get_ports io5]
 #set_property -dict {PACKAGE_PIN E19 IOSTANDARD LVCMOS33} [get_ports io6]
 
+# PMOD3
+set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports uart_tx_2]
+set_property -dict {PACKAGE_PIN J16 IOSTANDARD LVCMOS33} [get_ports uart_rx_2]
+#set_property -dict {PACKAGE_PIN F16 IOSTANDARD LVCMOS33} [get_ports b31]
+#set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports b24]
+#set_property -dict {PACKAGE_PIN  IOSTANDARD LVCMOS33} [get_ports b21]
+#set_property -dict {PACKAGE_PIN  IOSTANDARD LVCMOS33} [get_ports b34]
+#set_property -dict {PACKAGE_PIN  IOSTANDARD LVCMOS33} [get_ports b32]
+#set_property -dict {PACKAGE_PIN  IOSTANDARD LVCMOS33} [get_ports b23]
+#set_property -dict {PACKAGE_PIN  IOSTANDARD LVCMOS33} [get_ports b22]
+#set_property -dict {PACKAGE_PIN  IOSTANDARD LVCMOS33} [get_ports b33]
+
 ## PMOD4+
 #set_property -dict {PACKAGE_PIN T12 IOSTANDARD LVCMOS33} [get_ports q1p]
 #set_property -dict {PACKAGE_PIN U12 IOSTANDARD LVCMOS33} [get_ports q1n]
@@ -86,10 +98,12 @@ set_property -dict {PACKAGE_PIN H18 IOSTANDARD LVCMOS33} [get_ports ch375_nint]
 #set_property PULLUP TRUE [get_ports ch375_tx]
 
 # USB PS2
-#set_property -dict {PACKAGE_PIN J20 IOSTANDARD LVCMOS33} [get_ports usbdp]
-#set_property -dict {PACKAGE_PIN H20 IOSTANDARD LVCMOS33} [get_ports usbdn]
-#set_property PULLUP TRUE [get_ports usbdp]
-#set_property PULLUP TRUE [get_ports usbdn]
+set_property -dict {PACKAGE_PIN J20 IOSTANDARD LVCMOS33} [get_ports ps2_clk]
+set_property -dict {PACKAGE_PIN H20 IOSTANDARD LVCMOS33} [get_ports ps2_data]
+#set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports ps2_clk]
+#set_property -dict {PACKAGE_PIN J16 IOSTANDARD LVCMOS33} [get_ports ps2_data]
+set_property PULLUP TRUE [get_ports ps2_clk]
+set_property PULLUP TRUE [get_ports ps2_data]
 
 # SD Card
 set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports sd_ncd]

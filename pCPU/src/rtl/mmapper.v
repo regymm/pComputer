@@ -90,6 +90,9 @@ module mmapper
 		input [31:0]sb_spo,
 		input sb_ready,
 
+		// PS2 keyboard: 0x9a000000
+		input [31:0]ps2_spo,
+
         // 0xe0000000 MMU control
 
         // 1024*32(8KB) boot rom: 0xf0000000 to 0xf00007fc
@@ -180,6 +183,9 @@ module mmapper
 					spo = sb_spo;
 					sb_we = we;
 					ready = sb_ready;
+				end
+				4'ha: begin
+					spo = ps2_spo;
 				end
                 default: irq = 1;
             endcase

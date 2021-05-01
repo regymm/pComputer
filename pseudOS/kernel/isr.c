@@ -11,25 +11,60 @@
 #include "stdio.h"
 #include "misc.h"
 
+extern volatile unsigned int ticks;
+
 static void isr_timer_i_handler()
 {
+	/*printk("%d\r\n", ticks);*/
+	ticks++;
 
+	if (ticks % 5 == 0) {
+		/*printf("Switch process\r\n");*/
+		procmanager.schedule();
+	}
+
+}
+void isr_irq_uart_handler()
+{
+	char c = *uart_rx_data;
+	printk("UART IRQ: %c\r\n", c);
+}
+void isr_irq_gpio_handler()
+{
+	printk("GPIO IRQ: %d %d %d %d\r\n", gpio_ctrl[0], gpio_ctrl[1], gpio_ctrl[4], gpio_ctrl[5]);
 }
 static void isr_external_i_handler()
 {
-
+	int irq_dev = interrupt_ctrl[1];
+	switch (irq_dev) {
+		case IRQ_DEV_UART:
+			isr_irq_uart_handler();
+			break;
+		case IRQ_DEV_GPIO:
+			isr_irq_gpio_handler();
+			break;
+		default:
+			panic("Unknown external irq device : %d!\r\n", irq_dev);
+			break;
+	}
 }
 static void isr_ecall_e_handler()
 {
-
+	printk("ecall handler\r\n");
+	int* regs_save_addr = REGS_SAVE_ADDR;
+	int ecall_function = regs_save_addr[0];
+	int ecall_src_dest = regs_save_addr[1];
+	Message* ecall_msg = (Message *)regs_save_addr[2];
+	printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);
+	sendrec(ecall_function, ecall_src_dest, ecall_msg, procmanager.pid2proc(procmanager.proc_running));
+	printk("ecall handler return\r\n");
+	procmanager.schedule();
 }
 
 // called by isr_asm, main ISR
 // when this is called context is already on REGS_SAVE_ADDR
 void interrupt_service_routine()
 {
-	ticks++;
-
 	// +1 means addr+4 for int*
 	*(gpio_ctrl + 9) = ticks % 2 ? 8 : 0;
 	*(gpio_ctrl + 8) = ticks % 2 ? 0 : 8;
@@ -40,7 +75,7 @@ void interrupt_service_routine()
 			panic("ISR: software interrupt not supported!\r\n");
 			break;
 		case 0x80000007:
-			printk("ISR: timer interrupt\r\n");
+			/*printk("ISR: timer interrupt\r\n");*/
 			isr_timer_i_handler();
 			break;
 		case 0x8000000b:
@@ -57,12 +92,8 @@ void interrupt_service_routine()
 	}
 
 	/*printf("Got interrupt %d \r\n", ticks);*/
-	printk("mcause: %08x \r\n", mcause);
+	/*printk("mcause: %08x \r\n", mcause);*/
 
-	if (ticks % 5 == 0) {
-		/*printf("Switch process\r\n");*/
-		procmanager.schedule();
-	}
 	/*printf("interrupt_service_routine C end. \r\n");*/
 	/*fflush(stdin);*/
 }

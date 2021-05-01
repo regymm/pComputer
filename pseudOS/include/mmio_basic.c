@@ -25,6 +25,9 @@ volatile int* interrupt_ctrl	= (int*) 0x98000000;
 
 volatile int* uart_dma_ctrl		= (int*) 0x99000000;
 
+int video_x = 0;
+int video_y = 0;
+
 char uart_getchar()
 {
 	/**uart_rx_reset = 1;*/
@@ -39,6 +42,23 @@ void uart_putchar(char c)
 	while(! *uart_tx_done);
 	*uart_tx = c;
 	while(! *uart_tx_done);
+}
+void hdmi_putchar(char c)
+{
+	if (c == '\r') video_x = 0;
+	else if (c == '\n') {
+		if (video_y == 29) video_y = 0;
+		else video_y++;
+	}
+	else {
+		video_base[video_y * 80 + video_x] = c + 0x0100;
+		if (video_x == 79)  {
+			video_x = 0;
+			if (video_y == 29) video_y = 0;
+			else video_y++;
+		}
+		else video_x++;
+	}
 }
 
 void uart_putstr(const char* str)

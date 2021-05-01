@@ -37,9 +37,9 @@ module uart
         input we,
         output reg [31:0]spo,
 
-        output reg irq = 0,
+        output irq,
 
-		input override,
+		input override, // unused
 		output rxnew,
 		output [7:0]rxdata
     );
@@ -205,6 +205,7 @@ module uart
 		//rxnew_1 <= wire_rx_state_stop;
 		//rxnew <= rxnew_1;
 	end
+	assign irq = rxnew;
 	//assign rxnew = wire_rx_state_stop;
 	assign rxdata = data_rx;
 	//reg override_old;

@@ -26,10 +26,17 @@ module interrupt_unit
 	reg i_uart_mask;
 	reg i_gpio_mask;
 
+	localparam IRQ_DEV_NONE = 0;
+	localparam IRQ_DEV_TIMER = 1;
+	localparam IRQ_DEV_UART = 2;
+	localparam IRQ_DEV_GPIO = 3;
+	reg [3:0]current_irq_dev;
+
     // handler & memory control
     always @ (*) begin
         case (a[2:0])
-			3'b0: spo = {29'b0, i_gpio_mask, i_uart_mask, i_timer_mask};
+			3'b0: spo = {5'b0, i_gpio_mask, i_uart_mask, i_timer_mask, 24'b0};
+			3'b1: spo = {4'b0, current_irq_dev, 24'b0};
 			default: spo = 0;
         endcase
     end
@@ -48,6 +55,7 @@ module interrupt_unit
         end
     end
 
+    // interrupt sendout & receive control
 	reg int_reply_reg;
 	reg i_timer_reg;
 	reg i_uart_reg;
@@ -71,13 +79,13 @@ module interrupt_unit
 	//localparam END = 2'b11;
 	reg [0:0]state = IDLE;
 
-    // interrupt sendout & receive control
     always @ (posedge clk) begin
         if (rst) begin
             i_timer_save <= 0;
             i_uart_save <= 0;
             i_gpio_save <= 0;
 			int_istimer_reg <= 0;
+			current_irq_dev <= IRQ_DEV_NONE;
 			state <= IDLE;
         end
         else begin
@@ -93,12 +101,15 @@ module interrupt_unit
 						state <= ISSUE;
 						i_timer_save <= 0;
 						int_istimer_reg <= 1;
+						//current_irq_dev <= IRQ_DEV_TIMER;
 					end else if (i_uart_save) begin
 						state <= ISSUE;
 						i_uart_save <= 0;
+						current_irq_dev <= IRQ_DEV_UART;
 					end else if (i_gpio_save) begin
 						state <= ISSUE;
 						i_gpio_save <= 0;
+						current_irq_dev <= IRQ_DEV_GPIO;
 					end
 				end
 				ISSUE: begin

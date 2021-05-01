@@ -445,7 +445,7 @@ module riscv_multicyc
 					// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
 					else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
 					else if (op == OP_PRIV & (priv_mret)) phase <= MRET;
-					else if (op == OP_PRIV & (priv_ecall)) begin
+					else if (op == OP_PRIV & (priv_ebreak)) begin
 						phase <= EXCEPTION;
 						mcause_code_out <= EXC_BREAKPOINT;
 					end else if (op == OP_PRIV & (priv_ecall)) begin
