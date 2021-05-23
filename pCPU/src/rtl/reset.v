@@ -32,7 +32,7 @@ module reset
 
 	wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
 	
-	reg rst_globl_reg = 0;
+	reg rst_globl_reg = 1;
 
 	// TODO: simplify
 	always @ (posedge clk) begin

@@ -23,8 +23,6 @@ extern volatile int* sd_cache_dirty;
 
 extern volatile int* gpio_ctrl;
 
-extern volatile int* interrupt_ctrl;
-
 extern volatile int* uart_dma_ctrl;
 
 char uart_getchar();

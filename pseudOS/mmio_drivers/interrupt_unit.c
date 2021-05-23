@@ -6,4 +6,5 @@
  * Last Modified Date: 2021.05.01
  */
 
-volatile int* interrupt_ctrl = 0x98000000;
+#include "interrupt_unit.h"
+volatile int* interrupt_ctrl = (int*) 0x98000000;

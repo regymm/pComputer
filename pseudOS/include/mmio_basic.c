@@ -21,8 +21,6 @@ volatile int* sd_cache_dirty	= (int*) 0x96002014;
 
 volatile int* gpio_ctrl			= (int*) 0x92000000;
 
-volatile int* interrupt_ctrl	= (int*) 0x98000000;
-
 volatile int* uart_dma_ctrl		= (int*) 0x99000000;
 
 int video_x = 0;

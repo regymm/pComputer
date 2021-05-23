@@ -37,8 +37,8 @@ boot/bootrom/bootrom.elf: boot/bootrom/bootrom.o boot/bootrom/bootrom.c_o includ
 boot/uartbl/uartbl.elf: boot/uartbl/uartbl.o boot/uartbl/uartbl.c_o include/mmio_basic.c_o
 	$(LD) $(LDFLAGS) $^ -o $@ --script boot/uartbl/linker_uartbl.ld
 
-sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c newlib/crt0.S newlib/syscall.c fs/fs.c kernel/global.c kernel/process.c mmio_drivers/CH375.c kernel/isr.c kernel/misc.c
-	$(CC) $(CC_L_F) $^ -o $@ -T linker_sdboot.ld -lc -lgcc
+sdboot.elf: sdboot.S sdboot.c include/mmio_basic.c mmio_drivers/interrupt_unit.c mmio_drivers/ps2.c newlib/crt0.S newlib/syscall.c fs/fs.c kernel/global.c kernel/process.c mmio_drivers/CH375.c kernel/isr.c kernel/misc.c
+	$(CC) $(CC_L_F) $^ -o $@ -T linker_sdboot.ld -lc -lgcc 
 
 clean:
 	-rm -f *.elf

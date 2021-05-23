@@ -13,10 +13,12 @@
 #include "kernel/isr.h"
 #include "kernel/misc.h"
 #include "mmio_drivers/CH375.h"
+#include "mmio_drivers/interrupt_unit.h"
 #define false 0
 #define true 1
 
 extern void usb_test();
+extern volatile unsigned int ticks;
 
 /*extern void sd_test_asm();*/
 
@@ -84,6 +86,7 @@ void hdmi_test()
 // jumped from assembly to here
 void sd_c_start() // the current "kernel"
 {
+	printk("%d\r\n", ticks);
 	hdmi_test();
 	hardware_init();
 	hardware_test();
@@ -110,7 +113,7 @@ void sd_c_start() // the current "kernel"
 	printk("%d\r\n", (unsigned short)c);
 	
 
-	prepare_processes();
+	/*prepare_processes();*/
 	setupIRQ();
 
 	/*sdcard_fs_test();*/
@@ -121,6 +124,6 @@ void sd_c_start() // the current "kernel"
 
 	while(1){
 		for(i = 1; i < 100000; i++);
-		uart_putchar('.');
+		/*uart_putchar('.');*/
 	}
 }

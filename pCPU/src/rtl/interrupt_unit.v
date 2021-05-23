@@ -13,6 +13,7 @@ module interrupt_unit
         input i_timer,
         input i_uart,
         input i_gpio,
+		input i_ps2,
         //input irq_sdcard,
 
         input [2:0]a,
@@ -25,17 +26,19 @@ module interrupt_unit
 	reg i_timer_mask;
 	reg i_uart_mask;
 	reg i_gpio_mask;
+	reg i_ps2_mask;
 
 	localparam IRQ_DEV_NONE = 0;
 	localparam IRQ_DEV_TIMER = 1;
 	localparam IRQ_DEV_UART = 2;
 	localparam IRQ_DEV_GPIO = 3;
+	localparam IRQ_DEV_PS2 = 4;
 	reg [3:0]current_irq_dev;
 
     // handler & memory control
     always @ (*) begin
         case (a[2:0])
-			3'b0: spo = {5'b0, i_gpio_mask, i_uart_mask, i_timer_mask, 24'b0};
+			3'b0: spo = {4'b0, i_ps2_mask, i_gpio_mask, i_uart_mask, i_timer_mask, 24'b0};
 			3'b1: spo = {4'b0, current_irq_dev, 24'b0};
 			default: spo = 0;
         endcase
@@ -46,10 +49,11 @@ module interrupt_unit
             i_timer_mask <= 1;
             i_uart_mask <= 1;
             i_gpio_mask <= 1;
+            i_ps2_mask <= 1;
         end
         else begin
 			if (we) case (a[2:0])
-				3'b0: {i_gpio_mask, i_uart_mask, i_timer_mask} <= d[26:24];
+				3'b0: {i_ps2_mask, i_gpio_mask, i_uart_mask, i_timer_mask} <= d[27:24];
 				default: ;
 			endcase
         end
@@ -60,16 +64,19 @@ module interrupt_unit
 	reg i_timer_reg;
 	reg i_uart_reg;
 	reg i_gpio_reg;
+	reg i_ps2_reg;
 	always @ (posedge clk) begin
 		int_reply_reg <= int_reply;
 		i_timer_reg <= i_timer;
 		i_uart_reg <= i_uart;
 		i_gpio_reg <= i_gpio;
+		i_ps2_reg <= i_ps2;
 	end
 
     reg i_timer_save = 0;
     reg i_uart_save = 0;
     reg i_gpio_save = 0;
+    reg i_ps2_save = 0;
 
 	reg int_istimer_reg = 0;
 
@@ -84,6 +91,7 @@ module interrupt_unit
             i_timer_save <= 0;
             i_uart_save <= 0;
             i_gpio_save <= 0;
+            i_ps2_save <= 0;
 			int_istimer_reg <= 0;
 			current_irq_dev <= IRQ_DEV_NONE;
 			state <= IDLE;
@@ -92,6 +100,7 @@ module interrupt_unit
             if (i_timer_reg & !i_timer_mask) i_timer_save <= 1;
             if (i_uart_reg & !i_uart_mask) i_uart_save <= 1;
             if (i_gpio_reg & !i_gpio_mask) i_gpio_save <= 1;
+            if (i_ps2_reg & !i_ps2_mask) i_ps2_save <= 1;
 
 			case (state) 
 				IDLE: begin
@@ -110,6 +119,10 @@ module interrupt_unit
 						state <= ISSUE;
 						i_gpio_save <= 0;
 						current_irq_dev <= IRQ_DEV_GPIO;
+					end else if (i_ps2_save) begin
+						state <= ISSUE;
+						i_ps2_save <= 0;
+						current_irq_dev <= IRQ_DEV_PS2;
 					end
 				end
 				ISSUE: begin

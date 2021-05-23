@@ -12,14 +12,40 @@
 #include "string.h"
 #include "ipc.h"
 
+void kproc_tty_hardware()
+{
+	Message msg;
+	int sender;
+	char* buf;
+	int len;
+	int type;
+	while(1) {
+		sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
+		sender = msg.source;
+		buf = msg.pointer;
+		len = msg.integer;
+		type = msg.type;
+		if (type == SYSCALL_WRITE) {
+
+		} else if (type == SYSCALL_READ) {
+			msg.integer = -1;
+			printk("read not supported!\r\n");
+			sendrec_syscall(IPC_SEND, sender, &msg);
+		} else
+			panic("kproc_tty_hardware: unknown syscall type %d\r\n", type);
+		/*sendrec_syscall(IPC_SEND, msg.source, &msg);*/
+	}
+}
+
 // a kernel-side process, handling requests from user procs
 void kproc_get_ticks()
 {
+	/*cli();*/
 	Message msg;
 	int count = 0;
 	while (1) {
 		count++;
-		if (count % 100000 == 0) {
+		if (count % 10000 == 0) {
 			printk("kproc_get_ticks: I'm still running!\r\n");
 			/*sendrec_syscall(0, 0, 0);*/
 		}
@@ -54,10 +80,10 @@ void proc1()
 		for (i = 0; i < 80000; i++);
 		printk("A");
 		printk("proc a: %x\r\n", &msg);
-		msg.type = SYSCALL_GET_TICKS;
+		/*msg.type = SYSCALL_GET_TICKS;*/
 		/*msg.source = */
 		sendrec_syscall(IPC_BOTH, KPROC_PID_GET_TICKS, &msg);
-		printk("proc1: getticks: %d\r\n", msg.integer);
+		printk("proc1: getticks: %x\r\n", msg.integer);
 	}
 }
 void proc2()
@@ -128,13 +154,13 @@ void _proc_schedule()
 	/*short pid_from = pm->proc_running;*/
 	/*Process* p_from = pm->pid2proc(pid_from);*/
 	if (pm->do_start) {
-		printk("First schedule: load process only\r\n");
+		/*printk("First schedule: load process only\r\n");*/
 		pm->do_start = 0;
 		p_to = pm->pid2proc(1);
 	}
 	else {
 		short pid_to = pm->get_next(pm);
-		printk("Switch from %d to %d\r\n", pm->proc_running, pid_to);
+		/*printk("Switch from %d to %d\r\n", pm->proc_running, pid_to);*/
 		p_from = pm->pid2proc(pm->proc_running);
 		p_to = pm->pid2proc(pid_to);
 
@@ -217,7 +243,7 @@ int _msg_receive(Process* current, int src, Message* msg);
 // this is called by kernel ISR after receiving ecall from processes
 int sendrec(int function, int src_dest, Message* msg, Process* proc)
 {
-	printk("sendrec\r\n");
+	/*printk("sendrec\r\n");*/
 	int caller = proc->pid;
 	msg->source = caller;
 	assert(msg->source != src_dest);
@@ -232,7 +258,7 @@ int sendrec(int function, int src_dest, Message* msg, Process* proc)
 // these should also finish immediately
 int _msg_send(Process* current, int dest, Message* msg)
 {
-	printk("_msg_send %d to %d\r\n", current->pid, dest);
+	/*printk("_msg_send %d to %d\r\n", current->pid, dest);*/
 	Process* p_send = current;
 	Process* p_dest = procmanager.pid2proc(dest);
 
@@ -244,7 +270,7 @@ int _msg_send(Process* current, int dest, Message* msg)
 	if ((p_dest->state == PROC_STATE_RECEIVING) && 
 			(p_dest->p_recvfrom == p_send->pid || 
 			p_dest->p_recvfrom == IPC_TARGET_ANY)) {
-		printk("_msg_send: send directly\r\n");
+		/*printk("_msg_send: send directly\r\n");*/
 		// copy the message
 		memcpy(p_dest->p_msg, msg, sizeof(Message));
 		// not receiving any more, so clear p_msg pointer(not content!)
@@ -259,7 +285,7 @@ int _msg_send(Process* current, int dest, Message* msg)
 	}
 	// p_dest is not waiting from p_send, so block sender
 	else {
-		printk("_msg_send: block sender %d\r\n", p_send->pid);
+		/*printk("_msg_send: block sender %d\r\n", p_send->pid);*/
 		p_send->state |= PROC_STATE_SENDING;
 		assert(p_send->state == PROC_STATE_SENDING);
 		p_send->p_sendto = dest;
@@ -295,7 +321,7 @@ int _msg_receive(Process* current, int src, Message* msg)
 {
 	Process* p_recv = current;
 	Process* p_from = 0;
-	printk("_msg_receive %d from %d\r\n", p_recv->pid, src);
+	/*printk("_msg_receive %d from %d\r\n", p_recv->pid, src);*/
 
 	Process* prev = 0;
 
@@ -356,17 +382,17 @@ int _msg_receive(Process* current, int src, Message* msg)
 	// do and finish the IPC immediately
 	// TODO: merge similar cases
 	if (block_recv == 0) {
-		printk("_msg_receive: do receive now\r\n");
+		/*printk("_msg_receive: do receive now\r\n");*/
 		// sender to receive from is first in queue
 		if (p_from == p_recv->queue_sending) {
-			printk("first in queue\r\n");
+			/*printk("first in queue\r\n");*/
 			assert(prev == 0);
 			p_recv->queue_sending = p_from->queue_sending_next;
 			p_from->queue_sending_next = 0;
 		}
 		// otherwise -- remove p_from from p_recv's queue
 		else {
-			printk("remove from queue\r\n");
+			/*printk("remove from queue\r\n");*/
 			assert(prev != 0);
 			prev->queue_sending = p_from->queue_sending;
 			p_from->queue_sending = 0;
@@ -389,7 +415,7 @@ int _msg_receive(Process* current, int src, Message* msg)
 	}
 	// have to block receiver
 	else {
-		printk("_msg_receive: block receiver %d\r\n", p_recv->pid);
+		/*printk("_msg_receive: block receiver %d\r\n", p_recv->pid);*/
 		p_recv->state |= PROC_STATE_RECEIVING;
 		p_recv->p_msg = msg;
 		if (src == IPC_TARGET_ANY)

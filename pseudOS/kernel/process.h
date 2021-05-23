@@ -24,8 +24,6 @@
 #define IPC_TARGET_ANY (-363)
 #define IPC_TARGET_NONE (-364)
 
-#define SYSCALL_GET_TICKS 735
-
 typedef struct {
 	int a0;
 	int a1;

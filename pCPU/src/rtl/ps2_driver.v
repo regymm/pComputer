@@ -27,16 +27,16 @@ module ps2_driver
 		input rst,
 		input kclk,
 		input kdata,
-		output [31:0]keycodeout,
+		output reg [31:0]keycodeout,
 		output reg newkeypress
     );
 
 	wire kclkf, kdataf;
 	reg [7:0]datacur;
-	reg [7:0]dataprev;
+	//reg [7:0]dataprev;
 	reg [3:0]cnt = 0;
 	reg [31:0]keycode = 0;
-	reg flag = 0;
+	//reg flag = 0;
 
 	debouncer debonce(
 		.clk(clk),
@@ -46,44 +46,56 @@ module ps2_driver
 		.O1(kdataf)
 	);
 
-	always @ (negedge kclkf) begin
-		case (cnt)
-			0: ;
-			1: datacur[0] <= kdataf;
-			2: datacur[1] <= kdataf;
-			3: datacur[2] <= kdataf;
-			4: datacur[3] <= kdataf;
-			5: datacur[4] <= kdataf;
-			6: datacur[5] <= kdataf;
-			7: datacur[6] <= kdataf;
-			8: datacur[7] <= kdataf;
-			9: flag <= 1;
-			10: flag <= 0;
-		endcase
-
-		if (cnt <= 9) begin
-			cnt <= cnt + 1;
-			newkeypress <= 0;
-		end
-		else if (cnt == 10) begin
+	always @ (negedge kclkf, posedge rst) begin
+		if (rst) begin
 			cnt <= 0;
-			if (datacur != 8'hE0 & datacur != 8'hF0)
-				newkeypress <= 1;
-		end
+			//flag <= 0;
+			keycode <= 32'h0;
+			keycodeout <= 32'h0;
+			//dataprev <= 8'h0;
+			datacur <= 8'h0;
+			newkeypress <= 0;
+		end else begin
+			case (cnt)
+				0: ;
+				1: datacur[0] <= kdataf;
+				2: datacur[1] <= kdataf;
+				3: datacur[2] <= kdataf;
+				4: datacur[3] <= kdataf;
+				5: datacur[4] <= kdataf;
+				6: datacur[5] <= kdataf;
+				7: datacur[6] <= kdataf;
+				8: datacur[7] <= kdataf;
+				9: ;
+				10: ;
+				//9: flag <= 1;
+				//10: flag <= 0;
+			endcase
 
-	end
+			//if (flag & dataprev != datacur) begin
+			//end
 
-	always @ (posedge flag) begin
-		if (dataprev != datacur) begin
-			keycode[31:24] <= keycode[23:16];
-			keycode[23:16] <= keycode[15:8];
-			keycode[15:8] <= dataprev;
-			keycode[7:0] <= datacur;
-			dataprev <= datacur;
+			if (cnt <= 9) begin
+				cnt <= cnt + 1;
+				newkeypress <= 0;
+			end
+			else if (cnt == 10) begin
+				cnt <= 0;
+				if (datacur != 8'hE0 & datacur != 8'hF0) begin
+					// new key press or release is present
+					newkeypress <= 1;
+					keycodeout <= {keycode[23:0], datacur};
+					keycode <= 32'h0;
+				end else begin
+					keycode[31:24] <= keycode[23:16];
+					keycode[23:16] <= keycode[15:8];
+					keycode[15:8] <= keycode[7:0];
+					keycode[7:0] <= datacur;
+					//dataprev <= datacur;
+				end
+			end
 		end
 	end
-	
-	assign keycodeout = keycode;
 endmodule
 
 module debouncer(

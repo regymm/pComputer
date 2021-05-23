@@ -10,4 +10,4 @@
 #include "process.h"
 
 ProcManager procmanager;
-volatile unsigned int ticks = 0;
+volatile unsigned int ticks = 0x0;

@@ -14,7 +14,7 @@ module pcpu_main
 		parameter CLOCK_FREQ = 62500000,
 		parameter BAUD_RATE_UART = 921600,
 		parameter BAUD_RATE_CH375 = 9600,
-		parameter TIMER_COUNTER = 10000000
+		parameter TIMER_COUNTER = 1000000
 	)
     (
         input sysclk,
@@ -229,7 +229,6 @@ module pcpu_main
 
         .irq(irq_uart),
 
-		.override(sb_uart_override),
 		.rxnew(sb_rxnew),
 		.rxdata(sb_rxdata)
     );
@@ -322,17 +321,13 @@ module pcpu_main
 	assign ch375_rx = 1;
 `endif
 
-	wire [31:0]mainm_a;
-	wire [31:0]mainm_d;
-	wire mainm_we;
-	wire mainm_rd;
-	wire [31:0]mainm_spo;
-	wire mainm_ready;
+	wire [31:0]mainm_a_m;
+	wire [31:0]mainm_d_m;
+	wire mainm_we_m;
+	wire mainm_rd_m;
+	wire [31:0]mainm_spo_m;
+	wire mainm_ready_m;
 	wire mainm_irq;
-	wire sb_mem_override;
-	wire [31:0]sb_mem_a;
-	wire [31:0]sb_mem_d;
-	wire sb_mem_we;
 `ifdef PSRAM_EN
 	memory_controller memory_controller_inst
 	(
@@ -340,17 +335,12 @@ module pcpu_main
 		.clk_mem(clk_mem),
 		.rst(rst_psram),
 
-		.a(mainm_a),
-		.d(mainm_d),
-		.we(mainm_we),
-		.rd(mainm_rd),
-		.spo(mainm_spo),
-		.ready(mainm_ready), 
-
-		.override(sb_mem_override),
-		.a2(sb_mem_a),
-		.d2(sb_mem_d),
-		.we2(sb_mem_we),
+		.a(mainm_a_m),
+		.d(mainm_d_m),
+		.we(mainm_we_m),
+		.rd(mainm_rd_m),
+		.spo(mainm_spo_m),
+		.ready(mainm_ready_m), 
 
 		.irq(mainm_irq),
 
@@ -368,7 +358,13 @@ module pcpu_main
 	wire [2:0]sb_a;
 	wire [31:0]sb_d;
 	wire sb_we;
-	wire sb_uart_override;
+	wire sb_ready;
+	wire [31:0]mainm_a_c;
+	wire [31:0]mainm_d_c;
+	wire mainm_we_c;
+	wire mainm_rd_c;
+	wire [31:0]mainm_spo_c;
+	wire mainm_ready_c;
 `ifdef SERIALBOOT_EN
 	serialboot serialboot_inst(
 		.clk(clk_main),
@@ -379,20 +375,31 @@ module pcpu_main
 		.we(sb_we),
 		.ready(sb_ready),
 
-		.uart_override(sb_uart_override),
-		.uart_data(sb_rxdata),
-		.uart_ready(sb_rxnew),
+		.a_mem(mainm_a_m),
+		.d_mem(mainm_d_m),
+		.we_mem(mainm_we_m),
+		.rd_mem(mainm_rd_m),
+		.spo_mem(mainm_spo_m),
+		.ready_mem(mainm_ready_m),
 
-		.mem_override(sb_mem_override),
-		.mem_a(sb_mem_a),
-		.mem_d(sb_mem_d),
-		.mem_we(sb_mem_we),
-		.mem_ready(1'b1)
+		.a_cpu(mainm_a_c),
+		.d_cpu(mainm_d_c),
+		.we_cpu(mainm_we_c),
+		.rd_cpu(mainm_rd_c),
+		.spo_cpu(mainm_spo_c),
+		.ready_cpu(mainm_ready_c),
+
+		.uart_data(sb_rxdata),
+		.uart_ready(sb_rxnew)
 	);
 `else
-	assign sb_uart_override = 0;
-	assign sb_mem_override = 0;
 	assign sb_ready = 1;
+	assign a_mem = mainm_a_c;
+	assign d_mem = mainm_d_c;
+	assign we_mem = mainm_we_c;
+	assign spo_mem = mainm_spo_c;
+	assign rd_mem = mainm_rd_c;
+	assign ready_mem = mainm_ready_c;
 `endif
 
 
@@ -459,7 +466,7 @@ module pcpu_main
 `endif
 
 	wire [31:0]ps2_spo;
-	wire ps2_irq;
+	wire irq_ps2;
 `ifdef PS2_EN
 	ps2 ps2_inst(
 		.clk(clk_main),
@@ -467,10 +474,10 @@ module pcpu_main
 		.spo(ps2_spo),
 		.kclk(ps2_clk),
 		.kdata(ps2_data),
-		.irq(ps2_irq)
+		.irq(irq_ps2)
 	);
 `else
-	assign ps2_irq = 0;
+	assign irq_ps2 = 0;
 `endif
 
     // interrupt unit
@@ -502,6 +509,7 @@ module pcpu_main
         .i_timer(irq_timer),
         .i_uart(irq_uart),
         .i_gpio(irq_gpio),
+		.i_ps2(irq_ps2),
 
         .a(int_a),
         .d(int_d),
@@ -600,12 +608,12 @@ module pcpu_main
         .distm_spo(distm_spo),
 		.distm_ready(distm_ready),
 
-		.mainm_a(mainm_a),
-		.mainm_d(mainm_d),
-		.mainm_we(mainm_we),
-		.mainm_rd(mainm_rd),
-		.mainm_spo(mainm_spo),
-		.mainm_ready(mainm_ready),
+		.mainm_a(mainm_a_c),
+		.mainm_d(mainm_d_c),
+		.mainm_we(mainm_we_c),
+		.mainm_rd(mainm_rd_c),
+		.mainm_spo(mainm_spo_c),
+		.mainm_ready(mainm_ready_c),
 
         .sd_spo(sd_spo),
         .sd_a(sd_a),

@@ -37,7 +37,7 @@ module psram_controller_fast(
 
     output ready,
 
-    /*(*mark_debug = "true"*)*/ output reg [4:0]state
+    /*(*mark_debug = "true"*)*/ output reg [4:0]state = INIT
 );
 
 	localparam INIT = 0;

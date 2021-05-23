@@ -35,6 +35,7 @@ SECTIONS
 	.text : { *(.text.boot) }
 	.text : { *(.text) }
 	.data : { *(.data) }
+	.bss : { *(.bss) }
 
 	/* the bulk of the program: main, libc, functions etc. */
 	/*.text           :*/

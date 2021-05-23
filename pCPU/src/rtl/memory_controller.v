@@ -23,11 +23,6 @@ module memory_controller
 		output [31:0]spo, 
 		output ready, 
 
-		input override,
-		input [21:0]a2,
-		input [31:0]d2,
-		input we2,
-
 		output irq,
 
 		output psram_ce, 
@@ -38,10 +33,7 @@ module memory_controller
 		output psram_sclk
     );
 
-
-	wire [31:0]data = override ? d2 : d;
-	wire we_real = override ? we2 : we;
-	wire [21:0]a_real = override ? a2 : a;
+	wire [31:0]data = d;
 
 	reg [31:0]regspo;
 	assign spo = regspo;
@@ -49,7 +41,7 @@ module memory_controller
 	//assign spo = {regspo[7:0], regspo[15:8], regspo[23:16], regspo[31:24]};
 
 	reg ready_r = 0;
-	assign ready = ready_r & !(rd | we_real);
+	assign ready = ready_r & !(rd | we);
 
 	reg [21:0]rega;
 	/*(*mark_debug = "true"*)*/reg [7:0]regbuf[3:0];
@@ -142,7 +134,7 @@ module memory_controller
 				// go IDLE right after reset, but first memory operation will
 				// hang until the psram is ready
 				IDLE: begin
-					if (we_real) begin
+					if (we) begin
 						state <= WE_BEGIN;
 						ready_r <= 0;
 						count <= 4;
@@ -151,7 +143,7 @@ module memory_controller
 						ready_r <= 0;
 						count <= 4;
 					end else ready_r <= m_ready;
-					rega <= a_real[21:0];
+					rega <= a[21:0];
 					regbuf[3] <= data[31:24];
 					regbuf[2] <= data[23:16];
 					regbuf[1] <= data[15:8];

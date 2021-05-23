@@ -38,11 +38,17 @@ module ps2
 	reg [31:0]keycode;
 	reg newkeypress_old;
 	always @ (posedge clk) begin
-		newkeypress_old <= newkeypress;
-		if (newkeypress & !newkeypress_old) begin
-			keycode <= keycodeout;
-			irq <= 1;
-		end else irq <= 0;
+		if (rst) begin
+			newkeypress_old <= 0;
+			keycode <= 0;
+			irq <= 0;
+		end else begin
+			newkeypress_old <= newkeypress;
+			if (newkeypress & !newkeypress_old) begin
+				keycode <= keycodeout;
+				irq <= 1;
+			end else irq <= 0;
+		end
 	end
 	assign spo = keycode;
 endmodule

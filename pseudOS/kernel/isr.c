@@ -6,6 +6,8 @@
  * Last Modified Date: 2021.03.06
  */
 #include "../include/mmio_basic.h"
+#include "../mmio_drivers/interrupt_unit.h"
+#include "../mmio_drivers/ps2.h"
 #include "isr.h"
 #include "global.h"
 #include "stdio.h"
@@ -20,7 +22,7 @@ static void isr_timer_i_handler()
 
 	if (ticks % 5 == 0) {
 		/*printf("Switch process\r\n");*/
-		procmanager.schedule();
+		/*procmanager.schedule();*/
 	}
 
 }
@@ -33,6 +35,10 @@ void isr_irq_gpio_handler()
 {
 	printk("GPIO IRQ: %d %d %d %d\r\n", gpio_ctrl[0], gpio_ctrl[1], gpio_ctrl[4], gpio_ctrl[5]);
 }
+void isr_irq_ps2_handler()
+{
+	printk("PS2 IRQ: %x\r\n", ps2_keycode[0]);
+}
 static void isr_external_i_handler()
 {
 	int irq_dev = interrupt_ctrl[1];
@@ -43,6 +49,9 @@ static void isr_external_i_handler()
 		case IRQ_DEV_GPIO:
 			isr_irq_gpio_handler();
 			break;
+		case IRQ_DEV_PS2:
+			isr_irq_ps2_handler();
+			break;
 		default:
 			panic("Unknown external irq device : %d!\r\n", irq_dev);
 			break;
@@ -50,14 +59,14 @@ static void isr_external_i_handler()
 }
 static void isr_ecall_e_handler()
 {
-	printk("ecall handler\r\n");
+	/*printk("ecall handler\r\n");*/
 	int* regs_save_addr = REGS_SAVE_ADDR;
 	int ecall_function = regs_save_addr[0];
 	int ecall_src_dest = regs_save_addr[1];
 	Message* ecall_msg = (Message *)regs_save_addr[2];
-	printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);
+	/*printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);*/
 	sendrec(ecall_function, ecall_src_dest, ecall_msg, procmanager.pid2proc(procmanager.proc_running));
-	printk("ecall handler return\r\n");
+	/*printk("ecall handler return\r\n");*/
 	procmanager.schedule();
 }
 
@@ -79,14 +88,14 @@ void interrupt_service_routine()
 			isr_timer_i_handler();
 			break;
 		case 0x8000000b:
-			printk("ISR: external interrupt\r\n");
+			/*printk("ISR: external interrupt\r\n");*/
 			isr_external_i_handler();
 			break;
 		case 0x00000003:
 			panic("ISR: breakpoint not supported!\r\n");
 			break;
 		case 0x0000000b:
-			printk("ISR: ecall\r\n");
+			/*printk("ISR: ecall\r\n");*/
 			isr_ecall_e_handler();
 			break;
 	}
