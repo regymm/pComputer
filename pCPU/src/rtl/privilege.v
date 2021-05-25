@@ -63,7 +63,13 @@ module privilege
 	always @ (posedge clk) begin
 		mepc_reg <= mepc;
 	end
-	assign mtvec_out = mtvec;
+
+	assign mtvec_out = mtvec_reg;
+	reg [31:0]mtvec_reg;
+	always @ (posedge clk) begin
+		mtvec_reg <= mtvec;
+	end
+	//assign mtvec_out = mtvec;
 
 	//reg [63:0]mtime;
 	//reg [63:0]mtimecmp;
