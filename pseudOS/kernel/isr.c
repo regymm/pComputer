@@ -22,7 +22,8 @@ static void isr_timer_i_handler()
 
 	if (ticks % 5 == 0) {
 		/*printf("Switch process\r\n");*/
-		/*procmanager.schedule();*/
+		// disable this to testing w/o processes
+		procmanager.schedule();
 	}
 
 }

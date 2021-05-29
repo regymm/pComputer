@@ -86,11 +86,11 @@ void hdmi_test()
 // jumped from assembly to here
 void sd_c_start() // the current "kernel"
 {
+	uart_putstr("[sdcard]sd_c_start\r\n");
 	printk("%d\r\n", ticks);
 	hdmi_test();
 	hardware_init();
 	hardware_test();
-	uart_putstr("[sdcard]sd_c_start\r\n");
 	
 	printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);
 
@@ -113,7 +113,7 @@ void sd_c_start() // the current "kernel"
 	printk("%d\r\n", (unsigned short)c);
 	
 
-	/*prepare_processes();*/
+	prepare_processes();
 	setupIRQ();
 
 	/*sdcard_fs_test();*/
@@ -124,6 +124,6 @@ void sd_c_start() // the current "kernel"
 
 	while(1){
 		for(i = 1; i < 100000; i++);
-		/*uart_putchar('.');*/
+		uart_putchar('.');
 	}
 }

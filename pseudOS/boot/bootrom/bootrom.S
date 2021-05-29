@@ -283,7 +283,10 @@ interrupt_handler:
 	mret
 
 func_dummy:
+	nop
+	nop
 	ret
+	nop
 	j fail
 
 
