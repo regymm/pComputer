@@ -14,6 +14,8 @@ pCPU/tests/build.sh
 pCPU/tests/rv32ui/
 pCPU/tests/rv64ui/
 pCPU/vivado/
+pCPU/ise/
+pCPU/src/rtl/sdram-controller/
 pseudOS/bad.txt
 pseudOS/fs/fat32_test/
 pseudOS/fs/test.img

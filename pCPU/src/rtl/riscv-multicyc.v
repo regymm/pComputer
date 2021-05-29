@@ -382,6 +382,7 @@ module riscv_multicyc
 			MEM: begin
 				if (op == OP_LOAD | (op == OP_STORE & store_unaligned)) begin
 					MemRead = 1; IorDorW = 1; // Load, SB, SH
+					ALUSrcB = 1;
 				end else if (op == OP_STORE & !store_unaligned) begin
 					MemWrite = 1; IorDorW = 1;
 					MemSrc = 2; // SW
@@ -389,7 +390,7 @@ module riscv_multicyc
 			end
 			EXU: begin
 				IorDorW = 2;
-				ALUSrcB = 1;
+				//ALUSrcB = 1;
 			end
 			MEMU: begin
 				MemWrite = 1; IorDorW = 1;
@@ -535,7 +536,7 @@ module riscv_multicyc
 	always @ (*) begin case (PCSrc)
 		0: newpc = pc + 4;
 		1: newpc = beq_addr; // Branch
-		2: newpc = ALUOut; // JAL
+		2: newpc = beq_addr; // JAL
 		3: newpc = ALUOut & ~1; // JALR
 		4: newpc = {mtvec_in[31:2], 2'b0}; // exception, interrupt
 		5: newpc = mepc_in;
