@@ -329,7 +329,7 @@ module pcpu_main
 	wire mainm_ready_m;
 	wire mainm_irq;
 `ifdef PSRAM_EN
-	memory_controller memory_controller_inst
+	memory_controller_burst memory_controller_inst
 	(
 		.clk(clk_main),
 		.clk_mem(clk_mem),

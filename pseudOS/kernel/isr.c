@@ -92,6 +92,9 @@ void interrupt_service_routine()
 			/*printk("ISR: external interrupt\r\n");*/
 			isr_external_i_handler();
 			break;
+		case 0x00000002:
+			panic("ISR: illegal instruction encountered!\r\n");
+			break;
 		case 0x00000003:
 			panic("ISR: breakpoint not supported!\r\n");
 			break;

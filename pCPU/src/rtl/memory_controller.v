@@ -9,11 +9,13 @@
 
 `timescale 1ns / 1ps
 
-module memory_controller
+module memory_controller_burst
 	(
 		input rst, 
 		input clk, 
 		input clk_mem,
+
+		input [6:0]burst_length,
 
 		input [21:0]a, 
 		input [31:0]d, 
@@ -160,7 +162,7 @@ module memory_controller
 				WE: begin
 					m_we <= 0;
 					if (ready_for_next_byte_posedge) count <= count - 1;
-					if (count == 6'b000000) begin
+					if (count == 0) begin
 						state <= IDLE;
 						m_wend <= 1;
 					end
@@ -177,8 +179,8 @@ module memory_controller
 						count <= count - 1;
 						regbuf[count - 1] <= m_dout;
 					end
-					if (count == 6'b000001) m_rend <= 1;
-					if (count == 6'b000000) begin
+					if (count == 1) m_rend <= 1;
+					if (count == 0) begin
 						regspo <= {regbuf[3], regbuf[2], regbuf[1], regbuf[0]};
 						state <= IDLE;
 						//m_rend <= 1;

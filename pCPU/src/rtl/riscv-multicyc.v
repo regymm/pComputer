@@ -208,8 +208,7 @@ module riscv_multicyc
 	localparam OP_R		=	7'b0110011; // including RV32M
 	localparam OP_FENCE	=	7'b0001111; // FENCE(nop), FENCE.I(nop)
 	localparam OP_PRIV	=	7'b1110011; // ENV(ecall, ebreak), CSR, WFI(aka nop), SFENCE.VMA(aka nop), MRET
-	localparam OP_AMO	=	7'b0101111;
-	// TODO: ECALL, EBREAK(?), 
+	localparam OP_AMO	=	7'b0101111; // not on todo list
 	// TODO: simplify this
 	wire inst_srai = instruction[14:12] == 3'b101 & op == OP_R_I & instruction[30] == 1'b1;
 	wire [6:0]op = instruction[6:0];
@@ -276,7 +275,7 @@ module riscv_multicyc
 	wire priv_ecall = instruction[14:12] == 3'b0 & !instruction[28] & !instruction[20];
 	wire priv_ebreak = instruction[14:12] == 3'b0 & !instruction[28] & instruction[20];
 
-	localparam EXC_ILLEGAL_INSTRUCTION = 4'd2;
+	localparam EXC_ILLEGAL_INSTR= 4'd2;
 	localparam EXC_BREAKPOINT = 4'd3;
 	localparam EXC_ECALL_FROM_M_MODE = 4'd11;
 
@@ -382,7 +381,6 @@ module riscv_multicyc
 			MEM: begin
 				if (op == OP_LOAD | (op == OP_STORE & store_unaligned)) begin
 					MemRead = 1; IorDorW = 1; // Load, SB, SH
-					ALUSrcB = 1;
 				end else if (op == OP_STORE & !store_unaligned) begin
 					MemWrite = 1; IorDorW = 1;
 					MemSrc = 2; // SW
@@ -407,7 +405,7 @@ module riscv_multicyc
 				end else if (op == OP_LUI) begin
 					RegWrite = 1; RegSrc = 2;
 				end else if (op == OP_AUIPC) begin
-					RegWrite = 1;
+					RegWrite = 1; RegSrc = 1;
 				end else if (op == OP_JAL) begin
 					RegWrite = 1; RegSrc = 3;
 					PCWrite = 1; PCSrc = 2;
@@ -425,6 +423,8 @@ module riscv_multicyc
 				end
 			end
 			MEM_WAIT: begin
+				if (op == OP_STORE & store_unaligned)
+					ALUSrcB = 1;
 				IorDorW = 2;
 				MemSrc = 3;
 			end
@@ -474,7 +474,12 @@ module riscv_multicyc
 						phase <= EXCEPTION;
 						mcause_code_out <= EXC_ECALL_FROM_M_MODE;
 					end else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
-					else phase <= EX;
+					else if (op == OP_JALR | op == OP_BR | op == OP_LOAD | op == OP_STORE | op == OP_R | op == OP_R_I | op == OP_PRIV) phase <= EX;
+					else begin
+						// TODO: full illegal instr detection
+						phase <= EXCEPTION;
+						mcause_code_out <= EXC_ILLEGAL_INSTR;
+					end
 				end
 				EX: begin
 					if (op == OP_STORE | op == OP_LOAD) phase <= MEM;
@@ -558,6 +563,7 @@ module riscv_multicyc
 	always @ (*) begin case (RegSrc)
 		0: WriteData = ALUOut;
 		//1: WriteData = mdr;
+		1: WriteData = beq_addr;
 		2: WriteData = imm;
 		3: WriteData = pc; // already +4
 		// LOAD
