@@ -12,33 +12,38 @@
 `timescale 1ns / 1ps
 //`define SIMULATION
 
-module psram_controller_fast(
-	input rst,
-    input clk, 
-	input clk_mem,
-    //input clk_pulse_slow, 
+module psram_controller_fast
+	#(
+		//parameter BOOT_COUNTER=20000
+		parameter BOOT_COUNTER=10
+	)
+	(
+		input rst,
+		input clk, 
+		input clk_mem,
+		//input clk_pulse_slow, 
 
-    output reg sclk = 0, 
-    output reg ce = 1, 
-    inout mosi, 
-    inout miso, 
-    inout sio2, 
-    inout sio3, 
+		output reg sclk = 0, 
+		output reg ce = 1, 
+		inout mosi, 
+		inout miso, 
+		inout sio2, 
+		inout sio3, 
 
-    input rd, 
-	input rend,
-    input we,   
-	input wend,
-    input [23:0]a,
-    output reg [7:0]dout, 
-    output reg byte_available, 
-    input [7:0]din, 
-    output reg ready_for_next_byte, 
+		input rd, 
+		input rend,
+		input we,   
+		input wend,
+		input [23:0]a,
+		output reg [7:0]dout, 
+		output reg byte_available, 
+		input [7:0]din, 
+		output reg ready_for_next_byte, 
 
-    output ready,
+		output ready,
 
-    /*(*mark_debug = "true"*)*/ output reg [4:0]state = INIT
-);
+		/*(*mark_debug = "true"*)*/ output reg [4:0]state = INIT
+	);
 
 	localparam INIT = 0;
 	localparam RSTEN = 1;
@@ -151,7 +156,7 @@ module psram_controller_fast(
 	end
 	reg we_latch = 0;
 	always @ (posedge clk_mem) begin
-		if (rst) we_latch <= 1;
+		if (rst) we_latch <= 0; // TODO: check
 		else if (we) we_latch <= 1;
 		else if (state == BTWN_WRITE_IDLE) we_latch <= 0;
 	end
@@ -167,11 +172,7 @@ module psram_controller_fast(
 			ce <= 1;
 			sclk <= 0;
 			//sclk_en <= 0;
-			`ifdef SIMULATION
-				boot_counter <= 10;
-			`else
-				boot_counter <= 20000;
-			`endif
+			boot_counter <= BOOT_COUNTER;
 			state <= INIT;
 			byte_available <= 0;
 			ready_for_next_byte <= 0;

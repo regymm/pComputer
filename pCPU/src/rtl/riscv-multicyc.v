@@ -39,7 +39,7 @@ module riscv_multicyc
 	reg [31:0]A;
 	reg [31:0]B;
 	reg [31:0]ALUOut;
-	//reg [31:0]ALUOut2;
+	reg [31:0]ALUOut2;
 	reg [31:0]RV32MOut;
 	reg [31:0]mar;
 	reg [31:0]mwr;
@@ -100,21 +100,11 @@ module riscv_multicyc
 	reg [31:0]ALUIn1;
 	reg [31:0]ALUIn2;
 	wire [31:0]ALUResult;
-
-	reg [3:0]ALUm_reg;
-	reg [31:0]ALUIn1_reg;
-	reg [31:0]ALUIn2_reg;
-	always @ (posedge clk) begin
-		ALUm_reg <= ALUm;
-		ALUIn1_reg <= ALUIn1;
-		ALUIn2_reg <= ALUIn2;
-	end
-
 	alu alu_inst
 	(
-		.m(ALUm_reg),
-		.a(ALUIn1_reg),
-		.b(ALUIn2_reg),
+		.m(ALUm),
+		.a(ALUIn1),
+		.b(ALUIn2),
 		.y(ALUResult)
 	);
 
@@ -129,8 +119,8 @@ module riscv_multicyc
 	(
 		.clk(clk),
 		.start(RV32MStart),
-		.a(ALUIn1_reg),
-		.b(ALUIn2_reg),
+		.a(ALUIn1),
+		.b(ALUIn2),
 		.m(RV32Mm),
 		.finish(RV32MReady),
 		.r(RV32MResult),
@@ -208,7 +198,8 @@ module riscv_multicyc
 	localparam OP_R		=	7'b0110011; // including RV32M
 	localparam OP_FENCE	=	7'b0001111; // FENCE(nop), FENCE.I(nop)
 	localparam OP_PRIV	=	7'b1110011; // ENV(ecall, ebreak), CSR, WFI(aka nop), SFENCE.VMA(aka nop), MRET
-	localparam OP_AMO	=	7'b0101111; // not on todo list
+	localparam OP_AMO	=	7'b0101111;
+	// TODO: ECALL, EBREAK(?), 
 	// TODO: simplify this
 	wire inst_srai = instruction[14:12] == 3'b101 & op == OP_R_I & instruction[30] == 1'b1;
 	wire [6:0]op = instruction[6:0];
@@ -219,14 +210,6 @@ module riscv_multicyc
 	wire [31:0]imm_j = {{12{instruction[31]}}, instruction[19:12], instruction[20], instruction[30:21], 1'b0};
 	wire [31:0]imm_u = {instruction[31:12], 12'b0};
 	wire [31:0]imm_s = {{21{instruction[31]}}, instruction[30:25], instruction[11:7]};
-
-	// ID_RF phase br address calculation
-	reg [31:0]beq_addr;
-	always @ (posedge clk) begin
-		if (phase == ID_RF) begin
-			beq_addr <= pc + imm;
-		end
-	end
 
 	// unaligned memory access
 	wire store_unaligned = ~instruction[13];
@@ -275,7 +258,7 @@ module riscv_multicyc
 	wire priv_ecall = instruction[14:12] == 3'b0 & !instruction[28] & !instruction[20];
 	wire priv_ebreak = instruction[14:12] == 3'b0 & !instruction[28] & instruction[20];
 
-	localparam EXC_ILLEGAL_INSTR= 4'd2;
+	localparam EXC_ILLEGAL_INSTRUCTION = 4'd2;
 	localparam EXC_BREAKPOINT = 4'd3;
 	localparam EXC_ECALL_FROM_M_MODE = 4'd11;
 
@@ -351,8 +334,12 @@ module riscv_multicyc
 			end
 			ID_RF: begin
 				PCWrite = 1;
-				//ALUSrcA = 1; ALUSrcB = 1;
-
+				ALUSrcA = 1; ALUSrcB = 1;
+			end
+			EX: begin
+				`ifdef RV32M
+				RV32MStart = 1;
+				`endif
 				if (op == OP_R) begin
 					ALUm = {instruction[30], instruction[14:12]};
 				end else if (op == OP_R_I) begin
@@ -368,13 +355,6 @@ module riscv_multicyc
 					ALUSrcA = instruction[14] ? 2 : 0;
 					ALUSrcB = 2;
 					ALUm = instruction[13] ? {3'b011, instruction[12]} : {4'b1111};
-				end
-			end
-			EX: begin
-				`ifdef RV32M
-				RV32MStart = 1;
-				`endif
-				if (op == OP_PRIV & priv_csr) begin
 					csrsave = 1;
 				end
 			end
@@ -388,7 +368,7 @@ module riscv_multicyc
 			end
 			EXU: begin
 				IorDorW = 2;
-				//ALUSrcB = 1;
+				ALUSrcB = 1;
 			end
 			MEMU: begin
 				MemWrite = 1; IorDorW = 1;
@@ -405,7 +385,7 @@ module riscv_multicyc
 				end else if (op == OP_LUI) begin
 					RegWrite = 1; RegSrc = 2;
 				end else if (op == OP_AUIPC) begin
-					RegWrite = 1; RegSrc = 1;
+					RegWrite = 1;
 				end else if (op == OP_JAL) begin
 					RegWrite = 1; RegSrc = 3;
 					PCWrite = 1; PCSrc = 2;
@@ -423,8 +403,6 @@ module riscv_multicyc
 				end
 			end
 			MEM_WAIT: begin
-				if (op == OP_STORE & store_unaligned)
-					ALUSrcB = 1;
 				IorDorW = 2;
 				MemSrc = 3;
 			end
@@ -474,12 +452,7 @@ module riscv_multicyc
 						phase <= EXCEPTION;
 						mcause_code_out <= EXC_ECALL_FROM_M_MODE;
 					end else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
-					else if (op == OP_JALR | op == OP_BR | op == OP_LOAD | op == OP_STORE | op == OP_R | op == OP_R_I | op == OP_PRIV) phase <= EX;
-					else begin
-						// TODO: full illegal instr detection
-						phase <= EXCEPTION;
-						mcause_code_out <= EXC_ILLEGAL_INSTR;
-					end
+					else phase <= EX;
 				end
 				EX: begin
 					if (op == OP_STORE | op == OP_LOAD) phase <= MEM;
@@ -540,30 +513,27 @@ module riscv_multicyc
 	reg [31:0]newpc;
 	always @ (*) begin case (PCSrc)
 		0: newpc = pc + 4;
-		1: newpc = beq_addr; // Branch
-		2: newpc = beq_addr; // JAL
+		1: newpc = ALUOut2; // Branch
+		2: newpc = ALUOut; // JAL
 		3: newpc = ALUOut & ~1; // JALR
 		4: newpc = {mtvec_in[31:2], 2'b0}; // exception, interrupt
 		5: newpc = mepc_in;
 		default: newpc = INVALID_ADDR;
 	endcase end
 	always @ (*) begin case (ALUSrcA)
-		//0: ALUIn1 = A;
-		0: ALUIn1 = ReadData1;
+		0: ALUIn1 = A;
 		1: ALUIn1 = pc; // haven't +4
 		2: ALUIn1 = csrimm;
 		default: ALUIn1 = 0;
 	endcase end
 	always @ (*) begin case (ALUSrcB)
-		//0: ALUIn2 = B;
-		0: ALUIn2 = ReadData2;
+		0: ALUIn2 = B;
 		1: ALUIn2 = imm;
 		2: ALUIn2 = csr_spo;
 	endcase end
 	always @ (*) begin case (RegSrc)
 		0: WriteData = ALUOut;
 		//1: WriteData = mdr;
-		1: WriteData = beq_addr;
 		2: WriteData = imm;
 		3: WriteData = pc; // already +4
 		// LOAD
@@ -608,8 +578,7 @@ module riscv_multicyc
 			A <= ReadData1;
 			B <= ReadData2;
 			
-			ALUOut <= ALUResult;
-			//ALUOut2 <= ALUOut;
+			ALUOut <= ALUResult; ALUOut2 <= ALUOut;
 			`ifdef RV32M
 			RV32MOut <= RV32MResult;
 			`endif
@@ -628,7 +597,6 @@ module riscv_multicyc
 				if (IRLate) instruction <= mdr;
 				else instruction <= memread_data;
 			end
-
 		end
 	end
 endmodule
