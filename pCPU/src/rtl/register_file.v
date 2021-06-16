@@ -16,6 +16,8 @@ module register_file
         output reg [WIDTH-1:0]rd2
     );
 
+
+
     reg [WIDTH-1:0]regfile[31:0];
     initial $readmemh("/home/petergu/MyHome/pComputer/pCPU/regfile.dat", regfile);
 

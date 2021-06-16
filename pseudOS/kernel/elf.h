@@ -100,4 +100,7 @@ typedef struct
   Elf32_Word	sh_addralign;		/* Section alignment */
   Elf32_Word	sh_entsize;		/* Entry size if section holds table */
 } __attribute((packed)) Elf32_Shdr;
+
+int elf_header_check(int* elf_begin_addr);
+
 #endif

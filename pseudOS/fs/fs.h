@@ -49,23 +49,10 @@ typedef struct {
     unsigned short boot_sector_signature;
 } __attribute((packed)) Fat32BootSector;
 
-typedef struct {
-	volatile int* mm_cache_base;
-	volatile int* mm_address;
-	volatile int* mm_do_read;
-	volatile int* mm_do_write;
-	volatile int* mm_ready;
-	volatile int* mm_cache_dirty;
-	unsigned int seek;
-	short status;
-	PartitionTable partition_table;
-	Fat32BootSector fat32_boot_sector;
-} SDCard;
-
-int sdcard_fseek(SDCard* sd, unsigned int offset, int whence);
-int sdcard_fread(SDCard* sd, void* ptr, int size, int nmemb);
-int sdcard_wait_for_ready(SDCard* sd);
-int sdcard_fat32_setup(SDCard* sd);
-int sdcard_cleanup(SDCard* sd);
+//int sdcard_fseek(SDCard* sd, unsigned int offset, int whence);
+//int sdcard_fread(SDCard* sd, void* ptr, int size, int nmemb);
+//int sdcard_wait_for_ready(SDCard* sd);
+//int sdcard_fat32_setup(SDCard* sd);
+//int sdcard_cleanup(SDCard* sd);
 
 #endif

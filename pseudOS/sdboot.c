@@ -6,19 +6,24 @@
  * Last Modified Date: 2021.05.01
  */
 #include "fs/fs.h"
-#include "include/mmio_basic.h"
 #include "stdio.h"
 #include "kernel/global.h"
 #include "kernel/process.h"
 #include "kernel/isr.h"
 #include "kernel/misc.h"
+#include "mmio_drivers/basic.h"
 #include "mmio_drivers/CH375.h"
+#include "mmio_drivers/sdcard.h"
+#include "mmio_drivers/sdcard_blk.h"
 #include "mmio_drivers/interrupt_unit.h"
+#include "kernel/elf.h"
 #define false 0
 #define true 1
 
 extern void usb_test();
 extern volatile unsigned int ticks;
+extern SDCard sd0;
+extern SDBlk sdblk0;
 
 /*extern void sd_test_asm();*/
 
@@ -32,19 +37,10 @@ void setupIRQ()
 	/*setupIRQ_asm();*/
 }
 
-void sdcard_fs_test() // put aside fs, do multitasking demo first
+void sdcard_init() // put aside fs, do multitasking demo first
 {
-	SDCard sd;
-
-	sd.mm_address = sd_address;
-	sd.mm_cache_base = sd_cache_base;
-	sd.mm_do_read = sd_do_read;
-	sd.mm_do_write = sd_do_write;
-	sd.mm_ready = sd_ready;
-	sd.mm_cache_dirty = sd_cache_dirty;
-
-	sdcard_wait_for_ready(&sd);
-	sdcard_cleanup(&sd);
+	get_sdcard_0(&sd0);
+	get_sd_blk(&sdblk0);
 }
 
 void prepare_processes()
@@ -61,6 +57,7 @@ void hardware_init()
 	*uart_rx_reset = 1;
 	video_x = 0;
 	video_y = 0;
+	sdcard_init();
 }
 
 void hardware_test()

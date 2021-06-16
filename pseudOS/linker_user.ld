@@ -20,7 +20,7 @@ SECTIONS
 	/*PROVIDE(__boot_address = 0x20000000);*/
 
 	/* stack and heap related settings */
-	/*__stack_size = DEFINED(__stack_size) ? __stack_size : 0x1000;*/
+	__stack_size = DEFINED(__stack_size) ? __stack_size : 0x1000;
 	/*PROVIDE(__stack_size = __stack_size);*/
 	__heap_size = DEFINED(__heap_size) ? __heap_size : 0x1000;
 
@@ -68,13 +68,14 @@ SECTIONS
 
 	/* stack: we should consider putting this further to the top of the address
 	space */
-	/*.stack         : ALIGN(16) [> this is a requirement of the ABI(?) <]*/
-	/*{*/
-		/*PROVIDE(__stack_start = .);*/
-		/*. = __stack_size;*/
-		/*PROVIDE(_sp = .);*/
-		/*PROVIDE(__stack_end = .);*/
-	/*} >ram*/
+	.stack         : ALIGN(16) /* this is a requirement of the ABI(?) */
+	{
+		PROVIDE(__stack_start = .);
+		. = __stack_size;
+		PROVIDE(_sp = .);
+		PROVIDE(__stack_end = .);
+	}
+	/*>ram*/
 
 	/*/DISCARD/ : { *(.note.GNU-stack) *(.gnu_debuglink) *(.gnu.lto_*) }*/
     /*[>/DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) *(.reginfo) *(.MIPS.abiflags) *(.pdr)}<]*/

@@ -1,4 +1,4 @@
-#include "mmio_basic.h"
+#include "basic.h"
 volatile int* uart_tx			= (int*) 0x93000000;
 volatile int* uart_tx_done		= (int*) 0x93000008;
 volatile int* uart_rx_reset		= (int*) 0x93000004;

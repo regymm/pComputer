@@ -74,14 +74,19 @@ module riscv_multicyc
     register_file register_file_inst
     (
         .clk(clk),
-        .ra0(instruction[19:15]), // rs1
-        .ra1(instruction[24:20]), // rs2
-        .wa(instruction[11:7]),   // rd
+		.ra0(instruction[19:15]), // rs1
+		.ra1(instruction[24:20]), // rs2
+		.wa(instruction[11:7]),   // rd
+		//.ra0(instr_new[19:15]), // rs1
+		//.ra1(instr_new[24:20]), // rs2
+		//.wa(instr_new[11:7]),   // rd
         .we(RegWrite),
         .wd(WriteData),
         .rd0(ReadData1),
         .rd1(ReadData2)
     );
+
+	reg [31:0]instr_new;
 
 	// memory mapper, little endian
 	reg [31:0]mem_addr;
@@ -569,6 +574,10 @@ module riscv_multicyc
 		//1:
 		default: csr_d = ALUOut;
 	endcase end
+	always @ (*) begin case (IRLate)
+		1: instr_new = mdr;
+		0: instr_new = memread_data;
+	endcase end
 	// CPU main TODO: move out of if-else
 	always @ (posedge clk) begin
 		if (rst) begin
@@ -593,10 +602,7 @@ module riscv_multicyc
 				pc <= newpc; oldpc <= pc;
 			end
 
-			if (IRWrite) begin
-				if (IRLate) instruction <= mdr;
-				else instruction <= memread_data;
-			end
+			if (IRWrite) instruction <= instr_new;
 		end
 	end
 endmodule

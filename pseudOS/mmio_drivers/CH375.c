@@ -10,7 +10,7 @@
 #include "CH375_low.h"
 #include "CH375.h"
 #include "stdio.h"
-#include "../include/mmio_basic.h"
+#include "basic.h"
 
 volatile int* usb_tx_cmd		= (int*) 0x97000000;
 volatile int* usb_tx_data		= (int*) 0x97000008;

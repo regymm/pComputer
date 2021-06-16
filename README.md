@@ -4,7 +4,7 @@ A simple "computer" from scratch, including RISC-V CPU and simple OS, running on
 
 ### Gallery
 
-**2021.04.24** Boot from SD card, then read assembly code from UART, which contains the current kernel. The kernel shows process switching demo and the mcause CSR. The system runs on SqueakyBoard now.
+**2021.04.24** Boot from SD card, then read assembly code from UART, which contains the current kernel. The kernel shows process switching demo and the mcause CSR. The system runs on [SqueakyBoard](https://github.com/ustcpetergu/SqueakyBoard) now.
 
 ![](./doc/src/gallery-2021-0424.png) 
 
@@ -33,11 +33,11 @@ A simple "computer" from scratch, including RISC-V CPU and simple OS, running on
 
 - [x] Multiple-cycle RISC-V CPU @ 62.5MHz on SqueakyBoard(Zynq 7010 PL)
 - [x] RV32IM
-- [x] M-mode CSR (partial)
+- [x] M-mode CSR (partial but enough)
 - [x] Interrupt (timer, external, software)
-- [ ] Exception (WIP)
-- [ ] Supervisor/User privilege level support
-- [ ] Sv32 MMU
+- [x] Exception (ecall, break, partial invalid instruction)
+- [ ] Supervisor/User privilege level support (not planned)
+- [ ] Sv32 MMU (not planned)
 - [ ] GDB debug over openocd JTAG
 
 **Hardware/Software**
@@ -52,10 +52,10 @@ Peripherals
 - [x] GPIO (LEDs, buttons, switches)
 - [x] UART (921600 baud)
 - [x] SD card (SPI mode, SDHC)
-- [ ] PS/2 keyboard (WIP w/ proof of concept)
-- [ ] HDMI character terminal (WIP w/ proof of concept)
+- [x] PS/2 keyboard
+- [x] HDMI character terminal
 - [ ] HDMI frame buffer graphics
-- [ ] CH375 USB disk (WIP w/ proof of concept)
+- [x] CH375 USB disk
 - [ ] W5500 ethernet module
 - [ ] ESP8266 Wifi module
 
@@ -73,10 +73,10 @@ OS/Software
 - [ ] Boot from SD card (FAT32)
 - [x] Boot from UART (921600 baud)
 - [x] Multitasking w/o MMU
-- [ ] Microkernel framework, IPC send/receive
-- [ ] Syscall interface
+- [x] Microkernel framework, IPC send/receive (partial)
+- [ ] Syscall interface (doing)
 - [ ] Memory manager
-- [ ] Filesystem
+- [ ] Filesystem, block device layer
 - [ ] (v)fork, exec
 - [ ] Shell
 - [ ] Text editor

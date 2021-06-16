@@ -7,12 +7,12 @@
  */
 #include "fs.h"
 
-int sdcard_wait_for_ready(SDCard* sd) {
-	int i = 1000000;
-	while(i--) if(*(sd->mm_ready)) return 0;
-	return 1;
-}
+/*int sdcard_wait_for_ready(SDCard* sd) {*/
+	/*int i = 1000000;*/
+	/*while(i--) if(*(sd->mm_ready)) return 0;*/
+	/*return 1;*/
+/*}*/
 
-int sdcard_cleanup(SDCard* sd) {
-	return 0;
-}
+/*int sdcard_cleanup(SDCard* sd) {*/
+	/*return 0;*/
+/*}*/

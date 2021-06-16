@@ -10,6 +10,7 @@
 #define PSEUDOS_GLOBAL_H
 
 #include "process.h"
+#include "../mmio_drivers/sdcard_blk.h"
 
 #define REGS_SAVE_ADDR 0x10000000
 
@@ -34,5 +35,8 @@ extern Process proc_table[];
 extern ProcManager procmanager;
 
 extern volatile unsigned int ticks;
+
+SDCard sd0;
+Blk sdblk0;
 
 #endif
