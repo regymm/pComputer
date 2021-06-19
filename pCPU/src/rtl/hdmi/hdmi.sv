@@ -1,6 +1,6 @@
 // Implementation of HDMI Spec v1.4a
 // By Sameer Puri https://github.com/sameer
-
+`include "pCPU.vh"
 module hdmi 
 #(
     // Defaults to 640x480 which should be supported by almost if not all HDMI sinks.
@@ -371,7 +371,7 @@ generate
         //OBUFDS obufds(.din({tmds_current, tmds_current_clk}), .pad_out({tmds_p, tmds_clock_p}), .pad_out_b({tmds_n, tmds_clock_n}));
 	//`endif
 //`endif
-
+`ifndef VIDEO_FALSEDIFFPAIR
 		OBUFDS OBUFDS_red(
 			.I(tmds_current[2]),
 			.O(tmds_p[2]),
@@ -392,6 +392,16 @@ generate
 			.O(tmds_clock_p),
 			.OB(tmds_clock_n)
 		);
+`else
+	assign tmds_p[2] = tmds_current[2];
+	assign tmds_n[2] = ~tmds_current[2];
+	assign tmds_p[1] = tmds_current[1];
+	assign tmds_n[1] = ~tmds_current[1];
+	assign tmds_p[0] = tmds_current[0];
+	assign tmds_n[0] = ~tmds_current[0];
+	assign tmds_clock_p = tmds_current_clk;
+	assign tmds_clock_n = ~tmds_current_clk;
+`endif
 
 endgenerate
 

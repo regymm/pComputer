@@ -2,7 +2,7 @@
 // pCPU regfile based on bram
 // save resources, but no r/w forwarding
 
-module register_file
+module register_file_bram
     #(parameter WIDTH = 32)
     (
         input clk,

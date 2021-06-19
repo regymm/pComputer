@@ -38,7 +38,7 @@ boot/bootrom/bootrom.elf: boot/bootrom/bootrom.o boot/bootrom/bootrom.c_o mmio_d
 boot/uartbl/uartbl.elf: boot/uartbl/uartbl.o boot/uartbl/uartbl.c_o mmio_drivers/basic.c_o
 	$(LD) $(LDFLAGS) $^ -o $@ --script boot/uartbl/linker_uartbl.ld
 
-sdboot.elf: sdboot.S sdboot.c mmio_drivers/basic.c mmio_drivers/interrupt_unit.c mmio_drivers/ps2.c newlib/crt0.S newlib/syscall.c fs/fs.c kernel/global.c kernel/process.c mmio_drivers/CH375.c kernel/isr.c kernel/misc.c
+sdboot.elf: sdboot.S sdboot.c mmio_drivers/basic.c mmio_drivers/interrupt_unit.c mmio_drivers/ps2.c mmio_drivers/sdcard.c mmio_drivers/sdcard_blk.c newlib/crt0.S newlib/syscall.c fs/fs.c kernel/global.c kernel/process.c mmio_drivers/CH375.c kernel/isr.c kernel/misc.c kernel/elf.c
 	$(CC) $(CC_L_F) $^ -o $@ -T linker_sdboot.ld -lc -lgcc
 
 user:

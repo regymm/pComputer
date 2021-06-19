@@ -23,6 +23,7 @@ void sd_uart_bl()
 
 	*set_start_addr = 0x20001000;
 	*start_dma = 1; // this should hang until dma finish
+	uart_putstr("[uartbl] xfer control... \r\n");
 
 	/*int i = -1;*/
 	/*int k = 0;*/

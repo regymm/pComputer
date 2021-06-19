@@ -101,6 +101,6 @@ typedef struct
   Elf32_Word	sh_entsize;		/* Entry size if section holds table */
 } __attribute((packed)) Elf32_Shdr;
 
-int elf_header_check(int* elf_begin_addr);
+unsigned int* elf_header_check(int* elf_begin_addr);
 
 #endif

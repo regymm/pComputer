@@ -15,7 +15,7 @@
 module psram_controller_fast
 	#(
 		//parameter BOOT_COUNTER=20000
-		parameter BOOT_COUNTER=10
+		parameter BOOT_COUNTER=20000
 	)
 	(
 		input rst,

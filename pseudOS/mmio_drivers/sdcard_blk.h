@@ -12,24 +12,16 @@
 #include "sdcard.h"
 #include "../kernel/blk.h"
 
-typedef struct {
-	unsigned int sector;
-	unsigned int(* cache)[512];
-	bool dirty;
-	bool obtained;
-	SDCard* sd;
-} SDBlk;
+int get_sd_blk(Blk* sdblk, SDCard* sd);
 
-int get_sd_blk(Blk* sdblk);
-
-int sd_blk_init(SDCard* sd);
-int sd_blk_obtain();
-int sd_blk_release();
-int sd_blk_ioctl();
-int sd_blk_load(unsigned int sector);
-int sd_blk_writeback();
-int sd_blk_isdirty();
-int sd_blk_isready();
+//int sd_blk_init(SDCard* sd);
+int sd_blk_obtain(Blk* self);
+int sd_blk_release(Blk* self);
+int sd_blk_ioctl(Blk* self, int op, void* param);
+int sd_blk_load(Blk* self);
+int sd_blk_writeback(Blk* self);
+int sd_blk_isdirty(Blk* self);
+int sd_blk_isready(Blk* self);
 
 
 #endif
