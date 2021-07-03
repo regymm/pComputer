@@ -17,8 +17,14 @@ module mmapper
         (*mark_debug = "true"*)output reg [31:0]spo,
         (*mark_debug = "true"*)output reg ready,
 
+        // 1024*32(8KB) boot rom: 0xf0000000 to 0xf00007fc
+        output reg [9:0]bootm_a,
+		output reg bootm_rd,
+        input [31:0]bootm_spo,
+		input bootm_ready,
+
         // 4096*32(32KB) distributed memory: 0x10000000 to 0x10007ffc
-        output reg [11:0]distm_a,
+        output reg [31:0]distm_a,
         output reg [31:0]distm_d,
         output reg distm_we,
 		output reg distm_rd,
@@ -43,7 +49,7 @@ module mmapper
         //input [31:0]special_spo,
 
 
-        // MMIO devices
+        // MMIO devices (slow)
         // 
         // gpio: 0x92000000
         output reg [3:0]gpio_a,
@@ -93,21 +99,20 @@ module mmapper
 		// PS2 keyboard: 0x9a000000
 		input [31:0]ps2_spo,
 
+		// timer control: 0x9b000000
+		output reg [2:0]t_a,
+		output reg [31:0]t_d,
+		output reg t_we,
+		input [31:0]t_spo,
+
         // 0xe0000000 MMU control
-
-        // 1024*32(8KB) boot rom: 0xf0000000 to 0xf00007fc
-        output reg [9:0]bootm_a,
-		output reg bootm_rd,
-        input [31:0]bootm_spo,
-		input bootm_ready,
-
 
         output reg irq
     );
 
     always @ (*) begin 
         bootm_a = a[11:2];
-        distm_a = a[13:2];
+        distm_a = a[31:2];
         distm_d = d;
 		mainm_a = a[23:2];
 		mainm_d = d;
@@ -125,6 +130,8 @@ module mmapper
 		usb_d = d;
         int_a = a[4:2];
         int_d = d;
+		t_a = a[4:2];
+		t_d = d;
     end
 
     always @ (*) begin
@@ -140,6 +147,7 @@ module mmapper
 		usb_we = 0;
         int_we = 0;
 		bootm_rd = 0;
+		t_we = 0;
         irq = 0;
         spo = 0;
         ready = 1;
@@ -186,6 +194,10 @@ module mmapper
 				end
 				4'ha: begin
 					spo = ps2_spo;
+				end
+				4'hb: begin
+					spo = t_spo;
+					t_we = we;
 				end
                 default: irq = 1;
             endcase

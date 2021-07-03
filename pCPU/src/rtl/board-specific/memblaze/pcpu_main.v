@@ -33,6 +33,8 @@ module pcpu_main
         input uart_rx,
         output uart_tx,
 
+		input [5:0]m,
+
         input sd_ncd,
         input sd_wp,
         input sd_dat0,
@@ -52,7 +54,6 @@ module pcpu_main
     );
 
 	wire [1:0]sw;
-
 
 
     wire clk_main;
@@ -83,8 +84,8 @@ module pcpu_main
     );
 
     // reset signal
-	wire manual_rst = sw_d[0];
-    (*mark_debug = "true"*) wire rst = manual_rst | uart_rst;
+	wire manual_rst = btn_d[0];
+    (*mark_debug = "true"*) wire rst = manual_rst | uart_rst | (m == 6'b0);
 
 	// reset module
 	wire [31:0]rst_d = 0;
@@ -209,7 +210,7 @@ module pcpu_main
 		`endif
 
         .tx(uart_tx),
-        .rx(uart_rx_in),
+        .rx(uart_rx),
 
         .a(uart_a),
         .d(uart_d),
@@ -475,6 +476,11 @@ module pcpu_main
     wire cpu_eip_istimer;
     wire cpu_eip_reply;
 
+	wire [2:0]timer_a;
+	wire [31:0]timer_d;
+	wire timer_we;
+	wire [31:0]timer_spo;
+
     wire [2:0]int_a;
     wire [31:0]int_d;
     wire int_we;
@@ -485,7 +491,12 @@ module pcpu_main
     timer #(.TIMER_COUNTER(TIMER_COUNTER)) timer_inst(
         .clk(clk_main),
         .rst(rst_timer),
-        .irq(irq_timer)
+        .irq(irq_timer),
+
+		.a(timer_a),
+		.d(timer_d),
+		.we(timer_we),
+		.spo(timer_spo)
     );
 
     interrupt_unit interrupt_unit_inst(
@@ -642,6 +653,11 @@ module pcpu_main
 		.sb_ready(sb_ready),
 
 		.ps2_spo(ps2_spo),
+
+		.t_a(timer_a),
+		.t_d(timer_d),
+		.t_we(timer_we),
+		.t_spo(timer_spo),
 
         .irq(pirq)
     );

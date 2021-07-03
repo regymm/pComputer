@@ -20,6 +20,12 @@ _start:
 	li a1, 0xffffffff
 	sw a1, 24(a0)
 	sw a1, 28(a0)
+# some timer test
+	la a0, 0x9b000000
+	lw a1, 0(a0)
+	lw a2, 0(a0)
+	lw a1, 0(a0)
+	lw a2, 0(a0)
 ##	# timer only
 ##	la a0, 0x98000000
 ##	li a1, 0x6 # 0b110

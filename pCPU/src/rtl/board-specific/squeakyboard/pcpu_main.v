@@ -148,7 +148,7 @@ module pcpu_main
 
     
     // distributed ram 4096*32
-    wire [11:0]distm_a;
+    wire [31:0]distm_a;
     wire [31:0]distm_d;
     wire distm_we;
 	wire distm_rd;
@@ -156,7 +156,7 @@ module pcpu_main
 	wire distm_ready;
 	simple_ram #(
 		.WIDTH(32),
-		.DEPTH(12),
+		.DEPTH(15),
 		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_zeros.dat")
 	) distram (
         .clk(clk_main),
@@ -486,6 +486,11 @@ module pcpu_main
     wire cpu_eip_istimer;
     wire cpu_eip_reply;
 
+	wire [2:0]timer_a;
+	wire [31:0]timer_d;
+	wire timer_we;
+	wire [31:0]timer_spo;
+
     wire [2:0]int_a;
     wire [31:0]int_d;
     wire int_we;
@@ -496,7 +501,12 @@ module pcpu_main
     timer #(.TIMER_COUNTER(TIMER_COUNTER)) timer_inst(
         .clk(clk_main),
         .rst(rst_timer),
-        .irq(irq_timer)
+        .irq(irq_timer),
+
+		.a(timer_a),
+		.d(timer_d),
+		.we(timer_we),
+		.spo(timer_spo)
     );
 
     interrupt_unit interrupt_unit_inst(
@@ -521,6 +531,7 @@ module pcpu_main
 	assign cpu_eip = 0;
 	assign cpu_eip_istimer = 0;
 	assign int_spo = 0;
+	assign timer_spo = 0;
 `endif
 
     // cpu-multi-cycle
@@ -653,6 +664,11 @@ module pcpu_main
 		.sb_ready(sb_ready),
 
 		.ps2_spo(ps2_spo),
+
+		.t_a(timer_a),
+		.t_d(timer_d),
+		.t_we(timer_we),
+		.t_spo(timer_spo),
 
         .irq(pirq)
     );

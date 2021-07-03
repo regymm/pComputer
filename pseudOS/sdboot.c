@@ -7,6 +7,9 @@
  */
 #include "fs/fs.h"
 #include "stdio.h"
+#include "stdlib.h"
+#include "stdint.h"
+#include "string.h"
 #include "kernel/global.h"
 #include "kernel/process.h"
 #include "kernel/isr.h"
@@ -16,6 +19,7 @@
 #include "mmio_drivers/sdcard.h"
 #include "mmio_drivers/sdcard_blk.h"
 #include "mmio_drivers/interrupt_unit.h"
+#include "mmio_drivers/timer.h"
 #include "kernel/elf.h"
 #define false 0
 #define true 1
@@ -85,21 +89,58 @@ void sdcard_to_memory(int sd_start, unsigned int size, int* mem_start, Blk* sdbl
 			while(!sdblk->isready(sdblk));
 		}
 	}
+	printk("sd2mem end at mem addr %x\r\n", mem_start + mem_i);
 	printk("sd2mem finished ... \r\n");
+}
+
+void new_process_from_elf_in_memory(int* elf_addr, const char* name, int stack_size, int* pid)
+{
+	unsigned int* elf_entry_addr;
+	unsigned int* elf_stack_addr;
+	elf_header_check(elf_addr, stack_size, &elf_entry_addr, &elf_stack_addr);
+
+	ProcManager* pm = &procmanager;
+	// crit enter
+	short avail_pid = _getavailpid();
+	*pid = avail_pid;
+	Process* newproc = pm->proc_table + avail_pid;
+
+	newproc->pid = avail_pid;
+	char* nm = strcpy(newproc->name, name); // TODO: boundary check?
+	printk("new process name: %s\r\n", nm);
+
+	newproc->p_msg = NULL;
+	newproc->p_recvfrom = IPC_TARGET_NONE;
+	newproc->p_sendto = IPC_TARGET_NONE;
+	newproc->queue_sending = NULL;
+	newproc->queue_sending_next = NULL;
+
+	newproc->pc = (void (*)())elf_entry_addr;
+	newproc->regs.sp = elf_stack_addr;
+	newproc->state = PROC_STATE_READY;
+	// crit leave
 }
 
 void loadelf()
 {
-	sdcard_to_memory(0x5000, 16384, (int *)0x20020000, &sdblk0);
-	unsigned int* elf0_entry_addr = elf_header_check((int *)0x20020000);
+	sdcard_to_memory(0x5000, 16384, (int *)0x20110000, &sdblk0);
+	int pid;
+	new_process_from_elf_in_memory((int*) 0x20110000, "elf_p", 0x1000, &pid);
+	printk("new process loaded, pid %d\r\n", pid);
+	sdcard_to_memory(0x5000, 16384, (int *)0x20120000, &sdblk0);
+	new_process_from_elf_in_memory((int*) 0x20120000, "elf_p2", 0x1000, &pid);
+	printk("new process loaded, pid %d\r\n", pid);
+	/*unsigned int* elf0_entry_addr;*/
+	/*unsigned int* elf0_stack_addr;*/
+	/*elf_header_check((int *)0x20020000, 0x1000, &elf0_entry_addr, &elf0_stack_addr);*/
 
-	void (* elf0)(void) = elf0_entry_addr;
+	/*void (* elf0)(void) = *elf0_entry_addr;*/
 
-	printk("Before jump wait\r\n");
-	int c = uart_getchar();
+	/*printk("Before jump wait\r\n");*/
+	/*int c = uart_getchar();*/
 	/*printk("You typed: %x\r\n", c);*/
 
-	elf0();
+	/*elf0();*/
 }
 
 void prepare_processes()
@@ -119,9 +160,26 @@ void hardware_init()
 	sdcard_init();
 }
 
+/*void get_timer_ticks2(uint64_t* tic)*/
+/*{*/
+	/*unsigned long long timel = timer_ctrl[0];*/
+	/*unsigned long long timeh = timer_ctrl[1];*/
+	/*[>printk("get_timer_ticks: %08x %08x\r\n", timer_ctrl[0], timer_ctrl[1]);<]*/
+	/*[>*tic = timel + (timeh << 32);<]*/
+	/*printk("Const test in get_timer_ticks2 %llu\r\n", 12348765LLU);*/
+	/**tic = 0xbc614e;*/
+	/*printf("%llu %llu %llu", *tic, 0xbc614eLLU, 0);*/
+	/*printk("\r\n");*/
+/*}*/
+
 void hardware_test()
 {
 	printk("Hardware test...\r\n");
+	unsigned long long test_ticks = 0;
+	printk("Current tick %llu\r\n", test_ticks);
+	get_timer_ticks(&test_ticks);
+	printk("Current tick %llu\r\n", test_ticks);
+	printk("Const test %llu\r\n", 12348765LLU);
 	/*printk("CH375b USB: \r\n");*/
 	/*usb_test();*/
 	/*usb_hid_test();*/
@@ -145,6 +203,7 @@ void hdmi_test()
 void sd_c_start() // the current "kernel"
 {
 	uart_putstr("[sdcard]sd_c_start\r\n");
+	/*printk("Current tick %llu\r\n", get_timer_ticks());*/
 	printk("%d\r\n", ticks);
 	hdmi_test();
 	hardware_init();
@@ -169,10 +228,12 @@ void sd_c_start() // the current "kernel"
 	short c = 1;
 	printk("%d\r\n", c);
 	printk("%d\r\n", (unsigned short)c);
+
+	/*printk("Current tick %llu\r\n", get_timer_ticks());*/
 	
-	loadelf();
 
 	prepare_processes();
+	loadelf();
 	setupIRQ();
 
 	/*sdcard_fs_test();*/

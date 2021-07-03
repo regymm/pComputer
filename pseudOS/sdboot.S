@@ -37,7 +37,7 @@ sd_start:
 	sw a1, 32(a0)
 	sw a1, 36(a0)
 
-	# stack
+	# kernel stack at 1MB
 	la sp, 0x200ffffc
 	j sd_c_start
 	# never here

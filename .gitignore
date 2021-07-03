@@ -16,6 +16,7 @@ pCPU/tests/rv64ui/
 pCPU/vivado/
 pCPU/ise/
 pCPU/src/rtl/sdram-controller/
+pCPU/eda_projects
 pseudOS/bad.txt
 pseudOS/fs/fat32_test/
 pseudOS/fs/test.img

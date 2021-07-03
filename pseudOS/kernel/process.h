@@ -130,5 +130,8 @@ int sendrec_syscall(int function, int src_dest, Message* msg);
 // and literally the only syscall in pseudos
 extern int syscall_asm(int function, int src_dest, Message* msg);
 
+// TODO: this shouldn't be public
+short _getavailpid();
+
 
 #endif

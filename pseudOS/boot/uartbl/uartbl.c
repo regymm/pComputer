@@ -10,7 +10,7 @@
 #define true 1
 
 /*extern volatile int* BOOT_ENTRY;*/
-volatile int* BOOT_ENTRY2 = (int*) 0x20001000;
+/*volatile int* BOOT_ENTRY2 = (int*) 0x10001000;*/
 volatile int* set_start_addr = (int*) 0x99000004;
 volatile int* start_dma = (int*) 0x99000008;
 

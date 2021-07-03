@@ -11,6 +11,7 @@
 #include "stdio.h"
 #include "string.h"
 #include "ipc.h"
+#include "isr.h"
 
 void kproc_tty_hardware()
 {
@@ -74,7 +75,9 @@ void proc1()
 	int i = 0;
 	/*uart_putchar('a');*/
 	/*uart_putchar('S');*/
+	cli();
 	printk("proc1 begin ...\r\n");
+	sti();
 	Message msg;
 	while (1) {
 		for (i = 0; i < 80000; i++);
@@ -189,7 +192,7 @@ void _proc_schedule()
 	/*fflush(stdin);*/
 }
 
-// next process to be run
+// next process to be run, basic scheduling
 short _proc_getnext()
 {
 	ProcManager* pm = &procmanager;
@@ -230,6 +233,15 @@ Process* _pid2proc(short pid)
 short _proc2pid(Process* proc)
 {
 	return proc->pid;
+}
+short _getavailpid()
+{
+	// this should be in crit zone
+	int i;
+	for (i = 1; i < PROC_NUM_MAX; i++)
+		if (procmanager.proc_table[i].pid == -1)
+			return i;
+	return -1;
 }
 
 int _msg_send(Process* current, int dest, Message* msg);
@@ -460,22 +472,24 @@ void ProcManagerInit()
 	pm->pid2proc = _pid2proc;
 	pm->get_next=  _proc_getnext;
 
+	// TODO: make kernel init as a process, 
+	// don't use another variable
 	pm->do_start = 1;
 
 	pt[1].pid = 1;
 	pt[1].pc = proc1;
-	pt[1].regs.sp = 0x2008fffc;
+	pt[1].regs.sp = 0x2010fffc;
 	pt[1].state = PROC_STATE_RUNNING;
 	pt[2].pid = 2;
 	pt[2].pc = proc2;
-	pt[2].regs.sp = 0x2008effc;
+	pt[2].regs.sp = 0x2010effc;
 	pt[2].state = PROC_STATE_READY;
 	pt[3].pid = 3;
 	pt[3].pc = proc3;
-	pt[3].regs.sp = 0x2008dffc;
+	pt[3].regs.sp = 0x2010dffc;
 	pt[3].state = PROC_STATE_READY;
 	pt[4].pid = 4;
 	pt[4].pc = kproc_get_ticks;
-	pt[4].regs.sp = 0x2008cffc;
+	pt[4].regs.sp = 0x2010cffc;
 	pt[4].state = PROC_STATE_READY;
 }

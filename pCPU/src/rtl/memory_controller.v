@@ -139,6 +139,15 @@ module memory_controller_burst
 	localparam	RD			=	20;
 	/*(*mark_debug = "true"*)*/reg [5:0]state = IDLE;
 
+	always @ (posedge clk_mem) begin
+		if (state == IDLE | (state == WE & count == 0 & regburst_en & regburst_length != 0)) begin
+			regbuf[3] <= data[31:24];
+			regbuf[2] <= data[23:16];
+			regbuf[1] <= data[15:8];
+			regbuf[0] <= data[7:0];
+		end
+	end
+
 
 	always @ (posedge clk_mem) begin
 		if (rst) begin
@@ -158,18 +167,17 @@ module memory_controller_burst
 						state <= WE_BEGIN;
 						ready_r <= 0;
 						count <= 4;
+						//regbuf_w <= 0;
 					end else if (rd) begin
 						state <= RD_BEGIN;
 						ready_r <= 0;
 						count <= 4;
+						//regbuf_w <= 0;
 					end else ready_r <= m_ready;
 					regburst_en <= burst_en;
 					regburst_length <= burst_length;
 					rega <= a[21:0];
-					regbuf[3] <= data[31:24];
-					regbuf[2] <= data[23:16];
-					regbuf[1] <= data[15:8];
-					regbuf[0] <= data[7:0];
+					//regbuf_w <= 1;
 					m_wend <= 0;
 					m_rend <= 0;
 					//count <= 4;
@@ -183,8 +191,30 @@ module memory_controller_burst
 				end
 				WE: begin
 					m_we <= 0;
-					if (ready_for_next_byte_posedge) count <= count - 1;
+					if (ready_for_next_byte_posedge) begin
+						count <= count - 1;
+						if (count == 3 & regburst_en) begin
+							ready_r <= 1;
+							regburst_length <= regburst_length - 1;
+						end
+						//else begin
+							//ready_r <= 0;
+						//end
+					end else ready_r <= 0;
 					if (count == 0) begin
+						if (!regburst_en | (regburst_en & regburst_length == 0)) begin
+							state <= IDLE;
+							m_wend <= 1;
+							// when return, m_ready still not, continue
+							// wait in IDLE state
+						end else begin
+							state <= WE;
+							count <= 4;
+							// new value should present now
+							// assignment in another always
+						end
+					end
+					if (count == 0 & (!regburst_en | (regburst_en & regburst_length == 1))) begin
 						state <= IDLE;
 						m_wend <= 1;
 					end
@@ -201,8 +231,7 @@ module memory_controller_burst
 					if (byte_available_posedge) begin
 						count <= count - 1;
 						regbuf[count - 1] <= m_dout;
-					end
-					if (count == 1 & 
+					end if (count == 1 & 
 						(!regburst_en | 
 						regburst_en & regburst_length == 1))
 						m_rend <= 1;

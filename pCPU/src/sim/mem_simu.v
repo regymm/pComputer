@@ -82,6 +82,20 @@ module mem_simu();
 		rd = 0;
 
         #4000
+		burst_en = 1;
+		burst_length = 7;
+		a = 32'h2000abcd;
+		d = 32'hdeadbeef;
+		we = 1;
+		rd = 0;
+		#10
+		burst_en = 0;
+		burst_length = 0;
+		a = 0;
+		d = 0;
+		we = 0;
+		rd = 0;
+		#4000
 		$finish;
     end
     

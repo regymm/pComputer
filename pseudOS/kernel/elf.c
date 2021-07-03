@@ -18,7 +18,8 @@ int elf_strcmp(const char* a, const char* b)
 	return !(a[i] == 0 && b[i] == 0);
 }
 
-unsigned int* elf_header_check(int* elf_begin_addr)
+// this should cooperate with my custom userspace linker script
+void elf_header_check(int* elf_begin_addr, int stack_size, unsigned int** entry_addr, unsigned int** stack_addr)
 {
 	Elf32_Ehdr* elfhdr = (Elf32_Ehdr *)elf_begin_addr;
 	printk("elf loaded in mem at %08x\r\n", elfhdr);
@@ -27,15 +28,15 @@ unsigned int* elf_header_check(int* elf_begin_addr)
 		elfhdr->e_ident[2] != 'L' || \
 		elfhdr->e_ident[3] != 'F') {
 		printk("elf magic error!\r\n");
-		return 0;
+		*entry_addr = 0; return;
 	}
 	if (elfhdr->e_type != 2) {
 		printk("elf type is not executable!\r\n");
-		return 0;
+		*entry_addr = 0; return;
 	}
 	if (elfhdr->e_machine != 243) {
 		printk("elf machine is not RISCV!\r\n");
-		return 0;
+		*entry_addr = 0; return;
 	}
 	printk("elf entry addr is %08x(should be 0x0 for my relocation)\r\n", \
 			elfhdr->e_entry);
@@ -92,16 +93,26 @@ unsigned int* elf_header_check(int* elf_begin_addr)
 		// TODO: got.blt
 		if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".bss") == 0) {
 			printk("	found .bss section\r\n");
+			// at last is .bss, clear it and let stack after it
+			// now most elf data may be override
 			unsigned int* bss_entry_addr = \
 				(unsigned int*) \
 				((unsigned char *)elfhdr + elfshdr->sh_offset);
 			for (j = 0; j < elfshdr->sh_size / 4; j++)
 				bss_entry_addr[j] = 0;
-			printk("	.bss cleared, return\r\n");
-			return (unsigned int*)runtime_entry_addr;
+			printk("	.bss cleared\r\n");
+			if (stack_size > 0) {
+				*stack_addr = bss_entry_addr + j + stack_size / 4;
+				printk("	stack calculated: %x \r\n", *stack_addr);
+			}
+			else printk("	no stack size specified\r\n");
+			printk("return\r\n");
+			/*return (unsigned int*)runtime_entry_addr;*/
+			*entry_addr = (unsigned int*)runtime_entry_addr;
+			return;
 		}
 	}
-	return (unsigned int*)0xffffffff;
+	*entry_addr = 0; return;
 }
 
 int main()
@@ -109,7 +120,7 @@ int main()
 	FILE* fin = fopen("../userspace/test", "r");
 	int* elf_file = (int*)malloc(40000*sizeof(int));
 	fread(elf_file, sizeof(int), 40000, fin);
-	elf_header_check(elf_file);
+	/*elf_header_check(elf_file);*/
 	fclose(fin);
 	unsigned int main2 = 0x20021000;
 	putchar(((int)main2 >> 28) + '0');

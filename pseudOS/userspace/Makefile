@@ -1,6 +1,6 @@
 # varaibles are exported
 CC		=	$(RISCV)gcc
-CC_L_F	=	-march=rv32i -mabi=ilp32 -O0 -fPIC
+CC_L_F	=	-march=rv32i -mabi=ilp32 -O0 -fPIC -g
 
 test: test.c
 	$(CC) $(CC_L_F) $^ -o $@ -fPIE -T linker_user.ld -nostdlib

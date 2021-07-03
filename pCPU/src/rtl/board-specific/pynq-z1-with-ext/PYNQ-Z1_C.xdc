@@ -40,10 +40,10 @@ set_property -dict {PACKAGE_PIN W19 IOSTANDARD LVCMOS33} [get_ports sd_dat2]
 
 ##Pmod Header JB
 
-set_property -dict {PACKAGE_PIN W14 IOSTANDARD LVCMOS33} [get_ports psram_sclk]
-set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports psram_mosi]
-set_property -dict {PACKAGE_PIN T11 IOSTANDARD LVCMOS33} [get_ports uart_rx]
-set_property -dict {PACKAGE_PIN T10 IOSTANDARD LVCMOS33} [get_ports uart_tx]
+set_property -dict {PACKAGE_PIN W14 IOSTANDARD LVCMOS33} [get_ports psram_mosi]
+set_property -dict {PACKAGE_PIN Y14 IOSTANDARD LVCMOS33} [get_ports psram_sclk]
+set_property -dict {PACKAGE_PIN T11 IOSTANDARD LVCMOS33} [get_ports uart_tx]
+set_property -dict {PACKAGE_PIN T10 IOSTANDARD LVCMOS33} [get_ports uart_rx]
 set_property -dict {PACKAGE_PIN V16 IOSTANDARD LVCMOS33} [get_ports psram_ce]
 set_property -dict {PACKAGE_PIN W16 IOSTANDARD LVCMOS33} [get_ports psram_miso]
 set_property -dict {PACKAGE_PIN V12 IOSTANDARD LVCMOS33} [get_ports psram_sio2]
