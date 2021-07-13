@@ -319,29 +319,42 @@ module pcpu_main
 	wire mainm_ready_m;
 	wire mainm_irq;
 `ifdef PSRAM_EN
-	//memory_controller_burst memory_controller_inst
-	memory_controller memory_controller_inst
-	(
-		.clk(clk_main),
-		.clk_mem(clk_mem),
-		.rst(rst_psram),
-
-		.a(mainm_a_m),
-		.d(mainm_d_m),
-		.we(mainm_we_m),
+	simple_ram #(
+		.WIDTH(32),
+		.DEPTH(18),
+		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_zeros.dat")
+	) distram_2 (
+        .clk(clk_main),
+        .a(mainm_a_m),
+        .d(mainm_d_m),
+        .we(mainm_we_m),
 		.rd(mainm_rd_m),
-		.spo(mainm_spo_m),
-		.ready(mainm_ready_m), 
+        .spo(mainm_spo_m),
+		.ready(mainm_ready_m)
+    );
+	////memory_controller_burst memory_controller_inst
+	//memory_controller memory_controller_inst
+	//(
+		//.clk(clk_main),
+		//.clk_mem(clk_mem),
+		//.rst(rst_psram),
 
-		.irq(mainm_irq),
+		//.a(mainm_a_m),
+		//.d(mainm_d_m),
+		//.we(mainm_we_m),
+		//.rd(mainm_rd_m),
+		//.spo(mainm_spo_m),
+		//.ready(mainm_ready_m), 
 
-		.psram_ce(psram_ce), 
-		.psram_mosi(psram_mosi), 
-		.psram_miso(psram_miso), 
-		.psram_sio2(psram_sio2), 
-		.psram_sio3(psram_sio3),
-		.psram_sclk(psram_sclk)
-	);
+		//.irq(mainm_irq),
+
+		//.psram_ce(psram_ce), 
+		//.psram_mosi(psram_mosi), 
+		//.psram_miso(psram_miso), 
+		//.psram_sio2(psram_sio2), 
+		//.psram_sio3(psram_sio3),
+		//.psram_sclk(psram_sclk)
+	//);
 `else
 `endif
 

@@ -15,7 +15,7 @@ module memory_controller
 		input clk, 
 		input clk_mem,
 
-		input [21:0]a, 
+		input [23:0]a, 
 		input [31:0]d, 
 		input we, 
 		input rd, 
@@ -42,7 +42,7 @@ module memory_controller
 	reg ready_r = 0;
 	assign ready = ready_r & !(rd | we);
 
-	reg [21:0]rega;
+	reg [23:0]rega;
 	/*(*mark_debug = "true"*)*/reg [7:0]regbuf[3:0];
 
 	reg [5:0]count;
@@ -51,7 +51,7 @@ module memory_controller
 	reg m_rend; 
 	reg m_we = 0; 
 	reg m_wend; 
-	wire [23:0]m_a = {rega, 2'b0};
+	wire [23:0]m_a = rega;
 	wire [7:0]m_dout; 
 	wire m_byte_available;
 	wire [7:0]m_din = regbuf[count];
@@ -142,7 +142,7 @@ module memory_controller
 						ready_r <= 0;
 						count <= 4;
 					end else ready_r <= m_ready;
-					rega <= a[21:0];
+					rega <= a;
 					regbuf[3] <= data[31:24];
 					regbuf[2] <= data[23:16];
 					regbuf[1] <= data[15:8];

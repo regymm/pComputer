@@ -321,6 +321,8 @@ module pcpu_main
 	assign ch375_rx = 1;
 `endif
 
+	wire mainm_burst_en_m;
+	wire [7:0]mainm_burst_length_m;
 	wire [31:0]mainm_a_m;
 	wire [31:0]mainm_d_m;
 	wire mainm_we_m;
@@ -329,12 +331,15 @@ module pcpu_main
 	wire mainm_ready_m;
 	wire mainm_irq;
 `ifdef PSRAM_EN
-	//memory_controller_burst memory_controller_inst
-	memory_controller memory_controller_inst
+	memory_controller_burst memory_controller_inst
+	//memory_controller memory_controller_inst
 	(
 		.clk(clk_main),
 		.clk_mem(clk_mem),
 		.rst(rst_psram),
+
+		.burst_en(mainm_burst_en_m),
+		.burst_length(mainm_burst_length_m),
 
 		.a(mainm_a_m),
 		.d(mainm_d_m),
@@ -360,6 +365,8 @@ module pcpu_main
 	wire [31:0]sb_d;
 	wire sb_we;
 	wire sb_ready;
+	wire mainm_burst_en_c;
+	wire [7:0]mainm_burst_length_c;
 	wire [31:0]mainm_a_c;
 	wire [31:0]mainm_d_c;
 	wire mainm_we_c;
@@ -376,6 +383,8 @@ module pcpu_main
 		.we(sb_we),
 		.ready(sb_ready),
 
+		.burst_en_mem(mainm_burst_en_m),
+		.burst_length_mem(mainm_burst_length_m),
 		.a_mem(mainm_a_m),
 		.d_mem(mainm_d_m),
 		.we_mem(mainm_we_m),
@@ -383,6 +392,8 @@ module pcpu_main
 		.spo_mem(mainm_spo_m),
 		.ready_mem(mainm_ready_m),
 
+		.burst_en_cpu(mainm_burst_en_c),
+		.burst_length_cpu(mainm_burst_length_c),
 		.a_cpu(mainm_a_c),
 		.d_cpu(mainm_d_c),
 		.we_cpu(mainm_we_c),
@@ -401,6 +412,53 @@ module pcpu_main
 	assign spo_mem = mainm_spo_c;
 	assign rd_mem = mainm_rd_c;
 	assign ready_mem = mainm_ready_c;
+`endif
+
+	wire [31:0]cache_a;
+	wire [31:0]cache_d;
+	wire cache_we;
+	wire cache_rd;
+	wire [31:0]cache_spo;
+	wire cache_ready;
+`ifdef CACHE_EN
+	cache_cpu
+	//#(
+		//.WAYS(1),
+		//.WAY_LINES(128),
+		//.WAY_WORDS_PER_BLOCK(32),
+		//.WAY_TAG_LENGTH(32)
+	//)
+	cache_cpu_inst(
+		.clk(clk_main),
+		.rst(rst_mmu), // TODO: add a real reset
+
+		.a(cache_a),
+		.d(cache_d),
+		.we(cache_we),
+		.rd(cache_rd),
+		.spo(cache_spo),
+		.ready(cache_ready),
+
+		.burst_en(mainm_burst_en_c),
+		.burst_length(mainm_burst_length_c),
+		.lowmem_a(mainm_a_c),
+		.lowmem_d(mainm_d_c),
+		.lowmem_we(mainm_we_c),
+		.lowmem_rd(mainm_rd_c),
+		.lowmem_spo(mainm_spo_c),
+		.lowmem_ready(mainm_ready_c)
+
+		// hit & miss
+	);
+`else
+	assign mainm_burst_en_c = 0;
+	assign mainm_burst_length_c = 0;
+	assign mainm_a_c = cache_a;
+	assign mainm_d_c = cache_d;
+	assign mainm_we_c = cache_we;
+	assign mainm_rd_c = cache_rd;
+	assign cache_spo = mainm_spo_c;
+	assign cache_ready = mainm_ready_c;
 `endif
 
 
@@ -620,12 +678,12 @@ module pcpu_main
         .distm_spo(distm_spo),
 		.distm_ready(distm_ready),
 
-		.mainm_a(mainm_a_c),
-		.mainm_d(mainm_d_c),
-		.mainm_we(mainm_we_c),
-		.mainm_rd(mainm_rd_c),
-		.mainm_spo(mainm_spo_c),
-		.mainm_ready(mainm_ready_c),
+		.cache_a(cache_a),
+		.cache_d(cache_d),
+		.cache_we(cache_we),
+		.cache_rd(cache_rd),
+		.cache_spo(cache_spo),
+		.cache_ready(cache_ready),
 
         .sd_spo(sd_spo),
         .sd_a(sd_a),

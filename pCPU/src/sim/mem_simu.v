@@ -96,6 +96,15 @@ module mem_simu();
 		we = 0;
 		rd = 0;
 		#4000
+		burst_en = 0;
+		burst_length = 0;
+		a = 32'h2000abcd;
+		d = 32'hdeadbeef;
+		we = 1;
+		rd = 0;
+		#10
+		we = 0;
+		#4000
 		$finish;
     end
     

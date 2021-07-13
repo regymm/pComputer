@@ -23,7 +23,10 @@ void c_start()
 	}
 	else {
 		uart_putstr("[bootrom]sdcard not found. boot from UART.\r\n");
-		*(uart_dma_ctrl + 1) = 0x20000000;
+		// clear 0x20000000 to 0x20001000
+		int i;
+		for(i = 0; i < 1024; i++) psram_base[i] = 0;
+		*(uart_dma_ctrl + 1) = 0x20001000;
 		*(uart_dma_ctrl + 2) = 1; // wait here
 	}
 

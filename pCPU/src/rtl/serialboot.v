@@ -31,7 +31,9 @@ module serialboot(
 	input we,
 	output ready,
 
-	// cpu's bus access of memory
+	// cpu(or cache)'s bus access of memory
+	input burst_en_cpu,
+	input [7:0]burst_length_cpu,
 	input [31:0]a_cpu,
 	input [31:0]d_cpu,
 	input we_cpu,
@@ -41,6 +43,8 @@ module serialboot(
 
 	// port to memory -- with override of this
 	// module when serialbooting
+	output burst_en_mem,
+	output [7:0]burst_length_mem,
 	output [31:0]a_mem,
 	output [31:0]d_mem,
 	output we_mem,
@@ -57,6 +61,8 @@ module serialboot(
 	wire sb_we;
 	wire override;
 
+	assign burst_en_mem = override ? 0 : burst_en_cpu;
+	assign burst_length_mem = override ? 0 : burst_length_cpu;
 	assign a_mem = override ? sb_a : a_cpu;
 	assign d_mem = override ? sb_d : d_cpu;
 	assign we_mem = override ? sb_we : we_cpu;

@@ -280,9 +280,12 @@ module riscv_multicyc
 		else imm = 0;
 	end
 	reg [7:0]phase;
+	reg [7:0]phase_n;
 	reg [7:0]phase_return;
+	reg phase_return_set;
+	reg [7:0]phase_return_n;
 	localparam IF			=	10;
-	localparam IF_REMEDY	=	20;
+	//localparam IF_REMEDY	=	20;
 	localparam ID_RF		=	30;
 	localparam EX			=	40;
 	localparam MEM			=	50;
@@ -334,9 +337,9 @@ module riscv_multicyc
 				MemRead = 1;
 				IRWrite = 1;
 			end
-			IF_REMEDY: begin
-				IRWrite = 1; IRLate = 1;
-			end
+			//IF_REMEDY: begin
+				//IRWrite = 1; IRLate = 1;
+			//end
 			ID_RF: begin
 				PCWrite = 1;
 				ALUSrcA = 1; ALUSrcB = 1;
@@ -385,7 +388,7 @@ module riscv_multicyc
 					RegWrite = 1; RegSrc = 7;
 				end else
 				`endif
-					if (op == OP_R | op == OP_R_I) begin
+				if (op == OP_R | op == OP_R_I) begin
 					RegWrite = 1;
 				end else if (op == OP_LUI) begin
 					RegWrite = 1; RegSrc = 2;
@@ -410,6 +413,7 @@ module riscv_multicyc
 			MEM_WAIT: begin
 				IorDorW = 2;
 				MemSrc = 3;
+				if (MemReady & phase_return == ID_RF) IRWrite = 1;
 			end
 			INTERRUPT: begin
 				on_exc_enter = 1;
@@ -429,80 +433,129 @@ module riscv_multicyc
 			end
 		endcase
 	end
+
+	// TODO: generalize and improve
+	always @ (posedge clk) begin
+		if (op == OP_PRIV)
+			if (priv_ebreak)
+				mcause_code_out <= EXC_BREAKPOINT;
+			else if (priv_ecall)
+				mcause_code_out <= EXC_ECALL_FROM_M_MODE;
+	end
+
+	// phase control
+	always @ (*) begin
+		phase_n = BAD;
+		phase_return_n = BAD;
+		phase_return_set = 0;
+		case (phase)
+			IF:
+				if (!MemReady) begin
+					phase_n = MEM_WAIT;
+					phase_return_set = 1;
+					//phase_return_n = IF_REMEDY;
+					phase_return_n = ID_RF;
+				end else phase_n = ID_RF;
+			//IF_REMEDY:
+				//phase_n = ID_RF;
+			ID_RF:
+				// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
+				if (interrupt) phase_n = INTERRUPT;
+				else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase_n = IF;
+				else if (op == OP_PRIV & (priv_mret)) phase_n = MRET;
+				else if (op == OP_PRIV & (priv_ebreak)) begin
+					phase_n = EXCEPTION;
+					//mcause_code_out <= EXC_BREAKPOINT;
+				end else if (op == OP_PRIV & (priv_ecall)) begin
+					phase_n = EXCEPTION;
+					//mcause_code_out <= EXC_ECALL_FROM_M_MODE;
+				end else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase_n = WB;
+				else phase_n = EX;
+			EX:
+				if (op == OP_STORE | op == OP_LOAD)
+					phase_n = MEM;
+				`ifdef RV32M
+				else if (op == OP_R & is_RV32M)
+					phase_n = RV32M_WAIT;
+				`endif
+				else phase_n = WB;
+			MEM: begin
+				phase_n = MEM_WAIT;
+				phase_return_set = 1;
+				if (op == OP_LOAD) phase_return_n = WB;
+				else if (op == OP_STORE & store_unaligned)
+					phase_return_n = EXU;
+				else /* op == OP_STORE & !store_unaligned */
+					phase_return_n = IF;
+			end
+			EXU:
+				phase_n = MEMU;
+			MEMU: begin
+				phase_n = MEM_WAIT;
+				phase_return_set = 1;
+				phase_return_n = IF;
+			end
+			WB:
+				phase_n = IF;
+			MEM_WAIT: // including IF_REMEDY
+				if (MemReady) begin
+					phase_n = phase_return;
+					//if (phase_return == ID_RF) begin
+						//IRWrite = 1; // IRLate = 1;
+					//end
+				end
+				else phase_n = MEM_WAIT;
+			`ifdef RV32M
+			RV32M_WAIT: begin
+				if (RV32MReady) phase_n = WB;
+				else phase_n = RV32M_WAIT;
+			end
+			`endif
+			INTERRUPT:
+				phase_n = IF;
+			EXCEPTION:
+				phase_n = IF;
+			MRET:
+				phase_n = IF;
+			BAD:
+				phase_n = BAD;
+		endcase
+	end
+
 	// control FSM
 	always @ (posedge clk) begin
 		if (rst) begin
 			phase <= IF;
 		end
 		else begin
+			phase <= phase_n;
+			if (phase_return_set) phase_return <= phase_return_n;
 			case (phase)
 				IF: begin
-					if (!MemReady) begin
-						phase <= MEM_WAIT;
-						phase_return <= IF_REMEDY;
-					end else phase <= ID_RF;
 				end
-				IF_REMEDY: phase <= ID_RF;
+				//IF_REMEDY: begin
+				//end
 				ID_RF: begin
-					if (interrupt) phase <= INTERRUPT;
-					//if (0) phase <= I_INT_END;
-					//if (op == OP_ENV | 0) phase <= ID_RF;
-					// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
-					else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase <= IF;
-					else if (op == OP_PRIV & (priv_mret)) phase <= MRET;
-					else if (op == OP_PRIV & (priv_ebreak)) begin
-						phase <= EXCEPTION;
-						mcause_code_out <= EXC_BREAKPOINT;
-					end else if (op == OP_PRIV & (priv_ecall)) begin
-						phase <= EXCEPTION;
-						mcause_code_out <= EXC_ECALL_FROM_M_MODE;
-					end else if (op == OP_LUI | op == OP_AUIPC | op == OP_JAL) phase <= WB;
-					else phase <= EX;
 				end
 				EX: begin
-					if (op == OP_STORE | op == OP_LOAD) phase <= MEM;
-					//else if (op == OP_PRIV & priv_wfi) phase <= IF;
-					`ifdef RV32M
-					else if (op == OP_R & is_RV32M) phase <= RV32M_WAIT;
-					`endif
-					else phase <= WB;
 				end
 				MEM: begin
-					phase <= MEM_WAIT;
-					if (op == OP_LOAD) phase_return <= WB;
-					else if (op == OP_STORE & store_unaligned) phase_return <= EXU;
-					else /* op == OP_STORE & !store_unaligned */ phase_return <= IF;
 				end
 				EXU: begin
-					phase <= MEMU;
 				end
 				MEMU: begin
-					phase <= MEM_WAIT;
-					phase_return <= IF;
 				end
 				WB: begin
-					phase <= IF;
 				end
 				MEM_WAIT: begin
-					if (MemReady) phase <= phase_return;
-					else phase <= MEM_WAIT;
 				end
-				`ifdef RV32M
-				RV32M_WAIT: begin
-					if (RV32MReady) phase <= WB;
-				end
-				`endif
 				INTERRUPT: begin
-					phase <= IF;
 				end
 				EXCEPTION: begin
-					phase <= IF;
 				end
 				MRET: begin
-					phase <= IF;
 				end
 				BAD: begin
-					phase <= BAD;
 				end
 			endcase
 		end

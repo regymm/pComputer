@@ -76,6 +76,7 @@ SECTIONS
 		/*PROVIDE(__stack_end = .);*/
 	/*}*/
 	/*>ram*/
+	__global_pointer$ = 0x12345678;
 
 	/DISCARD/ : { *(.bss) *(.comment) }
 }

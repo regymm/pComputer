@@ -258,6 +258,7 @@ end:
 	nop
 	nop
 	nop
+	# TODO: better temporary stack ?
 	la sp, 0x10001ffc
 	j c_start
 	j real_end

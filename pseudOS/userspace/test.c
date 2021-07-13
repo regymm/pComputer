@@ -1,3 +1,5 @@
+#include "stdio.h"
+#include "math.h"
 int video_x;
 int video_y;
 int dummy_arr[1000];
@@ -21,6 +23,12 @@ int main()
 		for(i = 0; i < 50000; i++);
 		uart_putchar(chara);
 		uart_putstr("user_proc\r\n");
+		printf("printf test");
+		int a = 10;
+		int b = sqrt(a);
+		printf("%d", b);
+		FILE* f = fopen("no.txt", "r");
+		fclose(f);
 		/*hdmi_putchar('0');*/
 		/*hdmi_putchar('x');*/
 		/*hdmi_putchar(((int)main >> 28) + '0');*/

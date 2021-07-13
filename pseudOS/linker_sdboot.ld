@@ -64,6 +64,9 @@ SECTIONS
 		. = __heap_size;
 		PROVIDE(__heap_end = .);
 	}
+	_edata = .; PROVIDE (edata = .);
+	__global_pointer$ = 0x0;
+	_end = .; PROVIDE (end = .);
 	/*} >ram*/
 
 	/* stack: we should consider putting this further to the top of the address

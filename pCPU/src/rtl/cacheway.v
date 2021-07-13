@@ -26,11 +26,11 @@ module cacheway
         input [31:0]d,
         input we,
 		//input rd,
-        output reg [31:0]spo,
+        output [31:0]spo,
 
 		input tag_we,
 		input [TAG_LENGTH-1:0]tag_in,
-		output [TAG_LENGTH-1:0]tag_out,
+		(*mark_debug = "true"*)output [TAG_LENGTH-1:0]tag_out,
 
 		output init_done
     );
@@ -39,7 +39,7 @@ module cacheway
 	wire [$clog2(LINES)-1:0]index = a[$clog2(LINES)-1+$clog2(WORDS_PER_BLOCK)+2:$clog2(WORDS_PER_BLOCK)+2];
 	wire [$clog2(LINES * WORDS_PER_BLOCK)-1:0]bram_a = {index, offset};
 
-	reg [TAG_LENGTH-1:0]tags[$clog2(LINES)-1:0];
+	reg [TAG_LENGTH-1:0]tags[LINES-1:0];
 
 	reg state;
 	localparam INIT = 0;
@@ -53,13 +53,15 @@ module cacheway
 		else begin
 			if (state == INIT) begin
 				count <= count + 1;
-				if (count == LINES-1) state <= INIT_DONE;
+				if (count == {($clog2(LINES)){1'b1}}) state <= INIT_DONE;
 				tags[count] <= 0;
 			end else
 				if (en & tag_we) tags[index] <= tag_in;
 		end
 	end
 	assign tag_out = tags[index];
+
+	assign init_done = state;
 
 	simple_ram #(
 		.WIDTH(32),

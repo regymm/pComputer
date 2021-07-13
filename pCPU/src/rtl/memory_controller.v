@@ -10,6 +10,7 @@
 //  read: each single-cycle ready pulse means new 32bit data
 //  write: each single-cycle ready pulse means new
 //         data should be sent on d, 1 cycle later at least
+//         TODO: new addr length!![1:0]
 
 `timescale 1ns / 1ps
 
@@ -48,17 +49,20 @@ module memory_controller_burst
 
 	reg ready_r = 0;
 	reg ready_r_old = 0;
-	wire ready_slow = ready_r | ready_r_old;
+	reg ready_delay = 0;
 	always @ (posedge clk_mem) begin
 		ready_r_old <= ready_r;
+		ready_delay = (ready_r & !ready_r_old);
 	end
-	reg ready_slow_reg;
-	always @ (posedge clk) begin
-		ready_slow_reg <= ready_slow;
-	end
+	//wire ready_slow = ready_r | ready_r_old;
+	//reg ready_slow_reg;
+	//always @ (posedge clk) begin
+		//ready_slow_reg <= ready_slow;
+	//end
 	// TODO: this combinatorial may cause problem if 
 	// rd/we and clk are not aligned
-	assign ready = ready_slow_reg & !(rd | we);
+	//assign ready = ready_slow_reg & !(rd | we);
+	assign ready = (ready_r | ready_delay) & !(rd | we);
 
 	reg [21:0]rega;
 	/*(*mark_debug = "true"*)*/reg [7:0]regbuf[3:0];
@@ -145,7 +149,10 @@ module memory_controller_burst
 			regbuf[2] <= data[23:16];
 			regbuf[1] <= data[15:8];
 			regbuf[0] <= data[7:0];
+		end else if (state == RD & byte_available_posedge) begin
+			regbuf[count - 1] <= m_dout;
 		end
+		// the two cases shall not overlap
 	end
 
 
@@ -230,7 +237,8 @@ module memory_controller_burst
 					m_rd <= 0;
 					if (byte_available_posedge) begin
 						count <= count - 1;
-						regbuf[count - 1] <= m_dout;
+						//regbuf[count - 1] <= m_dout;
+						// to avoid multidriven
 					end if (count == 1 & 
 						(!regburst_en | 
 						regburst_en & regburst_length == 1))

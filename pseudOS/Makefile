@@ -46,7 +46,7 @@ sdboot.elf: sdboot.S sdboot.c \
 	newlib/crt0.S newlib/syscall.c \
 	fs/fs.c \
 	kernel/global.c kernel/process.c kernel/isr.c kernel/misc.c kernel/elf.c
-	$(CC) $(CC_L_F) $^ -o $@ -T linker_sdboot.ld  -lc -lgcc
+	$(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lc -lgcc
 
 user:
 	$(MAKE) -C userspace

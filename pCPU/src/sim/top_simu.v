@@ -22,15 +22,15 @@ module top_simu();
         .sysclk(clk),
         .btn(btn),
         .led(led),
-        .sw(sw),
+		.sw(sw),
         .sd_dat0(sd_dat0),
 		.psram_ce(psram_ce),
 		.psram_mosi(psram_mosi),
 		.psram_miso(psram_miso),
 		.psram_sio2(psram_sio2),
 		.psram_sio3(psram_sio3),
-		.psram_sclk(psram_sclk),
-		.ch375_tx(ch375_tx)
+		.psram_sclk(psram_sclk)
+		//.ch375_tx(ch375_tx)
 	);
     
     initial begin
@@ -42,11 +42,13 @@ module top_simu();
 		ch375_tx = 1;
         //#400
         sw = 2'b01;
+		btn = 2'b11;
         //btn = 4'b0000;
         //#2000
         //sw = 2'b10;
         #4000
         sw = 2'b00;
+		btn = 2'b00;
 
         //#10
         //btn = 4'b0000;
@@ -55,6 +57,7 @@ module top_simu();
         //btn = 4'b0010;
 
         #22000
+		#200000;
 		$finish;
         #50000
 
@@ -83,8 +86,6 @@ module top_simu();
 		#4000
 		sw = 2'b00;
 		#200000;
-		#200000;
-		#200000
         $finish;
     end
     

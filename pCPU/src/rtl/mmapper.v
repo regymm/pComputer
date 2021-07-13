@@ -31,13 +31,15 @@ module mmapper
         input [31:0]distm_spo,
 		input distm_ready,
 
+		// cache
+        output reg [31:0]cache_a,
+        output reg [31:0]cache_d,
+        output reg cache_we,
+        output reg cache_rd,
+        input [31:0]cache_spo,
+        input cache_ready,
+
 		// 8MB PSRAM: 0x20000000 to 0x21fffffc
-        output reg [21:0]mainm_a,
-        output reg [31:0]mainm_d,
-        output reg mainm_we,
-        output reg mainm_rd,
-        input [31:0]mainm_spo,
-        input mainm_ready,
 
         //// special devices:
         //// counter 0x50000000
@@ -112,10 +114,10 @@ module mmapper
 
     always @ (*) begin 
         bootm_a = a[11:2];
-        distm_a = a[31:2];
+        distm_a = {2'b0, a[31:2]};
         distm_d = d;
-		mainm_a = a[23:2];
-		mainm_d = d;
+		cache_a = a;
+		cache_d = d;
         gpio_a = a[5:2];
         gpio_d = d;
         uart_a = a[4:2];
@@ -137,8 +139,8 @@ module mmapper
     always @ (*) begin
         distm_we = 0;
 		distm_rd = 0;
-		mainm_we = 0;
-		mainm_rd = 0;
+		cache_we = 0;
+		cache_rd = 0;
         gpio_we = 0;
         uart_we = 0;
 		sb_we = 0;
@@ -157,10 +159,10 @@ module mmapper
             spo = distm_spo;
 			ready = distm_ready;
         end else if (a[31:28] == 4'h2) begin
-            mainm_we = we;
-            mainm_rd = rd;
-            spo = mainm_spo;
-			ready = mainm_ready;
+            cache_we = we;
+            cache_rd = rd;
+            spo = cache_spo;
+			ready = cache_ready;
         end else if (a[31:28] == 4'h9) begin
             case (a[27:24])
                 4'h2: begin
