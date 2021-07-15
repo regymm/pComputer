@@ -156,7 +156,7 @@ module pcpu_main
 	wire distm_ready;
 	simple_ram #(
 		.WIDTH(32),
-		.DEPTH(15),
+		.DEPTH(12),
 		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_zeros.dat")
 	) distram (
         .clk(clk_main),

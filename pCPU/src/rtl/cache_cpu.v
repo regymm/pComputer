@@ -23,7 +23,7 @@ module cache_cpu
         input [31:0]d,
         input we,
 		input rd,
-        output reg [31:0]spo,
+        output [31:0]spo,
 		output ready,
 
 		output burst_en,
@@ -39,17 +39,22 @@ module cache_cpu
 		output miss
     );
 
-	assign burst_en = 1;
-	assign burst_length = WAY_WORDS_PER_BLOCK;
-	assign lowmem_a = {host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], {($clog2(WAY_WORDS_PER_BLOCK)+2){1'b0}}};
-	assign lowmem_d = way_spo[0]; // TODO: set assoc
-
 	localparam INIT = 0;
 	localparam IDLE = 1;
 	localparam HIT = 2;
 	localparam LOAD = 3;
 	localparam WRITEBACK = 4;
 	(*mark_debug = "true"*)reg [3:0]state = INIT;
+
+	assign spo = way_spo[0];
+	assign ready = !(we | rd) & (state == IDLE);
+
+	assign burst_en = 1;
+	assign burst_length = WAY_WORDS_PER_BLOCK;
+	assign lowmem_a = {host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], {($clog2(WAY_WORDS_PER_BLOCK)+2){1'b0}}};
+	assign lowmem_d = way_spo[0]; // TODO: set assoc
+
+	wire quick_hit = (we | rd) & (| way_hit);
 
 	(*mark_debug = "true"*)reg [WAYS-1:0]way_en;
 	(*mark_debug = "true"*)reg way_we;
@@ -72,25 +77,24 @@ module cache_cpu
 			INIT: begin
 			end
 			IDLE: begin
-			end
-			HIT: begin
-				if (host_weorrd) begin
+				// make hit fast is important
+				if (quick_hit) begin
 					way_en[0] = 1;
-					way_we = 1;
 					way_tag_we = 1;
-
 					way_valid_in = 1;
-					way_dirty_in = 1;
-					//way_iord_in = 0;
-				end else begin
-					way_en[0] = 1;
-					way_we = 0;
-					way_tag_we = 1;
-
-					way_valid_in = 1;
-					way_dirty_in = way_tag_dirty;
+					way_we = we;
+					way_dirty_in =
+						we ? 1 : way_tag_dirty;
 					//way_iord_in = 0;
 				end
+			end
+			HIT: begin
+				way_en[0] = 1;
+				way_tag_we = 1;
+				way_valid_in = 1;
+				way_we = host_weorrd;
+				way_dirty_in = 
+					host_weorrd ? 1 : way_tag_dirty;
 			end
 			LOAD: begin
 				way_en[0] = 1;
@@ -99,7 +103,6 @@ module cache_cpu
 
 				way_valid_in = 1;
 				way_dirty_in = 0;
-				//way_iord_in = 0;
 
 				lowmem_rd = burst_issue;
 			end
@@ -115,8 +118,6 @@ module cache_cpu
     end
 
 
-	assign ready = !(we | rd) & (state == IDLE);
-
 	(*mark_debug = "true"*)reg burst_issue = 0;
 	wire [31:0]burst_a = {host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], xfer_cnt[$clog2(WAY_WORDS_PER_BLOCK)-1:0], 2'b0};
 	wire [31:0]burst_d = lowmem_spo;
@@ -124,15 +125,14 @@ module cache_cpu
 
 	reg host_weorrd;
 	reg [31:0]host_a = 0;
-	reg [31:0]host_d;
+	(*mark_debug = "true"*)reg [31:0]host_d;
 
-	(*mark_debug = "true"*)reg [15:0]xfer_cnt = 0;
+	reg [15:0]xfer_cnt = 0;
 
     always @ (posedge clk) begin
         if (rst) begin
 			host_a <= 0;
 			state <= INIT;
-			spo <= 0;
 			xfer_cnt <= 0;
 			burst_issue <= 0;
 			burst_we <= 0;
@@ -155,7 +155,7 @@ module cache_cpu
 					host_d <= d;
 					host_weorrd <= we;
 					if (| way_hit) begin
-						state <= HIT;
+						state <= IDLE; // one-cycle hit
 					end else begin
 						if (!way_tag_valid) begin
 							state <= LOAD;
@@ -169,17 +169,17 @@ module cache_cpu
 			end
 			HIT: begin
 				state <= IDLE;
-				spo <= way_spo[0]; // TODO: set assoc
+				//spo <= way_spo[0]; // TODO: set assoc
 			end
 			WRITEBACK: begin
 				if (burst_issue) begin
 					burst_issue <= 0;
-					xfer_cnt <= 1;
+					xfer_cnt <= 0;
 				end else begin
 					if (lowmem_ready) begin
 						xfer_cnt <= xfer_cnt + 1;
 					end
-					if (xfer_cnt == WAY_WORDS_PER_BLOCK + 1) begin
+					if (xfer_cnt == WAY_WORDS_PER_BLOCK) begin
 						// xfer_cnt may overflow but don't care
 						// this means all write are ready
 						// (instead of last write just sent)
@@ -190,11 +190,11 @@ module cache_cpu
 			LOAD: begin
 				if (burst_issue) begin
 					burst_issue <= 0;
-					xfer_cnt <= 0;
+					xfer_cnt <= -1;
 				end else begin
 					if (lowmem_ready) begin
 						xfer_cnt <= xfer_cnt + 1; // xfer_cnt + 1 is next burst_a address
-						if (xfer_cnt == WAY_WORDS_PER_BLOCK + 1) begin
+						if (xfer_cnt == WAY_WORDS_PER_BLOCK - 1) begin
 							burst_we <= 0;
 							state <= HIT;
 						end else begin
@@ -218,10 +218,15 @@ module cache_cpu
 	wire [WAYS-1:0]way_hit;
 
 	wire bursting = (state == WRITEBACK | state == LOAD);
-	wire [31:0]way_a = bursting ? burst_a : host_a;
-	wire [31:0]way_d = bursting ? burst_d : host_d;
+	wire [31:0]way_a = bursting ? burst_a : (state == IDLE ? a : host_a);
+	wire [31:0]way_d = bursting ? burst_d : (state == IDLE ? d : host_d);
 	wire [$clog2(WAY_WORDS_PER_BLOCK)+2-1 - 3:0]way_zeros = 0;
-	wire [31:0]way_tag_in = {a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], way_zeros, way_iord_in, way_dirty_in, way_valid_in};
+	wire [31:0]way_tag_in = {
+		a[31:$clog2(WAY_WORDS_PER_BLOCK)+2],
+		way_zeros,
+		way_iord_in,
+		way_dirty_in,
+		way_valid_in};
 
 	//genvar i;
 	//generate
@@ -248,8 +253,7 @@ module cache_cpu
 			assign way_tag_dirty[0] = way_tag_out[0][1];
 			assign way_tag_iord[0] = way_tag_out[0][2];
 			assign way_tag_addr[0] = way_tag_out[0][31:$clog2(WAY_WORDS_PER_BLOCK)+2];
-			assign way_hit[0] = way_tag_valid[0] & (way_tag_addr[0] == 
-				a[31:$clog2(WAY_WORDS_PER_BLOCK)+2]);
+			assign way_hit[0] = way_tag_valid[0] & (way_tag_addr[0] == a[31:$clog2(WAY_WORDS_PER_BLOCK)+2]);
 		//end
 	//endgenerate
 

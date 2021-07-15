@@ -201,12 +201,11 @@ module memory_controller_burst
 					if (ready_for_next_byte_posedge) begin
 						count <= count - 1;
 						if (count == 3 & regburst_en) begin
-							ready_r <= 1;
+							// last element don't need additional ready -- no next element!
+							if (regburst_length != 1)
+								ready_r <= 1;
 							regburst_length <= regburst_length - 1;
 						end
-						//else begin
-							//ready_r <= 0;
-						//end
 					end else ready_r <= 0;
 					if (count == 0) begin
 						if (!regburst_en | (regburst_en & regburst_length == 0)) begin
@@ -221,7 +220,7 @@ module memory_controller_burst
 							// assignment in another always
 						end
 					end
-					if (count == 0 & (!regburst_en | (regburst_en & regburst_length == 1))) begin
+					if (count == 0 & (!regburst_en | (regburst_en & regburst_length == 0))) begin
 						state <= IDLE;
 						m_wend <= 1;
 					end

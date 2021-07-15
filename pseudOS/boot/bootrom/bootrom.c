@@ -2,6 +2,12 @@
 
 void c_start()
 {
+	int i;
+	for(i = 0; i < 64; i++) psram_base[i] = i;
+	for(i = 0; i < 100; i++);
+	for(i = 0 + 0x4000; i < 64 + 0x4000; i++) psram_base[i] = i;
+	for(i = 0; i < 100; i++);
+	int j = psram_base[10];
 	uart_putstr("[bootrom]c_start\n\r");
 	uart_putstr("[bootrom]load from sdcard\n\r");
 

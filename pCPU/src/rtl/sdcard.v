@@ -200,6 +200,7 @@ module sdcard
     end
 
     // handle non-relevant control address reading
+	// TODO: fix this
 	reg [31:0]blockaspo;
 	reg [31:0]blockcounterspo;
 	always @ (*) begin

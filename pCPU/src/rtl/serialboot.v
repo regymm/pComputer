@@ -66,9 +66,9 @@ module serialboot(
 	assign a_mem = override ? sb_a : a_cpu;
 	assign d_mem = override ? sb_d : d_cpu;
 	assign we_mem = override ? sb_we : we_cpu;
-	assign rd_mem = override ? rd_cpu : rd_cpu;
-	assign spo_cpu = override ? spo_cpu : spo_mem;
-	assign ready_cpu = override ? ready_mem : ready_mem;
+	assign rd_mem = rd_cpu;
+	assign spo_cpu = spo_mem;
+	assign ready_cpu = ready_mem;
 
 	// TODO first avoid fake positive
 	reg [3:0]uart_data_bin;

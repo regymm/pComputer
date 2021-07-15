@@ -39,8 +39,7 @@ module uart
 
         output irq,
 
-		input override, // unused
-		output rxnew,
+		output reg rxnew,
 		output [7:0]rxdata
     );
 
@@ -198,7 +197,7 @@ module uart
 		end
 	end
 
-	reg rxnew;
+	//reg rxnew;
 	//reg rxnew_1;
 	always @ (posedge clk) begin
 		rxnew <= wire_rx_state_stop;

@@ -238,20 +238,22 @@ cont2:
 	la a0, 0x20000aa8
 	li a1, 0x12345678
 	sw a1, 0(a0)
+	li a1, 0x44448888
+	sw a1, 4(a0)
 	lw a2, 0(a0)
 	lw a3, 4(a0)
 	lw a4, 8(a0)
 	lw a5, 12(a0)
 #
 
-	li a0, 'O'
-	jal uart_putchar_simple
-	li a0, 'K'
-	jal uart_putchar_simple
-	li a0, '\n'
-	jal uart_putchar_simple
-	li a0, '\r'
-	jal uart_putchar_simple
+#	li a0, 'O'
+#	jal uart_putchar_simple
+#	li a0, 'K'
+#	jal uart_putchar_simple
+#	li a0, '\n'
+#	jal uart_putchar_simple
+#	li a0, '\r'
+#	jal uart_putchar_simple
 	j end
 end:
 	nop

@@ -588,6 +588,7 @@ module riscv_multicyc
 		0: ALUIn2 = B;
 		1: ALUIn2 = imm;
 		2: ALUIn2 = csr_spo;
+		default: ALUIn2 = B;
 	endcase end
 	always @ (*) begin case (RegSrc)
 		0: WriteData = ALUOut;
