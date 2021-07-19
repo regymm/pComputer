@@ -23,7 +23,7 @@ module memory_controller_burst
 		input burst_en,
 		input [7:0]burst_length,
 
-		input [21:0]a, 
+		input [23:0]a, 
 		input [31:0]d, 
 		input we, 
 		input rd, 
@@ -64,7 +64,7 @@ module memory_controller_burst
 	//assign ready = ready_slow_reg & !(rd | we);
 	assign ready = (ready_r | ready_delay) & !(rd | we);
 
-	reg [21:0]rega;
+	reg [23:0]rega;
 	/*(*mark_debug = "true"*)*/reg [7:0]regbuf[3:0];
 
 	reg regburst_en;
@@ -76,7 +76,7 @@ module memory_controller_burst
 	reg m_rend; 
 	reg m_we = 0; 
 	reg m_wend; 
-	wire [23:0]m_a = {rega, 2'b0};
+	wire [23:0]m_a = rega;
 	wire [7:0]m_dout; 
 	wire m_byte_available;
 	wire [7:0]m_din = regbuf[count];
@@ -183,7 +183,7 @@ module memory_controller_burst
 					end else ready_r <= m_ready;
 					regburst_en <= burst_en;
 					regburst_length <= burst_length;
-					rega <= a[21:0];
+					rega <= a;
 					//regbuf_w <= 1;
 					m_wend <= 0;
 					m_rend <= 0;

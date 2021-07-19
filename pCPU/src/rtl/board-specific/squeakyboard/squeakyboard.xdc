@@ -102,8 +102,8 @@ set_property -dict {PACKAGE_PIN J20 IOSTANDARD LVCMOS33} [get_ports ps2_clk]
 set_property -dict {PACKAGE_PIN H20 IOSTANDARD LVCMOS33} [get_ports ps2_data]
 #set_property -dict {PACKAGE_PIN H16 IOSTANDARD LVCMOS33} [get_ports ps2_clk]
 #set_property -dict {PACKAGE_PIN J16 IOSTANDARD LVCMOS33} [get_ports ps2_data]
-set_property PULLUP TRUE [get_ports ps2_clk]
-set_property PULLUP TRUE [get_ports ps2_data]
+set_property PULLUP true [get_ports ps2_clk]
+set_property PULLUP true [get_ports ps2_data]
 
 # SD Card
 set_property -dict {PACKAGE_PIN M20 IOSTANDARD LVCMOS33} [get_ports sd_ncd]
@@ -121,4 +121,6 @@ set_property -dict {PACKAGE_PIN T14 IOSTANDARD LVCMOS33} [get_ports psram_miso]
 set_property -dict {PACKAGE_PIN R14 IOSTANDARD LVCMOS33} [get_ports psram_sio2]
 set_property -dict {PACKAGE_PIN V15 IOSTANDARD LVCMOS33} [get_ports psram_sio3]
 set_property -dict {PACKAGE_PIN V12 IOSTANDARD LVCMOS33} [get_ports psram_sclk]
+
+
 

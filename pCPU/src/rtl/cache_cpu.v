@@ -51,7 +51,8 @@ module cache_cpu
 
 	assign burst_en = 1;
 	assign burst_length = WAY_WORDS_PER_BLOCK;
-	assign lowmem_a = {host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], {($clog2(WAY_WORDS_PER_BLOCK)+2){1'b0}}};
+	// TODO;
+	assign lowmem_a = {state == WRITEBACK ? burst_wb_base_a : host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], {($clog2(WAY_WORDS_PER_BLOCK)+2){1'b0}}};
 	assign lowmem_d = way_spo[0]; // TODO: set assoc
 
 	wire quick_hit = (we | rd) & (| way_hit);
@@ -112,14 +113,17 @@ module cache_cpu
 
 				way_valid_in = 1;
 				way_dirty_in = 0;
-				lowmem_we = burst_issue;
+				lowmem_we = burst_issue_delayed & !burst_issue;
 			end
 		endcase
     end
 
 
 	(*mark_debug = "true"*)reg burst_issue = 0;
-	wire [31:0]burst_a = {host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], xfer_cnt[$clog2(WAY_WORDS_PER_BLOCK)-1:0], 2'b0};
+	reg burst_issue_delayed;
+	reg [31-$clog2(WAY_WORDS_PER_BLOCK)-2:0]burst_wb_base_a;
+	wire [31:0]burst_ld_a = {host_a[31:$clog2(WAY_WORDS_PER_BLOCK)+2], xfer_cnt[$clog2(WAY_WORDS_PER_BLOCK)-1:0], 2'b0};
+	wire [31:0]burst_wb_a = {burst_wb_base_a, xfer_cnt[$clog2(WAY_WORDS_PER_BLOCK)-1:0], 2'b0};
 	wire [31:0]burst_d = lowmem_spo;
 	reg burst_we = 0;
 
@@ -128,6 +132,10 @@ module cache_cpu
 	(*mark_debug = "true"*)reg [31:0]host_d;
 
 	reg [15:0]xfer_cnt = 0;
+
+	always @ (posedge clk) begin
+		burst_issue_delayed <= burst_issue;
+	end
 
     always @ (posedge clk) begin
         if (rst) begin
@@ -163,6 +171,7 @@ module cache_cpu
 							state <= LOAD;
 						end else if (way_tag_dirty) begin
 							state <= WRITEBACK;
+							burst_wb_base_a <= way_tag_addr[0];
 						end
 					end
 				end
@@ -184,6 +193,7 @@ module cache_cpu
 						// this means all write are ready
 						// (instead of last write just sent)
 						state <= LOAD;
+						burst_issue <= 1;
 					end
 				end
 			end
@@ -218,7 +228,7 @@ module cache_cpu
 	wire [WAYS-1:0]way_hit;
 
 	wire bursting = (state == WRITEBACK | state == LOAD);
-	wire [31:0]way_a = bursting ? burst_a : (state == IDLE ? a : host_a);
+	wire [31:0]way_a = bursting ? (state == WRITEBACK ? burst_wb_a : burst_ld_a) : (state == IDLE ? a : host_a); // here the WRITEBACK judgement seems useless, because when writeback is needed(in case cache conflict) burst_wb_a and burst_ld_a should be literally the same for way RAM, as way tag which will soon be overwriten during LOAD state don't matter. No need to fix until there's some extra "manual writeback" functionality. 
 	wire [31:0]way_d = bursting ? burst_d : (state == IDLE ? d : host_d);
 	wire [$clog2(WAY_WORDS_PER_BLOCK)+2-1 - 3:0]way_zeros = 0;
 	wire [31:0]way_tag_in = {

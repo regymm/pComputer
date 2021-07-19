@@ -319,42 +319,42 @@ module pcpu_main
 	wire mainm_ready_m;
 	wire mainm_irq;
 `ifdef PSRAM_EN
-	simple_ram #(
-		.WIDTH(32),
-		.DEPTH(18),
-		.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_zeros.dat")
-	) distram_2 (
-        .clk(clk_main),
-        .a(mainm_a_m),
-        .d(mainm_d_m),
-        .we(mainm_we_m),
-		.rd(mainm_rd_m),
-        .spo(mainm_spo_m),
-		.ready(mainm_ready_m)
-    );
-	////memory_controller_burst memory_controller_inst
-	//memory_controller memory_controller_inst
-	//(
-		//.clk(clk_main),
-		//.clk_mem(clk_mem),
-		//.rst(rst_psram),
-
-		//.a(mainm_a_m),
-		//.d(mainm_d_m),
-		//.we(mainm_we_m),
+	//simple_ram #(
+		//.WIDTH(32),
+		//.DEPTH(18),
+		//.INIT("/home/petergu/MyHome/pComputer/pseudOS/coe/result_zeros.dat")
+	//) distram_2 (
+        //.clk(clk_main),
+        //.a(mainm_a_m),
+        //.d(mainm_d_m),
+        //.we(mainm_we_m),
 		//.rd(mainm_rd_m),
-		//.spo(mainm_spo_m),
-		//.ready(mainm_ready_m), 
+        //.spo(mainm_spo_m),
+		//.ready(mainm_ready_m)
+    //);
+	//memory_controller_burst memory_controller_inst
+	memory_controller memory_controller_inst
+	(
+		.clk(clk_main),
+		.clk_mem(clk_mem),
+		.rst(rst_psram),
 
-		//.irq(mainm_irq),
+		.a(mainm_a_m),
+		.d(mainm_d_m),
+		.we(mainm_we_m),
+		.rd(mainm_rd_m),
+		.spo(mainm_spo_m),
+		.ready(mainm_ready_m), 
 
-		//.psram_ce(psram_ce), 
-		//.psram_mosi(psram_mosi), 
-		//.psram_miso(psram_miso), 
-		//.psram_sio2(psram_sio2), 
-		//.psram_sio3(psram_sio3),
-		//.psram_sclk(psram_sclk)
-	//);
+		.irq(mainm_irq),
+
+		.psram_ce(psram_ce), 
+		.psram_mosi(psram_mosi), 
+		.psram_miso(psram_miso), 
+		.psram_sio2(psram_sio2), 
+		.psram_sio3(psram_sio3),
+		.psram_sclk(psram_sclk)
+	);
 `else
 `endif
 
@@ -363,12 +363,12 @@ module pcpu_main
 	wire [31:0]sb_d;
 	wire sb_we;
 	wire sb_ready;
-	wire [31:0]mainm_a_c;
-	wire [31:0]mainm_d_c;
-	wire mainm_we_c;
-	wire mainm_rd_c;
-	wire [31:0]mainm_spo_c;
-	wire mainm_ready_c;
+	wire [31:0]cache_a_c;
+	wire [31:0]cache_d_c;
+	wire cache_we_c;
+	wire cache_rd_c;
+	wire [31:0]cache_spo_c;
+	wire cache_ready_c;
 `ifdef SERIALBOOT_EN
 	serialboot serialboot_inst(
 		.clk(clk_main),
@@ -379,6 +379,8 @@ module pcpu_main
 		.we(sb_we),
 		.ready(sb_ready),
 
+		.burst_en_mem(0),
+		.burst_length_mem(0),
 		.a_mem(mainm_a_m),
 		.d_mem(mainm_d_m),
 		.we_mem(mainm_we_m),
@@ -386,24 +388,26 @@ module pcpu_main
 		.spo_mem(mainm_spo_m),
 		.ready_mem(mainm_ready_m),
 
-		.a_cpu(mainm_a_c),
-		.d_cpu(mainm_d_c),
-		.we_cpu(mainm_we_c),
-		.rd_cpu(mainm_rd_c),
-		.spo_cpu(mainm_spo_c),
-		.ready_cpu(mainm_ready_c),
+		.burst_en_cpu(0),
+		.burst_length_cpu(0),
+		.a_cpu(cache_a_c),
+		.d_cpu(cache_d_c),
+		.we_cpu(cache_we_c),
+		.rd_cpu(cache_rd_c),
+		.spo_cpu(cache_spo_c),
+		.ready_cpu(cache_ready_c),
 
 		.uart_data(sb_rxdata),
 		.uart_ready(sb_rxnew)
 	);
 `else
 	assign sb_ready = 1;
-	assign a_mem = mainm_a_c;
-	assign d_mem = mainm_d_c;
-	assign we_mem = mainm_we_c;
-	assign spo_mem = mainm_spo_c;
-	assign rd_mem = mainm_rd_c;
-	assign ready_mem = mainm_ready_c;
+	assign a_mem = cache_a_c;
+	assign d_mem = cache_d_c;
+	assign we_mem = cache_we_c;
+	assign spo_mem = cache_spo_c;
+	assign rd_mem = cache_rd_c;
+	assign ready_mem = cache_ready_c;
 `endif
 
 
@@ -622,12 +626,12 @@ module pcpu_main
         .distm_spo(distm_spo),
 		.distm_ready(distm_ready),
 
-		.mainm_a(mainm_a_c),
-		.mainm_d(mainm_d_c),
-		.mainm_we(mainm_we_c),
-		.mainm_rd(mainm_rd_c),
-		.mainm_spo(mainm_spo_c),
-		.mainm_ready(mainm_ready_c),
+		.cache_a(cache_a_c),
+		.cache_d(cache_d_c),
+		.cache_we(cache_we_c),
+		.cache_rd(cache_rd_c),
+		.cache_spo(cache_spo_c),
+		.cache_ready(cache_ready_c),
 
         .sd_spo(sd_spo),
         .sd_a(sd_a),

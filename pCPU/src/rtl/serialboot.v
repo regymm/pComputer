@@ -123,7 +123,7 @@ module serialboot(
 	//assign mem_d = {uart_byte[6], uart_byte[7], uart_byte[4], uart_byte[5], uart_byte[2], uart_byte[3], uart_byte[0], uart_byte[1]};
 	assign sb_d = {uart_byte[0], uart_byte[1], uart_byte[2], uart_byte[3], uart_byte[4], uart_byte[5], uart_byte[6], uart_byte[7]};
 	// mem_a can change, too
-	assign sb_a = mem_start_addr[31:2];
+	assign sb_a = mem_start_addr;
 	// mem_ready is not used -- blind optimism
 
 	always @ (posedge clk) begin

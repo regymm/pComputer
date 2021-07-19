@@ -199,10 +199,37 @@ void hdmi_test()
 
 }
 
+void memory_test_halt()
+{
+	uart_putstr("Memory test failed!!");
+	while(1);
+}
+void memory_test()
+{
+	/*int c = uart_getchar();*/
+	int mem_start = 0x20100000;
+	int i;
+	for(i = 0; i < 0x4000; i+=4) {
+		int* addr_to_test = (int *)(mem_start + i);
+		*addr_to_test = i;
+	}
+	for(i = 0; i < 0x4000; i+=4) {
+		int* addr_to_test = (int *)(mem_start + i);
+		int readback = *addr_to_test;
+		if (readback != i) {
+			void (*dumm)(void) = 0x99990000;
+			dumm();
+			memory_test();
+		}
+	}
+	uart_putstr("Memory test pass");
+}
+
 // jumped from assembly to here
 void sd_c_start() // the current "kernel"
 {
 	uart_putstr("[sdcard]sd_c_start\r\n");
+	memory_test();
 	/*printk("Current tick %llu\r\n", get_timer_ticks());*/
 	printk("%d\r\n", ticks);
 	hdmi_test();

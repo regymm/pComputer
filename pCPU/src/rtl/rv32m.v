@@ -74,7 +74,6 @@ module rv32m
 					result <= result + aext;
 				if (finish_cond) begin
 					r <= (mreg[1:0] == 2'b00) ? result[31:0] : result[63:32];
-					//r_debug <= result;
 					finish <= 1;
 				end
 			end else begin
@@ -86,24 +85,25 @@ module rv32m
 						(aext << 1) - bext + 1'b1;
 				else
 					aext <= (aext << 1);
-					//aext <= aext[63] ? 
-						//(aext << 1) + 1'b1 :
-						//(aext << 1);
 				if (finish_cond) begin
 					r <= divfix ? 
-						//(!mreg[1]) ? aext[31:0]+1 : (aext[63] ? aext[63:32]-bext[63:32] : aext[63:32] + bext[63:32])
 						(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
 						: 
 						(!mreg[1]) ? aext[31:0] : (remfix ? ~aext[63:32]+1 : aext[63:32]);
-					//r <= divfix ? 
-						////(!mreg[1]) ? aext[31:0]+1 : (aext[63] ? aext[63:32]-bext[63:32] : aext[63:32] + bext[63:32])
-						////(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
-						//(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
-						//: 
-						//(!mreg[1]) ? aext[31:0] : aext[63:32];
 					finish <= 1;
 				end
 			end
 		end
 	end
 endmodule
+					//r_debug <= result;
+					//aext <= aext[63] ? 
+						//(aext << 1) + 1'b1 :
+						//(aext << 1);
+						//(!mreg[1]) ? aext[31:0]+1 : (aext[63] ? aext[63:32]-bext[63:32] : aext[63:32] + bext[63:32])
+					//r <= divfix ? 
+						////(!mreg[1]) ? aext[31:0]+1 : (aext[63] ? aext[63:32]-bext[63:32] : aext[63:32] + bext[63:32])
+						////(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
+						//(!mreg[1]) ? aext[31:0]+1 : (remfix ? ~aext[63:32]+bext[63:32]+1 : aext[63:32]-bext[63:32])
+						//: 
+						//(!mreg[1]) ? aext[31:0] : aext[63:32];

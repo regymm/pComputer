@@ -64,6 +64,7 @@ module pcpu_main
 	wire clk_mem;
     wire clk_hdmi_25;
     wire clk_hdmi_250;
+	wire clk_slow = clk_hdmi_25;
     clock_wizard clock_wizard_inst(
         .clk_in1(sysclk),
         .clk_main(clk_main),
