@@ -14,6 +14,7 @@ module pcpu_main
 		parameter CLOCK_FREQ = 62500000,
 		parameter BAUD_RATE_UART = 921600,
 		parameter BAUD_RATE_CH375 = 9600,
+		//parameter TIMER_COUNTER = 4000
 		parameter TIMER_COUNTER = 1000000
 	)
     (

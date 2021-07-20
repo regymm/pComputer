@@ -33,11 +33,25 @@ module cache_cpu
 		(*mark_debug = "true"*)output reg lowmem_we,
 		(*mark_debug = "true"*)output reg lowmem_rd,
 		(*mark_debug = "true"*)input [31:0]lowmem_spo,
-		(*mark_debug = "true"*)input lowmem_ready,
+		(*mark_debug = "true"*)input lowmem_ready
 
-		output hit,
-		output miss
+		//output hit,
+		//output miss
     );
+
+	(*mark_debug = "true"*)reg [31:0]hit_count;
+	(*mark_debug = "true"*)reg [31:0]miss_count;
+	always @ (posedge clk) begin
+		if (rst) begin
+			hit_count <= 0;
+			miss_count <= 0;
+		end else begin
+			if (state == IDLE & (we | rd) & (| way_hit))
+				hit_count <= hit_count + 1;
+			if (state == IDLE & (we | rd) & !(| way_hit))
+				miss_count <= miss_count + 1;
+		end
+	end
 
 	localparam INIT = 0;
 	localparam IDLE = 1;
