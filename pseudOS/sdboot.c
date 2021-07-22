@@ -190,13 +190,55 @@ void hdmi_test()
 	int i = 0;
 	int k = 0x0100;
 	int j;
-	for(j = 1; j < 80 * 30; j++) video_base[i++] = k++;
+	for(j = 0; j < 19200; j++) video_base[j] = 0xffffffff;
+	video_base[19219] = 0x12345678;
+	int base_color_arr[] = {0x00, 0x03, 0xe0, 0x1c, 0x1f, 0xe3, 0xfc, 0xff};
+	printf("%u\r\n", timer_ctrl[0]);
+	/*while(1)*/
+	{
+	for(i = 0; i < 240; i++) {
+		/*for(j = 0; j < 80; j++) video_base[i * 80 + j] = i + (i<<8) + (i<<16) + (i<<24);*/
+		/*for(j = 1; j < 80; j++) video_base[i * 80 + j] = 0 + (0x2<<8) + (0x1c<<16) + (0x60<<24);*/
+		for(j = 0; j < 80; j++) {
+			int base_color_idx = i / (240/8);
+			int clr = (j < 40 ? base_color_arr[base_color_idx] : i*2+j*4);
+			clr = clr % 0x100;
+			video_base[i*80+j] = clr + (clr<<8) + (clr<<16) + (clr<<24);
+			/*if (i < 240/8) video_base[i*80+j] = 0;*/
+			/*else if (i<240/8*2) video_base[i*80+j] = 0x03030303;*/
+			/*else if (i<240/8*3) video_base[i*80+j] = 0xe0e0e0e0;*/
+			/*else if (i<240/8*4) video_base[i*80+j] = 0x1c1c1c1c;*/
+			/*else if (i<240/8*5) video_base[i*80+j] = 0xfcfcfcfc;*/
+			/*else if (i<240/8*6) video_base[i*80+j] = 0xe3e3e3e3;*/
+			/*else if (i<240/8*7) video_base[i*80+j] = 0x1f1f1f1f;*/
+			/*else video_base[i*80+j] = 0xffffffff;*/
+		}
+	}
+	for(i = 0; i < 240; i++) {
+		/*for(j = 0; j < 80; j++) video_base[i * 80 + j] = i + (i<<8) + (i<<16) + (i<<24);*/
+		/*for(j = 1; j < 80; j++) video_base[i * 80 + j] = 0 + (0x2<<8) + (0x1c<<16) + (0x60<<24);*/
+		for(j = 0; j < 80; j++) {
+			int clr = (i+j)%2 ? 0x1c : 0xe3;
+			/*video_base[i*80+j] = clr + (clr<<8) + (clr<<16) + (clr<<24);*/
+			/*if (i < 240/8) video_base[i*80+j] = 0;*/
+			/*else if (i<240/8*2) video_base[i*80+j] = 0x03030303;*/
+			/*else if (i<240/8*3) video_base[i*80+j] = 0xe0e0e0e0;*/
+			/*else if (i<240/8*4) video_base[i*80+j] = 0x1c1c1c1c;*/
+			/*else if (i<240/8*5) video_base[i*80+j] = 0xfcfcfcfc;*/
+			/*else if (i<240/8*6) video_base[i*80+j] = 0xe3e3e3e3;*/
+			/*else if (i<240/8*7) video_base[i*80+j] = 0x1f1f1f1f;*/
+			/*else video_base[i*80+j] = 0xffffffff;*/
+		}
+	}
+	}
+	/*printf("%u\r\n", timer_ctrl[0]);*/
+	/*for(; j < 19200; j++) video_base[i++] = 0x11119999;*/
 	/*i = 0;*/
 	/*for(j = 1; j < 80 * 30; j++) video_base[i++] = '9' + 0x0600;*/
 	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0237;*/
 	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0338;*/
 	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0439;*/
-
+	while(1);
 }
 
 void memory_test_halt()
@@ -260,7 +302,7 @@ void sd_c_start() // the current "kernel"
 	
 
 	prepare_processes();
-	loadelf();
+	/*loadelf();*/
 	setupIRQ();
 
 	/*sdcard_fs_test();*/

@@ -3,7 +3,7 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2021.xx.xx
- * Last Modified Date: 2021.06.24
+ * Last Modified Date: 2021.07.22
  */
 `timescale 1ns / 1ps
 // pComputer LED/Switch IO
@@ -11,7 +11,7 @@
 module cache_cpu
 	#(
 		parameter WAYS=1,
-		parameter WAY_LINES=128,
+		parameter WAY_LINES=256,
 		parameter WAY_WORDS_PER_BLOCK=32,
 		parameter WAY_TAG_LENGTH=32
 	)

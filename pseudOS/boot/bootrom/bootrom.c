@@ -1,7 +1,25 @@
 #include "../../mmio_drivers/basic.h"
+#define N 100
 
 void c_start()
 {
+	/*int (*a)[N] = 0x2020f580, (*b)[N] = 0x2041eb00, (*c)[N] = 0x25b8d800;  */
+	/*int i, j, k;  */
+	/*for (i = 0; i < N; i++) {  */
+		/*for (j = 0; j < N; j++) {  */
+			/*a[i][j] = i+j;  */
+			/*b[i][j] = i+j;  */
+		/*}  */
+	/*}  */
+	/*for (i = 0; i < N; i++) {  */
+		/*for (k = 0; k < N; k++) {  */
+			/*for (j = 0; j < N; j++) {  */
+				/*c[i][j] += a[i][k] * b[k][j];  */
+			/*}  */
+  
+		/*}  */
+	/*}  */
+
 	int i;
 	for(i = 0; i < 64; i++) psram_base[i] = i;
 	for(i = 0; i < 30; i++);

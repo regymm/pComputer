@@ -334,7 +334,7 @@ module riscv_multicyc
 		int_reply = 0;
 		case (phase)
 			IF: begin
-				//MemRead = 1;
+				MemRead = 1;
 				IRWrite = 1;
 			end
 			//IF_REMEDY: begin
@@ -408,13 +408,7 @@ module riscv_multicyc
 				end else if (op == OP_PRIV & priv_csr) begin
 					RegWrite = 1; RegSrc = 8;
 					csr_we = 1;
-				end else begin
-					// dummy, just to delay a cycle
 				end
-				// send pc memory read signal one cycle earlier
-				// so all instructions must end up in WB phase
-				MemRead = 1;
-				IorDorW = PCWrite ? 3 : 0;
 			end
 			MEM_WAIT: begin
 				IorDorW = 2;
@@ -438,10 +432,6 @@ module riscv_multicyc
 				PCWrite = 1; PCSrc = 5;
 			end
 		endcase
-		//if (phase_n == IF) begin
-			//MemRead = 1;
-			//IorDorW = PCWrite ? 3 : 0;
-		//end
 	end
 
 	// TODO: generalize and improve
@@ -471,7 +461,7 @@ module riscv_multicyc
 			ID_RF:
 				// FENCE, SFENCE.VMA, and WFI does nothing in our simple architecture
 				if (interrupt) phase_n = INTERRUPT;
-				else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase_n = WB;
+				else if (op == OP_FENCE | op == OP_PRIV & (priv_wfi | priv_sfencevma)) phase_n = IF;
 				else if (op == OP_PRIV & (priv_mret)) phase_n = MRET;
 				else if (op == OP_PRIV & (priv_ebreak)) begin
 					phase_n = EXCEPTION;
@@ -496,14 +486,14 @@ module riscv_multicyc
 				else if (op == OP_STORE & store_unaligned)
 					phase_return_n = EXU;
 				else /* op == OP_STORE & !store_unaligned */
-					phase_return_n = WB; // to send PC read signal earlier, should wait another cycle here
+					phase_return_n = IF;
 			end
 			EXU:
 				phase_n = MEMU;
 			MEMU: begin
 				phase_n = MEM_WAIT;
 				phase_return_set = 1;
-				phase_return_n = WB;
+				phase_return_n = IF;
 			end
 			WB:
 				phase_n = IF;
@@ -522,18 +512,14 @@ module riscv_multicyc
 			end
 			`endif
 			INTERRUPT:
-				//phase_n = IF;
-				phase_n = WB;
+				phase_n = IF;
 			EXCEPTION:
-				//phase_n = IF;
-				phase_n = WB;
+				phase_n = IF;
 			MRET:
-				//phase_n = IF;
-				phase_n = WB;
+				phase_n = IF;
 			BAD:
 				phase_n = BAD;
 		endcase
-		if (rst) phase_n = IF;
 	end
 
 	// control FSM
@@ -580,8 +566,7 @@ module riscv_multicyc
 		0: mem_addr = pc; // instruction
 		1: mem_addr = ALUOut; // data
 		2: mem_addr = mar; // wait
-		3: mem_addr = newpc;
-		//default: mem_addr = INVALID_ADDR;
+		default: mem_addr = INVALID_ADDR;
 	endcase end
 	reg [31:0]newpc;
 	always @ (*) begin case (PCSrc)

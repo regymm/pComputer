@@ -1,47 +1,38 @@
 `timescale 1ns / 1ps
+`define HDMI_PICTURE
 module mkrvidor4000_top
 (
-  input clk,
-  input rst,
-  input clk_pix,
-  input clk_tmds,
-  //input clk_audio,
+	input clk,
+	input rst,
+	input clk_pix,
+	input clk_tmds,
+	//input clk_audio,
 
-  input [31:0]a,
-  input [31:0]d,
-  input we,
-  output logic [31:0]spo = 0,
+	input [31:0]a,
+	input [31:0]d,
+	input we,
+	output logic [31:0]spo = 0,
 
-  // HDMI output
-  output [2:0] TMDSp,
-  output [2:0] TMDSn,
-  output TMDSp_clock,
-  output TMDSn_clock
-  //inout HDMI_SDA,
-  //inout HDMI_SCL,
-  //input HDMI_HPD
+//`ifdef HDMI_PICTURE
+	//output req,
+	//input gnt,
+	//output burst_en,
+	//output [7:0]burst_length,
+	//output [31:0]vram_a,
+	//output [31:0]vram_d,
+	//output reg vram_we,
+	//output reg vram_rd,
+	//input [31:0]vram_spo,
+	//input vram_ready,
+//`endif
+
+
+	// HDMI output
+	output [2:0] TMDSp,
+	output [2:0] TMDSn,
+	output TMDSp_clock,
+	output TMDSn_clock
 );
-
-//wire clk_pixel_x5;
-//wire clk_pixel;
-//hdmi_pll hdmi_pll(.inclk0(CLK_48MHZ), .c0(clk_pixel), .c1(clk_pixel_x5), .c2(clk_audio));
-
-//localparam AUDIO_BIT_WIDTH = 16;
-//localparam AUDIO_RATE = 48000;
-//localparam WAVE_RATE = 480;
-
-//logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word;
-//logic [AUDIO_BIT_WIDTH-1:0] audio_sample_word_dampened; // This is to avoid giving you a heart attack -- it'll be really loud if it uses the full dynamic range.
-//assign audio_sample_word_dampened = audio_sample_word >> 9;
-
-//sawtooth #(
-	//.BIT_WIDTH(AUDIO_BIT_WIDTH), 
-	//.SAMPLE_RATE(AUDIO_RATE), 
-	//.WAVE_RATE(WAVE_RATE)
-//) sawtooth (
-	//.clk_audio(clk_audio), 
-	//.level(audio_sample_word)
-//);
 
 (*mark_debug = "true"*) logic [23:0] rgb;
 logic [10:0]cx;
@@ -72,25 +63,78 @@ hdmi #(
 
 wire [10:0]cx_onscreen = cx_next - 160;
 wire [9:0] cy_onscreen = cy_next - 45;
+wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
 
-//// my VRAM interface
-//// 30 rows, 80 columns
-//reg [15:0]vram[4095:0];
-//reg [15:0]vout;
-//reg [31:0]a_reg;
-//reg [15:0]d_reg;
-//reg we_reg;
+`ifdef HDMI_PICTURE
+	assign burst_en = 1;
+	assign burst_length = 512;
+	assign lowmem_d = 0;
+	assign lowmem_we = 0;
+
+	// (cx_onscreen/2 + cy_onscreen/2 * 480/2)
+	wire [16:0]pix_a_pix = (cx_onscreen/2) + cy_onscreen/2 * 640/2;
+	// /4 for memory address (each 32-bit elem contains 4 pixels)
+	wire [14:0]pix_a_vram = pix_a_pix[16:2];
+	//reg [14:0]pix_a = 0;
+	wire [31:0]pix_data;
+	reg [7:0]pix_curr;
+	always @ (*) begin case (pix_a_pix[1:0])
+			2'b00: pix_curr = pix_data[7:0];
+			2'b01: pix_curr = pix_data[15:8];
+			2'b10: pix_curr = pix_data[23:16];
+			2'b11: pix_curr = pix_data[31:24];
+	endcase end
+	assign rgb = {
+		{pix_curr[7:5], pix_curr[7:5] == 3'b111 ? 5'b1 : 5'b0},
+		{pix_curr[4:2], pix_curr[4:2] == 3'b111 ? 5'b1 : 5'b0},
+		{pix_curr[1:0], pix_curr[1:0] == 2'b11 ? 6'b1 : 6'b0}
+	};
+
+	reg [14:0]pix_a_last;
+	always @(posedge clk_pix) begin
+		pix_a_last <= pix_a_vram;
+	end
+	wire [31:0]pix_spo_l;
+	wire [31:0]pix_spo_h;
+	assign pix_data = pix_a_last[14] ? pix_spo_h : pix_spo_l;
+	// 75KB total VRAM, supports 640x480 2bit monochrome color
+	// or 320x240 8bit 3-3-2 color
+	simple_dp_ram #(
+		.WIDTH(32),
+		.DEPTH(14)
+	) vram_low64K (
+		.clk1(clk),
+		.a1(a[15:2]),
+		.d1(data),
+		.we1(we & !a[16]),
+		.clk2(clk_pix),
+		.a2(pix_a_vram),
+		.rd2(1),
+		.spo2(pix_spo_l)
+		//.ready()
+	);
+	simple_dp_ram#(
+		.WIDTH(32),
+		.DEPTH(12)
+	) vram_high16K (
+		.clk1(clk),
+		.a1(a[15:2]),
+		.d1(data),
+		.we1(we & a[16]),
+		.clk2(clk_pix),
+		.a2(pix_a_vram),
+		.rd2(1),
+		.spo2(pix_spo_h)
+		//.ready()
+	);
+
+
+`else
+// HDMI console only
+
+// my VRAM interface
+// 30 rows, 80 columns
 (*mark_debug = "true"*) wire [11:0]a2 = ({6'b0, cy_onscreen[9:4]}) * 80 + {5'b0, cx_onscreen[9:3]};
-//always @ (posedge clk) begin
-	//a_reg <= a;
-	//d_reg <= {d[23:16], d[31:24]}; // endian problem again
-	//we_reg <= we;
-	//if (we_reg) vram[a_reg[13:2]] <= d_reg[15:0];
-	////spo <= {16'b0, vram[a[13:2]]};
-//end
-//always @ (posedge clk_pix) begin
-	//vout <= vram[a2 + 1];
-//end
 
 reg [13:0]a_reg;
 reg [15:0]d_reg;
@@ -113,33 +157,10 @@ simple_ram #(
 	.spo(vram_spo)
 );
 
-//reg we_reg_reg;
 reg [15:0]vout;
 always @ (posedge clk_pix) begin
 	vout <= vram_spo;
 end
-//always @ (posedge clk) begin
-	//we_reg_reg <= we_reg;
-	//if (!we_reg_reg) vout <= vram_spo;
-	////vout <= vram_spo;
-//end
-
-
-//logic [7:0] character = 8'h30;
-//logic [5:0] prevcy = 6'd0;
-//always @(posedge clk_pix)
-//begin
-	//if (cy == 10'd0)
-	//begin
-		//character <= 8'h30;
-		//prevcy <= 6'd0;
-	//end
-	//else if (prevcy != cy[9:4])
-	//begin
-		//character <= character + 8'h01;
-		//prevcy <= cy[9:4];
-	//end
-//end
 
 console console(
 	.clk_pixel(clk_pix), 
@@ -150,4 +171,5 @@ console console(
 	.cy(cy_onscreen), 
 	.rgb(rgb)
 );
+`endif
 endmodule
