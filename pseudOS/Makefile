@@ -7,9 +7,10 @@ LD 		=	$(RISCV)ld
 #LDFLAGS	=	-m elf32lriscv --nostdlib
 LDFLAGS	=	-m elf32lriscv
 CC		=	$(RISCV)gcc
+CPP		=	$(RISCV)g++
 CC_L_F	=	-march=rv32i -mabi=ilp32 -nostdlib -mstrict-align -O0 -static
-#CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -nostdlib -O0 -static
 CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -O0 -static
+CPPFLAGS=	$(CFLAGS) -nostdlib
 OBJCOPY	=	$(RISCV)objcopy
 READELF	=	$(RISCV)readelf
 #OBJDIR	=	obj
@@ -40,13 +41,18 @@ boot/bootrom/bootrom.elf: boot/bootrom/bootrom.o boot/bootrom/bootrom.c_o mmio_d
 boot/uartbl/uartbl.elf: boot/uartbl/uartbl.o boot/uartbl/uartbl.c_o mmio_drivers/basic.c_o
 	$(LD) $(LDFLAGS) $^ -o $@ --script boot/uartbl/linker_uartbl.ld
 
+cpp/cpp_test.o: cpp/cpp_test.cpp
+	$(CPP) $(CPPFLAGS) -c -g $^ -o $@
+
 sdboot.elf: sdboot.S sdboot.c \
 	mmio_drivers/basic.c mmio_drivers/interrupt_unit.c mmio_drivers/ps2.c mmio_drivers/sdcard.c mmio_drivers/sdcard_blk.c \
-	mmio_drivers/timer.c mmio_drivers/CH375.c \
+	mmio_drivers/timer.c mmio_drivers/CH375.c mmio_drivers/w5500.c\
 	newlib/crt0.S newlib/syscall.c \
 	fs/fs.c \
-	kernel/global.c kernel/process.c kernel/isr.c kernel/misc.c kernel/elf.c
-	$(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lc -lgcc
+	kernel/global.c kernel/process.c kernel/isr.c kernel/misc.c kernel/elf.c \
+	cpp/cpp_test.o \
+	cpp/pingo/consolebackend.o cpp/pingo/main.o cpp/pingo/pingo_mesh.o cpp/pingo/viking.o cpp/pingo/mat3.o cpp/pingo/mat4.o cpp/pingo/vec2.o cpp/pingo/vec3.o cpp/pingo/vec4.o cpp/pingo/depth.o cpp/pingo/material.o cpp/pingo/mesh.o cpp/pingo/object.o cpp/pingo/pixel.o cpp/pingo/rasterizer.o cpp/pingo/renderable.o cpp/pingo/renderer.o cpp/pingo/scene.o cpp/pingo/sprite.o cpp/pingo/texture.o
+	(cd cpp/pingo; ./manualmake.sh; cd ../..) && $(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lm -lc -lgcc
 
 user:
 	$(MAKE) -C userspace
@@ -69,4 +75,5 @@ clean:
 	-rm -f boot/bootrom/*.c_o
 	-rm -f boot/bootrom/*.elf
 	-rm -f boot/bootrom/*.bin
+	-rm -f cpp/cpp_test.o
 	-cd userspace && make clean

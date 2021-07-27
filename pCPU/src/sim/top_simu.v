@@ -17,6 +17,13 @@ module top_simu();
 	wire psram_sclk;
 	reg ch375_tx;
 
+	reg eth_intn = 1;
+	wire eth_rstn;
+	wire eth_sclk;
+	wire eth_scsn;
+	wire eth_mosi;
+	reg eth_miso = 1;
+
     pcpu_main pcpu_main_inst
     (
         .sysclk(clk),
@@ -29,7 +36,13 @@ module top_simu();
 		.psram_miso(psram_miso),
 		.psram_sio2(psram_sio2),
 		.psram_sio3(psram_sio3),
-		.psram_sclk(psram_sclk)
+		.psram_sclk(psram_sclk),
+		.eth_intn(eth_intn),
+		.eth_rstn(eth_rstn),
+		.eth_sclk(eth_sclk),
+		.eth_scsn(eth_scsn),
+		.eth_mosi(eth_mosi),
+		.eth_miso(eth_miso)
 		//.ch375_tx(ch375_tx)
 	);
     

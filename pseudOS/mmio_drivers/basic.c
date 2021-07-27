@@ -43,27 +43,27 @@ void uart_putchar(char c)
 }
 void hdmi_putchar(char c)
 {
-	int i;
-	int video_y_temp;
-	int video_x_temp;
-	if (c == '\r') video_x = 0;
-	else if (c == '\n') {
-		if (video_y == 29) video_y = 0;
-		else video_y++;
-		for (i = 0; i < 80; i++) {
-			video_base[video_y * 80 + i] = 0;
-			video_base[(video_y + 1) * 80 + i] = 0;
-		}
-	}
-	else {
-		video_base[video_y * 80 + video_x] = c + 0x0600;
-		if (video_x == 79)  {
-			video_x = 0;
-			if (video_y == 29) video_y = 0;
-			else video_y++;
-		}
-		else video_x++;
-	}
+	/*int i;*/
+	/*int video_y_temp;*/
+	/*int video_x_temp;*/
+	/*if (c == '\r') video_x = 0;*/
+	/*else if (c == '\n') {*/
+		/*if (video_y == 29) video_y = 0;*/
+		/*else video_y++;*/
+		/*for (i = 0; i < 80; i++) {*/
+			/*video_base[video_y * 80 + i] = 0;*/
+			/*video_base[(video_y + 1) * 80 + i] = 0;*/
+		/*}*/
+	/*}*/
+	/*else {*/
+		/*video_base[video_y * 80 + video_x] = c + 0x0600;*/
+		/*if (video_x == 79)  {*/
+			/*video_x = 0;*/
+			/*if (video_y == 29) video_y = 0;*/
+			/*else video_y++;*/
+		/*}*/
+		/*else video_x++;*/
+	/*}*/
 }
 
 void uart_putstr(const char* str)

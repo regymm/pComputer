@@ -50,8 +50,7 @@ A simple "computer" from scratch(PCB + RTL + ASM + C + OS), including RISC-V CPU
 
 **Processor**
 
-- [x] Multiple-cycle RISC-V CPU @ 62.5MHz on SqueakyBoard(Zynq 7010 PL)
-- [x] RV32IM
+- [x] Multiple-cycle RISC-V RV32IM @ 62.5MHz
 - [x] M-mode CSR (partial but enough)
 - [x] Interrupt (timer, external, software)
 - [x] Exception (ecall, break, partial invalid instruction)
@@ -74,16 +73,17 @@ Peripherals
 - [x] SD card (SPI mode, SDHC)
 - [x] PS/2 keyboard
 - [x] HDMI character terminal
-- [ ] HDMI frame buffer graphics
+- [x] HDMI frame buffer graphics, 320x240 8-bit color
 - [x] CH375 USB disk
 - [ ] W5500 ethernet module
 - [ ] Ethernet module w/ RGMII
 - [ ] ESP8266 Wifi module
+- [ ] Timer
 
 Memory
 
 - [x] ESP-PSRAM64H as main memory, QPI mode @ 62.5M
-- [ ] Cache
+- [x] Cache, direct mapping configurable 32KB
 
 OS/Software
 
@@ -92,6 +92,7 @@ OS/Software
 - [x] Use newlib for baremetal application
 - [x] Run pseudos
 - [x] Port MicroPython
+- [x] Run CoreMark
 - [ ] Port some RTOS
 
 **pseudos**
@@ -101,6 +102,7 @@ OS/Software
 - [x] Boot from UART (921600 baud)
 - [x] Multitasking w/o MMU
 - [x] Microkernel framework, IPC send/receive (partial)
+- [x] Load simple ELF process from SD card
 - [ ] Syscall interface (doing)
 - [ ] Memory manager
 - [ ] Filesystem, block device layer

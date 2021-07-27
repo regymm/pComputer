@@ -1,17 +1,15 @@
 `timescale 1ns / 1ps
 
-module hdmi_demo
+module hdmi_fpga4fun
     (
-		input clk,
-		input rst,
-
-		input [31:0]a,
-		input [31:0]d,
-		input we,
-		output [31:0]spo,
-
         input clk_pix, // 25MHz
         input clk_tmds, // 250MHz
+
+		input [23:0]rgb,
+
+		output [9:0]cx,
+		output [9:0]cy,
+
         // 8 differential signals output
         output [2:0] TMDSp, TMDSn,
         output TMDSp_clock, TMDSn_clock
@@ -29,6 +27,9 @@ module hdmi_demo
 	wire vSync = (counterY >= 490) & (counterY < 492);
 	wire DrawArea = (counterX < 640) & (counterY < 480);
 
+	assign cx = counterX;
+	assign cy = counterY;
+
 
 	//hdmi_char_term hdmi_char_term_inst(
 		//.red(red),
@@ -38,10 +39,13 @@ module hdmi_demo
 		//.counterY(counterY)
 	//);
 
-	// temp test signals
-	wire [7:0] red = {counterX[5:0] & {6{counterY[4:3]==~counterX[4:3]}}, 2'b00};
-	wire [7:0] green = counterX[7:0] & {8{counterY[6]}};
-	wire [7:0] blue = counterY[7:0];
+	//wire [7:0] red = {counterX[5:0] & {6{counterY[4:3]==~counterX[4:3]}}, 2'b00};
+	//wire [7:0] green = counterX[7:0] & {8{counterY[6]}};
+	//wire [7:0] blue = counterY[7:0];
+	
+	wire [7:0]red = rgb[23:16];
+	wire [7:0]green = rgb[15:8];
+	wire [7:0]blue = rgb[7:0];
 
 	wire [9:0] TMDS_red, TMDS_green, TMDS_blue;
 

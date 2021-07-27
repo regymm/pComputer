@@ -20,6 +20,7 @@
 #include "mmio_drivers/sdcard_blk.h"
 #include "mmio_drivers/interrupt_unit.h"
 #include "mmio_drivers/timer.h"
+#include "mmio_drivers/w5500.h"
 #include "kernel/elf.h"
 #define false 0
 #define true 1
@@ -158,6 +159,7 @@ void hardware_init()
 	video_x = 0;
 	video_y = 0;
 	sdcard_init();
+	while(!w5500_isready());
 }
 
 /*void get_timer_ticks2(uint64_t* tic)*/
@@ -172,6 +174,98 @@ void hardware_init()
 	/*printk("\r\n");*/
 /*}*/
 
+void w5500_test()
+{
+	printk("w5500 tests\r\n");
+	unsigned int versionr = w5500_spi(W5_BS_GENERAL, W5_G_VERSIONR, W5_RW_R, W5_FDM1, 0);
+	printk("Version %d\r\n", versionr);
+	// 192.168.99.1
+	w5500_spi(W5_BS_GENERAL, W5_G_GAR, W5_RW_W, W5_FDM4, 0x0163A8C0);
+	unsigned int gar_wb = w5500_spi(W5_BS_GENERAL, W5_G_GAR, W5_RW_R, W5_FDM4, 0);
+	printk("Gateway %08x\r\n", gar_wb);
+	// 255.255.255.0
+	w5500_spi(W5_BS_GENERAL, W5_G_SUBR, W5_RW_W, W5_FDM4, 0x00FFFFFF);
+	unsigned int subr_wb = w5500_spi(W5_BS_GENERAL, W5_G_SUBR, W5_RW_R, W5_FDM4, 0);
+	printk("Subnet Mask %08x\r\n", subr_wb);
+	// a random MAC addr
+	w5500_spi(W5_BS_GENERAL, W5_G_SHAR, W5_RW_W, W5_FDM4, 0x01DC0800);
+	w5500_spi(W5_BS_GENERAL, W5_G_SHAR+4, W5_RW_W, W5_FDM2, 0x0302);
+	unsigned int shar_wb = w5500_spi(W5_BS_GENERAL, W5_G_SHAR, W5_RW_R, W5_FDM4, 0);
+	printk("MAC %08x\r\n", shar_wb);
+	shar_wb = w5500_spi(W5_BS_GENERAL, W5_G_SHAR+4, W5_RW_R, W5_FDM2, 0);
+	printk("MAC %04x\r\n", shar_wb);
+	// 192.168.99.5
+	w5500_spi(W5_BS_GENERAL, W5_G_SIPR, W5_RW_W, W5_FDM4, 0x0563A8C0);
+	unsigned int sipr_wb = w5500_spi(W5_BS_GENERAL, W5_G_SIPR, W5_RW_R, W5_FDM4, 0);
+	printk("IP %08x\r\n", sipr_wb);
+	/*w5500_spi(W5_BS_GENERAL, W5_GENERAL_MR, W5_RW_W, W5_FDM1, 0x0);*/
+	/*unsigned int mr = w5500_spi(W5_BS_GENERAL, W5_GENERAL_MR, W5_RW_R, W5_FDM1, 0);*/
+	/*printk("Ping Unblock: MR %x\r\n", mr);*/
+
+}
+
+int f_cpp_test(int);
+void f_cpp_init(int);
+void cpp_test()
+{
+	f_cpp_init(5);
+	int x = f_cpp_test(100);
+	printk("CPP: %d\r\n", x);
+}
+
+void float_test()
+{
+	float a = 1.23456;
+	float b = 9.87654;
+	float c = a * b;
+	float d = b / a;
+	// 12, 8
+	// printf float unsupported
+	printk("Float: %d, %d\r\n", (int)c, (int)d);
+}
+
+/*#include "cpp/pingo/sftrdr_main.h"*/
+void software_renderer()
+{
+	volatile int* video_light_mode;
+	/*video_light_mode = (void *)0x94040000;*/
+	/**video_light_mode = 0xffffffff;*/
+	video_light_mode = (void *)0x94020000;
+	*video_light_mode = 0xffffffff;
+	sftrdr_main();
+}
+
+void hdmi_test()
+{
+	int i = 0;
+	int k = 0x0100;
+	int j;
+	for(j = 0; j < 19200; j++) video_base[j] = 0x0;
+	video_base[19218] = 0x03e01c1f;
+	video_base[0] = 0x03e01c1f;
+	video_base[10000] = 0x03e01c1f;
+	int base_color_arr[] = {0x00, 0x03, 0xe0, 0x1c, 0x1f, 0xe3, 0xfc, 0xff};
+	printf("%u\r\n", timer_ctrl[0]);
+	/*while(1)*/
+	for(i = 0; i < 240; i++) {
+		for(j = 0; j < 80; j++) {
+			int base_color_idx = i / (240/8);
+			int clr = (j < 40 ? base_color_arr[base_color_idx] : i*2+j*4);
+			/*int clr = (j < 40 ? base_color_arr[base_color_idx] : i%2 ? 0xff : 0xff);*/
+			clr = clr % 0x100;
+			video_base[i*80+j] = clr + (clr<<8) + (clr<<16) + (clr<<24);
+			/*video_base[i*80+j] = clr + (0) + (clr<<16) + (0);*/
+		}
+	}
+	for(i = 0; i < 240; i++) {
+		for(j = 0; j < 80; j++) {
+			int clr = (i+j)%2 ? 0x1c : 0xe3;
+		}
+	}
+	printf("%u\r\n", timer_ctrl[0]);
+	/*while(1);*/
+}
+
 void hardware_test()
 {
 	printk("Hardware test...\r\n");
@@ -180,65 +274,11 @@ void hardware_test()
 	get_timer_ticks(&test_ticks);
 	printk("Current tick %llu\r\n", test_ticks);
 	printk("Const test %llu\r\n", 12348765LLU);
+	hdmi_test();
+	w5500_test();
 	/*printk("CH375b USB: \r\n");*/
 	/*usb_test();*/
 	/*usb_hid_test();*/
-}
-
-void hdmi_test()
-{
-	int i = 0;
-	int k = 0x0100;
-	int j;
-	for(j = 0; j < 19200; j++) video_base[j] = 0xffffffff;
-	video_base[19219] = 0x12345678;
-	int base_color_arr[] = {0x00, 0x03, 0xe0, 0x1c, 0x1f, 0xe3, 0xfc, 0xff};
-	printf("%u\r\n", timer_ctrl[0]);
-	/*while(1)*/
-	{
-	for(i = 0; i < 240; i++) {
-		/*for(j = 0; j < 80; j++) video_base[i * 80 + j] = i + (i<<8) + (i<<16) + (i<<24);*/
-		/*for(j = 1; j < 80; j++) video_base[i * 80 + j] = 0 + (0x2<<8) + (0x1c<<16) + (0x60<<24);*/
-		for(j = 0; j < 80; j++) {
-			int base_color_idx = i / (240/8);
-			int clr = (j < 40 ? base_color_arr[base_color_idx] : i*2+j*4);
-			clr = clr % 0x100;
-			video_base[i*80+j] = clr + (clr<<8) + (clr<<16) + (clr<<24);
-			/*if (i < 240/8) video_base[i*80+j] = 0;*/
-			/*else if (i<240/8*2) video_base[i*80+j] = 0x03030303;*/
-			/*else if (i<240/8*3) video_base[i*80+j] = 0xe0e0e0e0;*/
-			/*else if (i<240/8*4) video_base[i*80+j] = 0x1c1c1c1c;*/
-			/*else if (i<240/8*5) video_base[i*80+j] = 0xfcfcfcfc;*/
-			/*else if (i<240/8*6) video_base[i*80+j] = 0xe3e3e3e3;*/
-			/*else if (i<240/8*7) video_base[i*80+j] = 0x1f1f1f1f;*/
-			/*else video_base[i*80+j] = 0xffffffff;*/
-		}
-	}
-	for(i = 0; i < 240; i++) {
-		/*for(j = 0; j < 80; j++) video_base[i * 80 + j] = i + (i<<8) + (i<<16) + (i<<24);*/
-		/*for(j = 1; j < 80; j++) video_base[i * 80 + j] = 0 + (0x2<<8) + (0x1c<<16) + (0x60<<24);*/
-		for(j = 0; j < 80; j++) {
-			int clr = (i+j)%2 ? 0x1c : 0xe3;
-			/*video_base[i*80+j] = clr + (clr<<8) + (clr<<16) + (clr<<24);*/
-			/*if (i < 240/8) video_base[i*80+j] = 0;*/
-			/*else if (i<240/8*2) video_base[i*80+j] = 0x03030303;*/
-			/*else if (i<240/8*3) video_base[i*80+j] = 0xe0e0e0e0;*/
-			/*else if (i<240/8*4) video_base[i*80+j] = 0x1c1c1c1c;*/
-			/*else if (i<240/8*5) video_base[i*80+j] = 0xfcfcfcfc;*/
-			/*else if (i<240/8*6) video_base[i*80+j] = 0xe3e3e3e3;*/
-			/*else if (i<240/8*7) video_base[i*80+j] = 0x1f1f1f1f;*/
-			/*else video_base[i*80+j] = 0xffffffff;*/
-		}
-	}
-	}
-	/*printf("%u\r\n", timer_ctrl[0]);*/
-	/*for(; j < 19200; j++) video_base[i++] = 0x11119999;*/
-	/*i = 0;*/
-	/*for(j = 1; j < 80 * 30; j++) video_base[i++] = '9' + 0x0600;*/
-	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0237;*/
-	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0338;*/
-	/*for(j = 1; j <= 40; j++) video_base[i++] = 0x0439;*/
-	while(1);
 }
 
 void memory_test_halt()
@@ -274,9 +314,11 @@ void sd_c_start() // the current "kernel"
 	memory_test();
 	/*printk("Current tick %llu\r\n", get_timer_ticks());*/
 	printk("%d\r\n", ticks);
-	hdmi_test();
 	hardware_init();
 	hardware_test();
+	cpp_test();
+	float_test();
+	software_renderer();
 	
 	printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);
 

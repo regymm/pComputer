@@ -53,25 +53,32 @@ module pcpu_main
 		input ps2_clk,
 		input ps2_data,
 
+		input eth_intn,
+		output eth_rstn,
+		output eth_sclk,
+		output eth_scsn,
+		output eth_mosi,
+		input eth_miso,
+
         output [2:0]TMDSp,
         output [2:0]TMDSn,
         output TMDSp_clock,
         output TMDSn_clock
     );
 
-
-
     wire clk_main;
 	wire clk_mem;
+	wire clk_2x;
     wire clk_hdmi_25;
     wire clk_hdmi_250;
-	wire clk_slow = clk_hdmi_25;
+	//wire clk_slow = clk_hdmi_25;
     clock_wizard clock_wizard_inst(
         .clk_in1(sysclk),
         .clk_main(clk_main),
 		.clk_mem(clk_mem),
 		.clk_hdmi_25(clk_hdmi_25),
-		.clk_hdmi_250(clk_hdmi_250)
+		.clk_hdmi_250(clk_hdmi_250),
+		.clk_hdmi_50(clk_2x)
     );
 
 
@@ -490,6 +497,7 @@ module pcpu_main
 		.clk(clk_main),
 		.clk_pix(clk_hdmi_25),
 		.clk_tmds(clk_hdmi_250),
+		.clk_2x(clk_2x),
 		.rst(rst_video),
 
 		.a(video_a),
@@ -539,6 +547,34 @@ module pcpu_main
 	);
 `else
 	assign irq_ps2 = 0;
+`endif
+
+	wire [31:0]eth_a;
+	wire [31:0]eth_d;
+	wire eth_we;
+	wire [31:0]eth_spo;
+	wire irq_eth;
+`ifdef ETH_EN
+	w5500_fdm w5500_fdm_inst(
+		.clk(clk_main),
+		.rst(rst),
+		.a(eth_a),
+		.d(eth_d),
+		.we(eth_we),
+		.spo(eth_spo),
+
+		.intn(eth_intn),
+		.rstn(eth_rstn),
+		.sclk(eth_sclk),
+		.scsn(eth_scsn),
+		.mosi(eth_mosi),
+		.miso(eth_miso),
+
+		.irq(irq_eth)
+	);
+`else
+	assign eth_spo = 0;
+	assign irq_eth = 0;
 `endif
 
     // interrupt unit
@@ -729,6 +765,11 @@ module pcpu_main
 		.t_d(timer_d),
 		.t_we(timer_we),
 		.t_spo(timer_spo),
+
+		.eth_a(eth_a),
+		.eth_d(eth_d),
+		.eth_we(eth_we),
+		.eth_spo(eth_spo),
 
         .irq(pirq)
     );

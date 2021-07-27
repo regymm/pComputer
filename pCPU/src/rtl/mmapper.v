@@ -107,6 +107,13 @@ module mmapper
 		output reg t_we,
 		input [31:0]t_spo,
 
+
+		// "ethernet": 0x9c000000
+		output reg [31:0]eth_a,
+		output reg [31:0]eth_d,
+		output reg eth_we,
+		input [31:0]eth_spo,
+
         // 0xe0000000 MMU control
 
         output reg irq
@@ -134,6 +141,8 @@ module mmapper
         int_d = d;
 		t_a = a[4:2];
 		t_d = d;
+		eth_a = a;
+		eth_d = d;
     end
 
     always @ (*) begin
@@ -150,6 +159,7 @@ module mmapper
         int_we = 0;
 		bootm_rd = 0;
 		t_we = 0;
+		eth_we = 0;
         irq = 0;
         spo = 0;
         ready = 1;
@@ -201,6 +211,10 @@ module mmapper
 					spo = t_spo;
 					t_we = we;
 				end
+				4'hc: begin
+					spo = eth_spo;
+					eth_we = we;
+				end
                 default: irq = 1;
             endcase
         end else if (a[31:28] == 4'hf) begin
@@ -209,15 +223,5 @@ module mmapper
 			ready = bootm_ready;
         end
         else irq = 1;
-        //case (a[31:28])
-            //0: 
-            //1: 
-            //2: begin end
-            //3: 
-            //6: begin spo = sd_spo; sd_we = we; end
-            //7: 
-            //8: begin spo = isr_spo; isr_we = we; end
-            //default: irq = 1;
-        //endcase
     end
 endmodule

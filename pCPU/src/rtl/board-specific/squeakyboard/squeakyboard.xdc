@@ -70,12 +70,12 @@ set_property -dict {PACKAGE_PIN J16 IOSTANDARD LVCMOS33} [get_ports uart_rx_2]
 #set_property -dict {PACKAGE_PIN Y19 IOSTANDARD LVCMOS33} [get_ports q4n]
 
 # W5500-Lite
-#set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports eth_cs]
-#set_property -dict {PACKAGE_PIN L20 IOSTANDARD LVCMOS33} [get_ports eth_sclk]
-#set_property -dict {PACKAGE_PIN V18 IOSTANDARD LVCMOS33} [get_ports eth_mosi]
-#set_property -dict {PACKAGE_PIN R16 IOSTANDARD LVCMOS33} [get_ports eth_miso]
-#set_property -dict {PACKAGE_PIN T17 IOSTANDARD LVCMOS33} [get_ports eth_rst]
-#set_property -dict {PACKAGE_PIN L19 IOSTANDARD LVCMOS33} [get_ports eth_int]
+set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports eth_scsn]
+set_property -dict {PACKAGE_PIN L20 IOSTANDARD LVCMOS33} [get_ports eth_sclk]
+set_property -dict {PACKAGE_PIN V18 IOSTANDARD LVCMOS33} [get_ports eth_mosi]
+set_property -dict {PACKAGE_PIN R16 IOSTANDARD LVCMOS33} [get_ports eth_miso]
+set_property -dict {PACKAGE_PIN T17 IOSTANDARD LVCMOS33} [get_ports eth_rstn]
+set_property -dict {PACKAGE_PIN L19 IOSTANDARD LVCMOS33} [get_ports eth_intn]
 
 # HDMI
 set_property -dict {PACKAGE_PIN W20 IOSTANDARD TMDS_33} [get_ports TMDSn_clock]

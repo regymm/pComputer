@@ -3,10 +3,10 @@
 module mkrvidor4000_top
 (
 	input clk,
+	input clk_2x,
 	input rst,
 	input clk_pix,
 	input clk_tmds,
-	//input clk_audio,
 
 	input [31:0]a,
 	input [31:0]d,
@@ -24,6 +24,10 @@ module mkrvidor4000_top
 	//output reg vram_rd,
 	//input [31:0]vram_spo,
 	//input vram_ready,
+	//assign burst_en = 1;
+	//assign burst_length = 512;
+	//assign lowmem_d = 0;
+	//assign lowmem_we = 0;
 //`endif
 
 
@@ -34,45 +38,79 @@ module mkrvidor4000_top
 	output TMDSn_clock
 );
 
-(*mark_debug = "true"*) logic [23:0] rgb;
-logic [10:0]cx;
-logic [9:0] cy;
-(*mark_debug = "true"*) wire [10:0]cx_next;
-(*mark_debug = "true"*) wire [9:0] cy_next;
-hdmi #(
-	.VIDEO_ID_CODE(1), 
-	.DVI_OUTPUT(1),
-	.DDRIO(0)
-	//.AUDIO_RATE(AUDIO_RATE), 
-	//.AUDIO_BIT_WIDTH(AUDIO_BIT_WIDTH)
-) hdmi(
-	.clk_pixel_x10(clk_tmds), 
-	.clk_pixel(clk_pix), 
-	.clk_audio(0), 
+//(*mark_debug = "true"*) logic [23:0] rgb;
+//logic [10:0]cx;
+//logic [9:0]cy;
+//(*mark_debug = "true"*) wire [9:0]cx_next;
+//(*mark_debug = "true"*) wire [9:0]cy_next;
+//hdmi #(
+	//.VIDEO_ID_CODE(1), 
+	//.DVI_OUTPUT(1),
+	//.DDRIO(0)
+	////.AUDIO_RATE(AUDIO_RATE), 
+	////.AUDIO_BIT_WIDTH(AUDIO_BIT_WIDTH)
+//) hdmi(
+	//.clk_pixel_x10(clk_tmds), 
+	//.clk_pixel(clk_pix), 
+	//.clk_audio(0), 
+	//.rgb(rgb), 
+	////.audio_sample_word(0), 
+	//.tmds_p(TMDSp), 
+	//.tmds_clock_p(TMDSp_clock), 
+	//.tmds_n(TMDSn), 
+	//.tmds_clock_n(TMDSn_clock), 
+	//.cx(cx), 
+	//.cy(cy),
+	//.cx_next(cx_next),
+	//.cy_next(cy_next)
+//);
+
+//wire [9:0]cx_onscreen = cx_next - 160;
+//wire [9:0] cy_onscreen = cy_next - 45;
+
+wire [23:0]rgb;
+wire [9:0]cx;
+wire [9:0]cy;
+hdmi_fpga4fun hdmi(
+	.clk_pix(clk_pix), 
+	.clk_tmds(clk_tmds), 
 	.rgb(rgb), 
-	//.audio_sample_word(0), 
-	.tmds_p(TMDSp), 
-	.tmds_clock_p(TMDSp_clock), 
-	.tmds_n(TMDSn), 
-	.tmds_clock_n(TMDSn_clock), 
+	.TMDSp(TMDSp), 
+	.TMDSp_clock(TMDSp_clock), 
+	.TMDSn(TMDSn), 
+	.TMDSn_clock(TMDSn_clock), 
 	.cx(cx), 
-	.cy(cy),
-	.cx_next(cx_next),
-	.cy_next(cy_next)
+	.cy(cy)
 );
 
-wire [10:0]cx_onscreen = cx_next - 160;
-wire [9:0] cy_onscreen = cy_next - 45;
+wire [9:0]cx_onscreen = cx;
+wire [9:0]cy_onscreen = cy;
+
 wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
 
 `ifdef HDMI_PICTURE
-	assign burst_en = 1;
-	assign burst_length = 512;
-	assign lowmem_d = 0;
-	assign lowmem_we = 0;
+	// use upper blank memory address for mode control modes
+	reg light_mode = 0;
+	reg mono_mode = 0;
+	always @ (posedge clk) begin
+		if (rst) begin
+			light_mode = 0;
+			mono_mode = 0;
+		end else begin
+			if (we & a[18:17] == 2'b01) light_mode <= data[0];
+			if (we & a[18:17] == 2'b10) mono_mode <= data[0];
+		end
+	end
+	reg light_mode_pix;
+	reg mono_mode_pix;
+	always @ (posedge clk_pix) begin
+		light_mode_pix <= light_mode;
+		mono_mode_pix <= mono_mode;
+	end
 
-	// (cx_onscreen/2 + cy_onscreen/2 * 480/2)
-	wire [16:0]pix_a_pix = (cx_onscreen/2) + cy_onscreen/2 * 640/2;
+	//wire [16:0]pix_a_pix = (cx_onscreen/2) + cy_onscreen/2 * 640/2;
+	wire [16:0]pix_a_pix = (cx_onscreen/2) + cy_onscreen/2 * 512/2 + cy_onscreen/2 * 128/2;
+	//wire [16:0]pix_a_pix = (cx_onscreen[8:1]) + {cy_onscreen, 5'b0} + {cy_onscreen, 7'b0};
 	// /4 for memory address (each 32-bit elem contains 4 pixels)
 	wire [14:0]pix_a_vram = pix_a_pix[16:2];
 	//reg [14:0]pix_a = 0;
@@ -84,19 +122,30 @@ wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
 			2'b10: pix_curr = pix_data[23:16];
 			2'b11: pix_curr = pix_data[31:24];
 	endcase end
-	assign rgb = {
-		{pix_curr[7:5], pix_curr[7:5] == 3'b111 ? 5'b1 : 5'b0},
-		{pix_curr[4:2], pix_curr[4:2] == 3'b111 ? 5'b1 : 5'b0},
-		{pix_curr[1:0], pix_curr[1:0] == 2'b11 ? 6'b1 : 6'b0}
+	wire [4:0]r_padding = light_mode_pix ? 
+		(pix_curr[7:5] == 3'b000 ? 5'b0 : 5'b1) :
+		(pix_curr[7:5] == 3'b111 ? 5'b1 : 5'b0);
+	wire [4:0]g_padding = light_mode_pix ? 
+		(pix_curr[4:2] == 3'b000 ? 5'b0 : 5'b1) :
+		(pix_curr[4:2] == 3'b111 ? 5'b1 : 5'b0);
+	wire [5:0]b_padding = light_mode_pix ? 
+		(pix_curr[1:0] == 2'b00 ? 6'b0 : 6'b1) :
+		(pix_curr[1:0] == 2'b11 ? 6'b1 : 6'b0);
+	assign rgb = mono_mode_pix ? {
+		pix_curr, pix_curr, pix_curr
+	} : {
+		{pix_curr[7:5], r_padding},
+		{pix_curr[4:2], g_padding},
+		{pix_curr[1:0], b_padding}
 	};
 
-	reg [14:0]pix_a_last;
-	always @(posedge clk_pix) begin
-		pix_a_last <= pix_a_vram;
+	reg pix_a_last_sel;
+	always @(posedge clk_2x) begin
+		pix_a_last_sel <= pix_a_vram[14];
 	end
 	wire [31:0]pix_spo_l;
 	wire [31:0]pix_spo_h;
-	assign pix_data = pix_a_last[14] ? pix_spo_h : pix_spo_l;
+	assign pix_data = pix_a_last_sel ? pix_spo_h : pix_spo_l;
 	// 75KB total VRAM, supports 640x480 2bit monochrome color
 	// or 320x240 8bit 3-3-2 color
 	simple_dp_ram #(
@@ -107,7 +156,7 @@ wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
 		.a1(a[15:2]),
 		.d1(data),
 		.we1(we & !a[16]),
-		.clk2(clk_pix),
+		.clk2(clk_2x),
 		.a2(pix_a_vram),
 		.rd2(1),
 		.spo2(pix_spo_l)
@@ -121,7 +170,7 @@ wire [31:0]data = {d[7:0], d[15:8], d[23:16], d[31:24]};
 		.a1(a[15:2]),
 		.d1(data),
 		.we1(we & a[16]),
-		.clk2(clk_pix),
+		.clk2(clk_2x),
 		.a2(pix_a_vram),
 		.rd2(1),
 		.spo2(pix_spo_h)

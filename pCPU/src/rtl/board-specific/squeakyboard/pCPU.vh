@@ -15,6 +15,7 @@
 `define VIDEO_EN
 `define IRQ_EN
 `define PS2_EN
+`define ETH_EN
 //`define MMU_EN
 
 `define SERIALBOOT_EN

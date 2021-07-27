@@ -1,8 +1,24 @@
 #include "../../mmio_drivers/basic.h"
 #define N 100
 
+/*volatile int* w5500_setaddr = 0x9c000000;*/
+/*volatile int* w5500_setctrl = 0x9c000004;*/
+/*volatile int* w5500_setdata = 0x9c000008;*/
+/*volatile int* w5500_setxfrlen = 0x9c00000c;*/
+/*volatile int* w5500_issue = 0x9c000010;*/
+/*volatile int* w5500_ready = 0x9c000014;*/
+/*volatile int* w5500_recvbits = 0x9c000018;*/
+/*volatile int* w5500_intn = 0x9c00001c;*/
+
 void c_start()
 {
+	/*while(!*w5500_ready);*/
+	/**w5500_setaddr = 0xabcd;*/
+	/**w5500_setctrl = 0x48;*/
+	/**w5500_setdata = 0x12345678;*/
+	/**w5500_setxfrlen = 2;*/
+	/**w5500_issue = 1;*/
+
 	/*int (*a)[N] = 0x2020f580, (*b)[N] = 0x2041eb00, (*c)[N] = 0x25b8d800;  */
 	/*int i, j, k;  */
 	/*for (i = 0; i < N; i++) {  */
