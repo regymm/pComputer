@@ -101,6 +101,27 @@ typedef struct
   Elf32_Word	sh_entsize;		/* Entry size if section holds table */
 } __attribute((packed)) Elf32_Shdr;
 
+/* Relocation table entry with addend (in section of type SHT_RELA).  */
+
+typedef struct
+{
+  Elf32_Addr	r_offset;		/* Address */
+  Elf32_Word	r_info;			/* Relocation type and symbol index */
+  Elf32_Sword	r_addend;		/* Addend */
+} __attribute((packed)) Elf32_Rela;
+
+/* Symbol table entry.  */
+
+typedef struct
+{
+  Elf32_Word	st_name;		/* Symbol name (string tbl index) */
+  Elf32_Addr	st_value;		/* Symbol value */
+  Elf32_Word	st_size;		/* Symbol size */
+  unsigned char	st_info;		/* Symbol type and binding */
+  unsigned char	st_other;		/* Symbol visibility */
+  Elf32_Section	st_shndx;		/* Section index */
+} Elf32_Sym;
+
 void elf_header_check(int* elf_begin_addr, int stack_size, unsigned int** entry_addr, unsigned int** stack_addr);
 
 #endif
