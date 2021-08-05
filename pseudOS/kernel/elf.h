@@ -49,6 +49,7 @@ typedef unsigned short Elf32_Section;
 typedef Elf32_Half Elf32_Versym;
 
 
+#define PT_LOAD		1		/* Loadable program segment */
 /* The ELF file header.  This appears at the start of every ELF file.  */
 
 #define EI_NIDENT (16)

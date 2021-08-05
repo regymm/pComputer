@@ -117,6 +117,7 @@ void elf_header_check(int* elf_begin_addr, int stack_size, unsigned int** entry_
 
 int load_shared_library(int* elf_begin_addr)
 {
+	int i, j;
 	Elf32_Ehdr* elfhdr = (Elf32_Ehdr*) elf_begin_addr;
 	printk("elf loaded in mem at %08x\r\n", elfhdr);
 	if (elfhdr->e_ident[0] != '\x7f' || \
@@ -126,10 +127,10 @@ int load_shared_library(int* elf_begin_addr)
 		printk("elf magic error!\r\n");
 		return -1;
 	}
-	/*if (elfhdr->e_type != 3) {*/
-		/*printk("elf type is not shared object!\r\n");*/
-		/*return;*/
-	/*}*/
+	if (elfhdr->e_type != 3) {
+		printk("elf type is not shared object!\r\n");
+		return -1;
+	}
 	if (elfhdr->e_machine != 243) {
 		printk("elf machine is not RISCV!\r\n");
 		return -1;
@@ -137,10 +138,43 @@ int load_shared_library(int* elf_begin_addr)
 
 	printk("elf entry addr is %08x(don't care)\r\n", \
 			elfhdr->e_entry);
-	printk("elf has %d sectors headers, size %d, 0x%d bytes info file\r\n", \
+	printk("elf has %d program headers, %d sectors headers, size %d, 0x%d bytes info file\r\n", \
+			elfhdr->e_phnum, \
 			elfhdr->e_shnum, \
 			elfhdr->e_shentsize, \
 			elfhdr->e_shoff);
+
+	Elf32_Phdr* elfphdr_base = (Elf32_Phdr *)((unsigned char*)elfhdr + elfhdr->e_phoff);
+	Elf32_Phdr* elfphdr_first = elfphdr_base;
+	if (!(elfphdr_first->p_type == PT_LOAD && \
+			elfphdr_first->p_offset == 0 && \
+			elfphdr_first->p_vaddr == 0 && \
+			elfphdr_first->p_paddr == 0)) {
+		printk("First program header is not LOAD 0x0 0x0 0x0, panic\r\n");
+		return -1;
+	}
+	Elf32_Phdr* elfphdr_second = elfphdr_base + 1;
+	if (!(elfphdr_second->p_type == PT_LOAD)) {
+		printk("Second program header is not LOAD, panic\r\n");
+		return -1;
+	}
+	if (!(elfphdr_second->p_vaddr == elfphdr_second->p_paddr)) {
+		printk("Second program header PA != VA, panic\r\n");
+		return -1;
+	}
+	int load2_offset = elfphdr_second->p_offset;
+	int load2_addr = elfphdr_second->p_vaddr;
+	int load2_filesize = elfphdr_second->p_filesz;
+	int load2_memsize = elfphdr_second->p_memsz;
+	printk("Ignore other program headers\r\n");
+	/*for (i = 0; i < elfhdr->e_shnum; i++) {*/
+		/*Elf32_Phdr* elfphdr = elfphdr_base + i;*/
+		/*if (elfphdr->p_type != PT_LOAD) {*/
+			/*printk("unknown program header %x, ignore\r\n", elfphdr->p_type);*/
+			/*continue;*/
+		/*}*/
+	/*}*/
+
 
 	Elf32_Shdr* elfshdr_base = (Elf32_Shdr *)((unsigned char *)elfhdr + elfhdr->e_shoff);
 	Elf32_Shdr* elfshdr_strtab = (Elf32_Shdr *)((Elf32_Shdr *)elfshdr_base + elfhdr->e_shstrndx);
@@ -157,9 +191,13 @@ int load_shared_library(int* elf_begin_addr)
 	printk("Elf32_Shdr struct size %d\r\n", \
 			sizeof(Elf32_Shdr));
 
-	int i, j;
 	Elf32_Shdr* elfshdr;
+	Elf32_Shdr* dynsym_shdr = 0;
+	Elf32_Shdr* reladyn_shdr = 0;
+	Elf32_Shdr* relaplt_shdr = 0;
 	Elf32_Sym* dynsym_start_addr = 0;
+	Elf32_Rela* reladyn_start_addr = 0;
+	Elf32_Rela* relaplt_start_addr = 0;
 	for (i = 0; i < elfhdr->e_shnum; i++) {
 		elfshdr = (Elf32_Shdr *)((unsigned char *)elfshdr_base + i * elfhdr->e_shentsize);
 		void* sec_start = ((unsigned char *)elfhdr + elfshdr->sh_offset);
@@ -170,60 +208,69 @@ int load_shared_library(int* elf_begin_addr)
 		if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".dynsym") == 0) {
 			printk("\tfound dynsym section\r\n");
 			dynsym_start_addr = (Elf32_Sym *) sec_start;
+			dynsym_shdr = elfshdr;
 			/*for (j = 0; j < elfshdr->sh_size/elfshdr->sh_entsize; j++) {*/
 				/*printk("%d, %d, %08x\r\n", j, (dynsym_start_addr+j)->st_size, (dynsym_start_addr+j)->st_value);*/
 			/*}*/
 		}
 		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".rela.dyn") == 0) {
 			printk("\tfound rela.dyn section\r\n");
-			if (dynsym_start_addr == 0) {
-				printk("\tdynsym section should already found!\r\n");
-				return -1;
-			}
-			Elf32_Rela* reladyn_start_addr = (Elf32_Sym *) sec_start;
-			for (j = 0; j < elfshdr->sh_size/elfshdr->sh_entsize; j++) {
-				Elf32_Rela* reladyn_entry = reladyn_start_addr + j;
-				int got_offset = reladyn_entry->r_offset;
-				int r_info = reladyn_entry->r_info;
-				if (r_info % 0x100 != 1) {
-					printk("rela.plt entry is not R_RISCV_32!\r\n");
-					continue;
-				}
-				int dynsym_idx = r_info / 0x100;
-				unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
-				unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
-				printk("\t\t\t %08x %08x %6d %8x\r\n", got_offset, r_info, dynsym_idx, symval);
-				*got_entry_addr = (unsigned int)elf_begin_addr + symval;
-			}
+			reladyn_start_addr = (Elf32_Rela *) sec_start;
+			reladyn_shdr = elfshdr;
 		}
 		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".rela.plt") == 0) {
 			printk("\tfound rela.plt section\r\n");
-			if (dynsym_start_addr == 0) {
-				printk("\tdynsym section should already found!\r\n");
-				return -1;
-			}
-			printk("\t\tsize %x\r\n", elfshdr->sh_size);
-			printk("\t\tentry size %x\r\n", elfshdr->sh_entsize);
-			printk("\t\tElf32_Rel size %x\r\n", sizeof(Elf32_Rela));
-			Elf32_Rela* relaplt_start_addr = (Elf32_Rela *) sec_start;
-			printk("\t\t\t %s %s %s %s\r\n", "ofst@got", "info", "symidx", "symval");
-			for (j = 0; j < elfshdr->sh_size/elfshdr->sh_entsize; j++) {
-				Elf32_Rela* relaplt_entry = relaplt_start_addr + j;
-				int got_offset = relaplt_entry->r_offset;
-				int r_info = relaplt_entry->r_info;
-				if (r_info % 0x100 != 5) {
-					printk("rela.plt entry is not R_RISCV_JUMP_SLOT!\r\n");
-					continue;
-				}
-				int dynsym_idx = r_info / 0x100;
-				unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
-				unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
-				/*printk("\t\t\t %08x %08x %6d %8x\r\n", got_offset, r_info, dynsym_idx, symval);*/
-				*got_entry_addr = (unsigned int)elf_begin_addr + symval;
-			}
-			printk("\t\t%d rela.plt entry processed\r\n", j);
+			relaplt_start_addr = (Elf32_Rela *) sec_start;
+			relaplt_shdr = elfshdr;
 		}
 	}
+
+	if (!((unsigned int)dynsym_start_addr & \
+				(unsigned int)reladyn_start_addr & \
+				(unsigned int)relaplt_start_addr)) {
+		printk("\tlacking section!\r\n");
+		return -1;
+	}
+
+	// rela.dyn patching
+	printk("\t\t\t %s %s %s %s %s\r\n", "ofst@got", "info", "symidx", "symval", "addend");
+	for (j = 0; j < reladyn_shdr->sh_size/reladyn_shdr->sh_entsize; j++) {
+		Elf32_Rela* reladyn_entry = reladyn_start_addr + j;
+		int got_offset = reladyn_entry->r_offset; // maybe not got actually
+		int r_info = reladyn_entry->r_info;
+		int r_addend = reladyn_entry->r_addend;
+		if (r_info % 0x100 != 1) {
+			printk("rela.dyn entry is not R_RISCV_32!\r\n");
+			/*continue;*/
+		}
+		int dynsym_idx = r_info / 0x100;
+		unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
+		unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
+		printk("\t\t\t %08x %08x %6d %8x %8x\r\n", got_offset, r_info, dynsym_idx, symval, r_addend);
+		/**got_entry_addr = (unsigned int)elf_begin_addr + symval + r_addend;*/
+	}
+
+	// rela.plt patching
+	printk("\t\tsize %x\r\n", relaplt_shdr->sh_size);
+	printk("\t\tentry size %x\r\n", relaplt_shdr->sh_entsize);
+	printk("\t\tElf32_Rel size %x\r\n", sizeof(Elf32_Rela));
+	printk("\t\t\t %s %s %s %s\r\n", "ofst@got", "info", "symidx", "symval");
+	for (j = 0; j < relaplt_shdr->sh_size/relaplt_shdr->sh_entsize; j++) {
+		Elf32_Rela* relaplt_entry = relaplt_start_addr + j;
+		int got_offset = relaplt_entry->r_offset;
+		int r_info = relaplt_entry->r_info;
+		if (r_info % 0x100 != 5) {
+			printk("rela.plt entry is not R_RISCV_JUMP_SLOT!\r\n");
+			return -1;
+		}
+		int dynsym_idx = r_info / 0x100;
+		unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
+		unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
+		/*printk("\t\t\t %08x %08x %6d %8x\r\n", got_offset, r_info, dynsym_idx, symval);*/
+		*got_entry_addr = (unsigned int)elf_begin_addr + symval;
+	}
+	printk("\t\t%d rela.plt entry processed\r\n", j);
+
 	return 0;
 }
 
@@ -238,9 +285,9 @@ int main()
 	load_shared_library(elf_file);
 
 	fclose(fin);
-	FILE* fout = fopen("../userspace/libc.patched.so", "wb");
-	fwrite(elf_file, sizeof(int), 200000, fout);
-	fclose(fout);
+	/*FILE* fout = fopen("../userspace/libc.patched.so", "wb");*/
+	/*fwrite(elf_file, sizeof(int), 200000, fout);*/
+	/*fclose(fout);*/
 	unsigned int main2 = 0x20021000;
 	putchar(((int)main2 >> 28) + '0');
 	putchar(((int)main2 >> 24) + '0');
