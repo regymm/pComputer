@@ -124,7 +124,7 @@ void elf_header_check(int* elf_begin_addr, int stack_size, unsigned int** entry_
 	*entry_addr = 0; return;
 }
 
-int find_function_from_so(int* so_begin_addr, const char* fname)
+int find_function_from_so(const char* fname)
 {
 	int i;
 	for (i = 0; i < dynlinktbl.size; i++) 
@@ -320,21 +320,205 @@ int load_shared_library(int* elf_begin_addr)
 	return 0;
 }
 
+// elf begin addr in memory
+// stack size
+// entry addr which .text starts used to set $pc
+// stack addr(top of stack) used to set $sp
+int load_dynamic_exec(int* elf_begin_addr, int stack_size, int** entry_addr, int** stack_addr)
+{
+	// basic processing, just like libc.so
+	Elf32_Ehdr* elfhdr = (Elf32_Ehdr *)elf_begin_addr;
+	printk("elf loaded in mem at %08x\r\n", elfhdr);
+	if (elfhdr->e_ident[0] != '\x7f' || \
+		elfhdr->e_ident[1] != 'E' || \
+		elfhdr->e_ident[2] != 'L' || \
+		elfhdr->e_ident[3] != 'F') {
+		printk("elf magic error!\r\n");
+		*entry_addr = 0; return -1;
+	}
+	if (elfhdr->e_type != 2) {
+		printk("elf type is not executable!\r\n");
+		*entry_addr = 0; return -1;
+	}
+	if (elfhdr->e_machine != 243) {
+		printk("elf machine is not RISCV!\r\n");
+		*entry_addr = 0; return -1;
+	}
+
+	printk("elf entry addr is %08x\r\n", \
+			elfhdr->e_entry);
+	*entry_addr = (int*)((int)elfhdr->e_entry + (int)elfhdr);
+
+	printk("elf has %d program headers, \
+			%d sectors headers, \
+			size %d, \
+			0x%d bytes info file\r\n", \
+			elfhdr->e_phnum, \
+			elfhdr->e_shnum, \
+			elfhdr->e_shentsize, \
+			elfhdr->e_shoff);
+
+	Elf32_Phdr* elfphdr_base = (Elf32_Phdr *)((unsigned char*)elfhdr + elfhdr->e_phoff);
+	Elf32_Phdr* elfphdr_first = elfphdr_base + 2; // TODO: remove hard code, do the analysis!
+	if (!(elfphdr_first->p_type == PT_LOAD && \
+			elfphdr_first->p_offset == 0 && \
+			elfphdr_first->p_vaddr == 0 && \
+			elfphdr_first->p_paddr == 0)) {
+		printk("First program header is not LOAD 0x0 0x0 0x0, panic\r\n");
+		return -1;
+	}
+	Elf32_Phdr* elfphdr_second = elfphdr_base + 3;
+	if (!(elfphdr_second->p_type == PT_LOAD)) {
+		printk("Second program header is not LOAD, panic\r\n");
+		return -1;
+	}
+	if (!(elfphdr_second->p_vaddr == elfphdr_second->p_paddr)) {
+		printk("Second program header PA != VA, panic\r\n");
+		return -1;
+	}
+	if (!(elfphdr_second->p_offset <= elfphdr_second->p_vaddr)) {
+		printk("Second program header offset > VA, panic\r\n");
+		return -1;
+	}
+	int load2_offset = elfphdr_second->p_offset;
+	int load2_addr = elfphdr_second->p_vaddr;
+	int load2_filesize = elfphdr_second->p_filesz;
+	int load2_memsize = elfphdr_second->p_memsz;
+	printk("Ignore other program headers\r\n");
+
+	Elf32_Shdr* elfshdr_base = (Elf32_Shdr *)((unsigned char *)elfhdr + elfhdr->e_shoff);
+	Elf32_Shdr* elfshdr_strtab = (Elf32_Shdr *)((Elf32_Shdr *)elfshdr_base + elfhdr->e_shstrndx);
+
+	printk("elfshdr base and strtab: %08x %08x \r\n", \
+			elfshdr_base, \
+			elfshdr_strtab);
+
+	unsigned char* elfs_strtab = (unsigned char *)elfhdr + elfshdr_strtab->sh_offset;
+
+	printk(".shstrtab section header at %08x, section body at %08x\r\n", \
+			elfhdr->e_shoff + elfhdr->e_shstrndx * elfhdr->e_shentsize, \
+			elfshdr_strtab->sh_offset);
+	printk("Elf32_Shdr struct size %d\r\n", \
+			sizeof(Elf32_Shdr));
+
+	int i, j;
+
+	Elf32_Shdr* elfshdr;
+	Elf32_Shdr* dynsym_shdr = 0;
+	Elf32_Shdr* reladyn_shdr = 0;
+	Elf32_Shdr* relaplt_shdr = 0;
+	Elf32_Sym* dynsym_start_addr = 0;
+	char* dynstr_start_addr = 0;
+	Elf32_Rela* reladyn_start_addr = 0;
+	Elf32_Rela* relaplt_start_addr = 0;
+	for (i = 0; i < elfhdr->e_shnum; i++) {
+		elfshdr = (Elf32_Shdr *)((unsigned char *)elfshdr_base + i * elfhdr->e_shentsize);
+		void* sec_start = ((unsigned char *)elfhdr + elfshdr->sh_offset);
+		printk("name %20s, addr %08x, size 0x%x\r\n", \
+				elfs_strtab + elfshdr->sh_name, \
+				elfshdr->sh_addr, \
+				elfshdr->sh_size);
+		if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".dynsym") == 0) {
+			printk("\tfound dynsym section\r\n");
+			dynsym_start_addr = (Elf32_Sym *) sec_start;
+			dynsym_shdr = elfshdr;
+		}
+		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".dynstr") == 0) {
+			printk("\tfound dynstr section\r\n");
+			dynstr_start_addr = (char *) sec_start;
+		}
+		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".rela.dyn") == 0) {
+			printk("\tfound rela.dyn section\r\n");
+			reladyn_start_addr = (Elf32_Rela *) sec_start;
+			reladyn_shdr = elfshdr;
+		}
+		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".rela.plt") == 0) {
+			printk("\tfound rela.plt section\r\n");
+			relaplt_start_addr = (Elf32_Rela *) sec_start;
+			relaplt_shdr = elfshdr;
+		}
+	}
+
+	// collect dynlinktable for symbol-finding after second LOAD override
+	printk("collect dynamic link entries from rela.plt\r\n");
+	DynLinkTable temptbl;
+	int relaplt_entrycnt = relaplt_shdr->sh_size/relaplt_shdr->sh_entsize;
+	temptbl.size = relaplt_entrycnt;
+	for (j = 0; j < relaplt_entrycnt; j++) {
+		Elf32_Rela* relaplt_entry = relaplt_start_addr + j;
+		int r_info = relaplt_entry->r_info;
+		if (r_info % 0x100 != 5) {
+			printk("rela.plt entry is not R_RISCV_JUMP_SLOT!\r\n");
+			return -1;
+		}
+		int dynsym_idx = r_info / 0x100;
+		Elf32_Sym* entry = dynsym_start_addr + dynsym_idx; // dynsym entry
+		printk("%d, %d, %08x, %d, %s\r\n", j, entry->st_size, entry->st_value, entry->st_name, dynstr_start_addr + entry->st_name);
+		temptbl.tbl[j].addr = (unsigned int)elf_begin_addr + entry->st_value;
+		elf_strcpy(temptbl.tbl[j].name, dynstr_start_addr + entry->st_name);
+	}
+
+	// second LOAD processing
+	for (i = load2_memsize - load2_filesize - 4; i >= 0; i-=4)
+		elf_begin_addr[(load2_addr + load2_memsize - load2_filesize + i)/4] = 0;
+	for (i = load2_filesize - 4; i >= 0; i-=4)
+		elf_begin_addr[(load2_addr + i)/4] = elf_begin_addr[(load2_offset + i)/4];
+	// now shstrtab and section headers are already corrupted
+	// but relocation offsets are real in-mem addr
+	
+	// we can do dynamic linking now
+	for (j = 0; j < temptbl.size; j++) {
+		int* dyn_loc_in_mem = (int *)temptbl.tbl[j].addr;
+		int dyn_sym_addr = find_function_from_so(temptbl.tbl[j].name);
+		*dyn_loc_in_mem = dyn_sym_addr;
+	}
+
+	// symbol relocation: rela.dyn patching
+	printk("\t\t\t %s %s %s %s %s\r\n", "ofst@got", "info", "symidx", "symval", "addend");
+	for (j = 0; j < reladyn_shdr->sh_size/reladyn_shdr->sh_entsize; j++) {
+		Elf32_Rela* reladyn_entry = reladyn_start_addr + j;
+		int got_offset = reladyn_entry->r_offset; // maybe not got actually
+		int r_info = reladyn_entry->r_info;
+		int r_addend = reladyn_entry->r_addend;
+		if (r_info % 0x100 != 1) {
+			printk("rela.dyn entry is not R_RISCV_32!\r\n");
+			/*continue;*/
+		}
+		int dynsym_idx = r_info / 0x100;
+		unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
+		unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
+		printk("\t\t\t %08x %08x %6d %8x %8x\r\n", got_offset, r_info, dynsym_idx, symval, r_addend);
+		*got_entry_addr = (unsigned int)elf_begin_addr + symval + r_addend;
+	}
+
+	return 0;
+}
+
 int main()
 {
 	/*FILE* fin = fopen("../userspace/test", "r");*/
 	FILE* fin = fopen("../userspace/libc.so", "r");
 	int* elf_file = (int*)malloc(200000*sizeof(int));
 	fread(elf_file, sizeof(int), 200000, fin);
+	fclose(fin);
 
 	/*elf_header_check(elf_file);*/
 	load_shared_library(elf_file);
-	printk("%08x\r\n", find_function_from_so(elf_file, "strcpy"));
+	printk("%08x\r\n", find_function_from_so("strcpy"));
 
+	FILE* fin2 = fopen("../userspace/hello", "r");
+	int* elf_exec = (int*)malloc(200000*sizeof(int));
+	fread(elf_exec, sizeof(int), 200000, fin2);
 	fclose(fin);
-	FILE* fout = fopen("../userspace/libc.patched.so", "wb");
-	fwrite(elf_file, sizeof(int), 200000, fout);
-	fclose(fout);
+
+	int* entry_addr = 0;
+	int* stack_addr = 0;
+	load_dynamic_exec(elf_exec, 0x10000, &entry_addr, &stack_addr);
+	printk("%08x, %08x\r\n", entry_addr, stack_addr);
+
+	/*FILE* fout = fopen("../userspace/libc.patched.so", "wb");*/
+	/*fwrite(elf_file, sizeof(int), 200000, fout);*/
+	/*fclose(fout);*/
 	unsigned int main2 = 0x20021000;
 	putchar(((int)main2 >> 28) + '0');
 	putchar(((int)main2 >> 24) + '0');

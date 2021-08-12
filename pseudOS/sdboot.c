@@ -128,9 +128,10 @@ void loadelf()
 	int pid;
 	new_process_from_elf_in_memory((int*) 0x20110000, "elf_p", 0x1000, &pid);
 	printk("new process loaded, pid %d\r\n", pid);
-	sdcard_to_memory(0x5000, 16384, (int *)0x20120000, &sdblk0);
-	new_process_from_elf_in_memory((int*) 0x20120000, "elf_p2", 0x1000, &pid);
-	printk("new process loaded, pid %d\r\n", pid);
+	/*sdcard_to_memory(0x5000, 16384, (int *)0x20120000, &sdblk0);*/
+	/*new_process_from_elf_in_memory((int*) 0x20120000, "elf_p2", 0x1000, &pid);*/
+	/*printk("new process loaded, pid %d\r\n", pid);*/
+
 	/*unsigned int* elf0_entry_addr;*/
 	/*unsigned int* elf0_stack_addr;*/
 	/*elf_header_check((int *)0x20020000, 0x1000, &elf0_entry_addr, &elf0_stack_addr);*/
@@ -142,6 +143,12 @@ void loadelf()
 	/*printk("You typed: %x\r\n", c);*/
 
 	/*elf0();*/
+}
+
+void load_libcso()
+{
+	sdcard_to_memory(0x100000, 0x100000/4, (int *)LIBCSO_LOAD_ADDR, &sdblk0);
+	load_shared_library(LIBCSO_LOAD_ADDR);
 }
 
 void prepare_processes()
@@ -318,7 +325,7 @@ void sd_c_start() // the current "kernel"
 	hardware_test();
 	cpp_test();
 	float_test();
-	software_renderer();
+	/*software_renderer();*/
 	
 	printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);
 
@@ -344,6 +351,7 @@ void sd_c_start() // the current "kernel"
 	
 
 	prepare_processes();
+	load_libcso();
 	/*loadelf();*/
 	setupIRQ();
 

@@ -20,6 +20,7 @@
 #endif
 
 // syscall IDs
+// TODO: syscall actually have to be same as linux
 #define SYSCALL_GET_TICKS 735
 #define SYSCALL_WRITE 75
 #define SYSCALL_READ 74
@@ -27,6 +28,8 @@
 // PIDs of kernel procs handling syscall requests
 #define KPROC_PID_GET_TICKS 4
 #define KPROC_PID_TTY_HARDWARE 5
+
+#define LIBCSO_LOAD_ADDR 0x20700000
 
 //typedef unsigned char uint8_t;
 //typedef char int8_t;
