@@ -123,6 +123,22 @@ typedef struct
   Elf32_Section	st_shndx;		/* Section index */
 } Elf32_Sym;
 
+// dynamic linking look up table used by OS
+
+typedef struct
+{
+	unsigned int addr;
+	char name[256];
+} DynLinkEntry;
+
+typedef struct
+{
+	int size;
+	DynLinkEntry tbl[4096];
+} DynLinkTable;
+
+DynLinkTable dynlinktbl;
+
 void elf_header_check(int* elf_begin_addr, int stack_size, unsigned int** entry_addr, unsigned int** stack_addr);
 
 #endif

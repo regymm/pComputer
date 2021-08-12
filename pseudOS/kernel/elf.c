@@ -11,11 +11,20 @@
 #include "stdio.h"
 #define printk printf
 
+/*extern SOSearch_Metadata libcso_data;*/
+extern DynLinkTable dynlinktbl;
+
 int elf_strcmp(const char* a, const char* b)
 {
 	int i = 0;
 	while (a[i] == b[i] && a[i] && b[i]) i++;
 	return !(a[i] == 0 && b[i] == 0);
+}
+
+void elf_strcpy(char* dest, const char* src)
+{
+	int i = 0;
+	while ((dest[i] = src[i])) i++;
 }
 
 // this should cooperate with my custom userspace linker script
@@ -115,6 +124,16 @@ void elf_header_check(int* elf_begin_addr, int stack_size, unsigned int** entry_
 	*entry_addr = 0; return;
 }
 
+int find_function_from_so(int* so_begin_addr, const char* fname)
+{
+	int i;
+	for (i = 0; i < dynlinktbl.size; i++) 
+		if (elf_strcmp(fname, dynlinktbl.tbl[i].name) == 0)
+			return dynlinktbl.tbl[i].addr;
+	printk("function not found in libc.so!\r\n");
+	return -1;
+}
+
 int load_shared_library(int* elf_begin_addr)
 {
 	int i, j;
@@ -162,6 +181,10 @@ int load_shared_library(int* elf_begin_addr)
 		printk("Second program header PA != VA, panic\r\n");
 		return -1;
 	}
+	if (!(elfphdr_second->p_offset <= elfphdr_second->p_vaddr)) {
+		printk("Second program header offset > VA, panic\r\n");
+		return -1;
+	}
 	int load2_offset = elfphdr_second->p_offset;
 	int load2_addr = elfphdr_second->p_vaddr;
 	int load2_filesize = elfphdr_second->p_filesz;
@@ -196,6 +219,7 @@ int load_shared_library(int* elf_begin_addr)
 	Elf32_Shdr* reladyn_shdr = 0;
 	Elf32_Shdr* relaplt_shdr = 0;
 	Elf32_Sym* dynsym_start_addr = 0;
+	char* dynstr_start_addr = 0;
 	Elf32_Rela* reladyn_start_addr = 0;
 	Elf32_Rela* relaplt_start_addr = 0;
 	for (i = 0; i < elfhdr->e_shnum; i++) {
@@ -209,9 +233,10 @@ int load_shared_library(int* elf_begin_addr)
 			printk("\tfound dynsym section\r\n");
 			dynsym_start_addr = (Elf32_Sym *) sec_start;
 			dynsym_shdr = elfshdr;
-			/*for (j = 0; j < elfshdr->sh_size/elfshdr->sh_entsize; j++) {*/
-				/*printk("%d, %d, %08x\r\n", j, (dynsym_start_addr+j)->st_size, (dynsym_start_addr+j)->st_value);*/
-			/*}*/
+		}
+		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".dynstr") == 0) {
+			printk("\tfound dynstr section\r\n");
+			dynstr_start_addr = (char *) sec_start;
 		}
 		else if (elf_strcmp(elfs_strtab + elfshdr->sh_name, ".rela.dyn") == 0) {
 			printk("\tfound rela.dyn section\r\n");
@@ -232,6 +257,27 @@ int load_shared_library(int* elf_begin_addr)
 		return -1;
 	}
 
+	// filling up dynlinktable
+	printk("fill up DynLinkTable\r\n");
+	int dynsym_entrycnt = dynsym_shdr->sh_size/dynsym_shdr->sh_entsize;
+	dynlinktbl.size = dynsym_entrycnt;
+	for (j = 0; j < dynsym_entrycnt; j++) {
+		Elf32_Sym* entry = dynsym_start_addr + j;
+		printk("%d, %d, %08x, %d, %s\r\n", j, entry->st_size, entry->st_value, entry->st_name, dynstr_start_addr + entry->st_name);
+		dynlinktbl.tbl[j].addr = (unsigned int)elf_begin_addr + entry->st_value;
+		elf_strcpy(dynlinktbl.tbl[j].name, dynstr_start_addr + entry->st_name);
+	}
+	
+
+	// second LOAD processing
+	for (i = load2_memsize - load2_filesize - 4; i >= 0; i-=4)
+		elf_begin_addr[(load2_addr + load2_memsize - load2_filesize + i)/4] = 0;
+	for (i = load2_filesize - 4; i >= 0; i-=4)
+		elf_begin_addr[(load2_addr + i)/4] = elf_begin_addr[(load2_offset + i)/4];
+	
+	// now shstrtab and section headers are already corrupted
+	// but relocation offsets are real in-mem addr
+
 	// rela.dyn patching
 	printk("\t\t\t %s %s %s %s %s\r\n", "ofst@got", "info", "symidx", "symval", "addend");
 	for (j = 0; j < reladyn_shdr->sh_size/reladyn_shdr->sh_entsize; j++) {
@@ -247,7 +293,7 @@ int load_shared_library(int* elf_begin_addr)
 		unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
 		unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
 		printk("\t\t\t %08x %08x %6d %8x %8x\r\n", got_offset, r_info, dynsym_idx, symval, r_addend);
-		/**got_entry_addr = (unsigned int)elf_begin_addr + symval + r_addend;*/
+		*got_entry_addr = (unsigned int)elf_begin_addr + symval + r_addend;
 	}
 
 	// rela.plt patching
@@ -283,11 +329,12 @@ int main()
 
 	/*elf_header_check(elf_file);*/
 	load_shared_library(elf_file);
+	printk("%08x\r\n", find_function_from_so(elf_file, "strcpy"));
 
 	fclose(fin);
-	/*FILE* fout = fopen("../userspace/libc.patched.so", "wb");*/
-	/*fwrite(elf_file, sizeof(int), 200000, fout);*/
-	/*fclose(fout);*/
+	FILE* fout = fopen("../userspace/libc.patched.so", "wb");
+	fwrite(elf_file, sizeof(int), 200000, fout);
+	fclose(fout);
 	unsigned int main2 = 0x20021000;
 	putchar(((int)main2 >> 28) + '0');
 	putchar(((int)main2 >> 24) + '0');
