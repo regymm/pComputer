@@ -263,7 +263,7 @@ int load_shared_library(int* elf_begin_addr)
 	dynlinktbl.size = dynsym_entrycnt;
 	for (j = 0; j < dynsym_entrycnt; j++) {
 		Elf32_Sym* entry = dynsym_start_addr + j;
-		printk("%d, %d, %08x, %d, %s\r\n", j, entry->st_size, entry->st_value, entry->st_name, dynstr_start_addr + entry->st_name);
+		/*printk("%d, %d, %08x, %d, %s\r\n", j, entry->st_size, entry->st_value, entry->st_name, dynstr_start_addr + entry->st_name);*/
 		dynlinktbl.tbl[j].addr = (unsigned int)elf_begin_addr + entry->st_value;
 		elf_strcpy(dynlinktbl.tbl[j].name, dynstr_start_addr + entry->st_name);
 	}
@@ -336,8 +336,8 @@ int load_dynamic_exec(int* elf_begin_addr, int stack_size, int** entry_addr, int
 		printk("elf magic error!\r\n");
 		*entry_addr = 0; return -1;
 	}
-	if (elfhdr->e_type != 2) {
-		printk("elf type is not executable!\r\n");
+	if (elfhdr->e_type != 3) {
+		printk("elf type is not dyn!\r\n");
 		*entry_addr = 0; return -1;
 	}
 	if (elfhdr->e_machine != 243) {
@@ -454,7 +454,7 @@ int load_dynamic_exec(int* elf_begin_addr, int stack_size, int** entry_addr, int
 		int dynsym_idx = r_info / 0x100;
 		Elf32_Sym* entry = dynsym_start_addr + dynsym_idx; // dynsym entry
 		printk("%d, %d, %08x, %d, %s\r\n", j, entry->st_size, entry->st_value, entry->st_name, dynstr_start_addr + entry->st_name);
-		temptbl.tbl[j].addr = (unsigned int)elf_begin_addr + entry->st_value;
+		temptbl.tbl[j].addr = (unsigned int)elf_begin_addr + relaplt_entry->r_offset;
 		elf_strcpy(temptbl.tbl[j].name, dynstr_start_addr + entry->st_name);
 	}
 
@@ -471,6 +471,7 @@ int load_dynamic_exec(int* elf_begin_addr, int stack_size, int** entry_addr, int
 		int* dyn_loc_in_mem = (int *)temptbl.tbl[j].addr;
 		int dyn_sym_addr = find_function_from_so(temptbl.tbl[j].name);
 		*dyn_loc_in_mem = dyn_sym_addr;
+		printk("%08x <- %08x\r\n", dyn_loc_in_mem, *dyn_loc_in_mem);
 	}
 
 	// symbol relocation: rela.dyn patching
@@ -480,10 +481,10 @@ int load_dynamic_exec(int* elf_begin_addr, int stack_size, int** entry_addr, int
 		int got_offset = reladyn_entry->r_offset; // maybe not got actually
 		int r_info = reladyn_entry->r_info;
 		int r_addend = reladyn_entry->r_addend;
-		if (r_info % 0x100 != 1) {
-			printk("rela.dyn entry is not R_RISCV_32!\r\n");
+		/*if (r_info % 0x100 != 1) {*/
+			/*printk("rela.dyn entry is not R_RISCV_32!\r\n");*/
 			/*continue;*/
-		}
+		/*}*/
 		int dynsym_idx = r_info / 0x100;
 		unsigned int* got_entry_addr = (unsigned char *)elf_begin_addr + got_offset;
 		unsigned int symval = (dynsym_start_addr+dynsym_idx)->st_value;
@@ -509,7 +510,7 @@ int main()
 	FILE* fin2 = fopen("../userspace/hello", "r");
 	int* elf_exec = (int*)malloc(200000*sizeof(int));
 	fread(elf_exec, sizeof(int), 200000, fin2);
-	fclose(fin);
+	fclose(fin2);
 
 	int* entry_addr = 0;
 	int* stack_addr = 0;
