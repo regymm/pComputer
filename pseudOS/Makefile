@@ -49,10 +49,12 @@ sdboot.elf: sdboot.S sdboot.c \
 	mmio_drivers/timer.c mmio_drivers/CH375.c mmio_drivers/w5500.c\
 	newlib/crt0.S newlib/syscall.c \
 	fs/fs.c \
-	kernel/global.c kernel/process.c kernel/isr.c kernel/misc.c kernel/elf.c \
-	cpp/cpp_test.o \
-	cpp/pingo/consolebackend.o cpp/pingo/main.o cpp/pingo/pingo_mesh.o cpp/pingo/viking.o cpp/pingo/mat3.o cpp/pingo/mat4.o cpp/pingo/vec2.o cpp/pingo/vec3.o cpp/pingo/vec4.o cpp/pingo/depth.o cpp/pingo/material.o cpp/pingo/mesh.o cpp/pingo/object.o cpp/pingo/pixel.o cpp/pingo/rasterizer.o cpp/pingo/renderable.o cpp/pingo/renderer.o cpp/pingo/scene.o cpp/pingo/sprite.o cpp/pingo/texture.o
-	(cd cpp/pingo; ./manualmake.sh; cd ../..) && $(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lm -lc -lgcc
+	kernel/global.c kernel/process.c kernel/isr.c kernel/misc.c kernel/elf.c kernel/syscall.c\
+	cpp/cpp_test.o 
+	$(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lm -lc -lgcc
+
+	#cpp/pingo/consolebackend.o cpp/pingo/main.o cpp/pingo/pingo_mesh.o cpp/pingo/viking.o cpp/pingo/mat3.o cpp/pingo/mat4.o cpp/pingo/vec2.o cpp/pingo/vec3.o cpp/pingo/vec4.o cpp/pingo/depth.o cpp/pingo/material.o cpp/pingo/mesh.o cpp/pingo/object.o cpp/pingo/pixel.o cpp/pingo/rasterizer.o cpp/pingo/renderable.o cpp/pingo/renderer.o cpp/pingo/scene.o cpp/pingo/sprite.o cpp/pingo/texture.o
+	#(cd cpp/pingo; ./manualmake.sh; cd ../..) && $(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lm -lc -lgcc
 
 user:
 	$(MAKE) -C userspace

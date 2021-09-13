@@ -3,10 +3,14 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2021.02.17
- * Last Modified Date: 2021.02.17
+ * Last Modified Date: 2021.09.05
  */
 #ifndef FS_H
 #define FS_H
+
+extern void* fs_kproc_entry;
+void fs_init();
+void fs_proc();
 
 typedef struct {
     unsigned char first_byte;

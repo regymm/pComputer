@@ -9,7 +9,6 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "stdint.h"
-#include "string.h"
 #include "kernel/global.h"
 #include "kernel/process.h"
 #include "kernel/isr.h"
@@ -98,7 +97,7 @@ void new_process_from_elf_in_memory(int* elf_addr, const char* name, int stack_s
 {
 	unsigned int* elf_entry_addr;
 	unsigned int* elf_stack_addr;
-	elf_header_check(elf_addr, stack_size, &elf_entry_addr, &elf_stack_addr);
+	load_dynamic_exec(elf_addr, stack_size, &elf_entry_addr, &elf_stack_addr);
 
 	ProcManager* pm = &procmanager;
 	// crit enter
@@ -107,7 +106,7 @@ void new_process_from_elf_in_memory(int* elf_addr, const char* name, int stack_s
 	Process* newproc = pm->proc_table + avail_pid;
 
 	newproc->pid = avail_pid;
-	char* nm = strcpy(newproc->name, name); // TODO: boundary check?
+	char* nm = elf_strcpy(newproc->name, name); // TODO: boundary check?
 	printk("new process name: %s\r\n", nm);
 
 	newproc->p_msg = NULL;
@@ -239,7 +238,7 @@ void software_renderer()
 	/**video_light_mode = 0xffffffff;*/
 	video_light_mode = (void *)0x94020000;
 	*video_light_mode = 0xffffffff;
-	sftrdr_main();
+	/*sftrdr_main();*/
 }
 
 void hdmi_test()
@@ -352,7 +351,7 @@ void sd_c_start() // the current "kernel"
 
 	prepare_processes();
 	load_libcso();
-	/*loadelf();*/
+	loadelf();
 	setupIRQ();
 
 	/*sdcard_fs_test();*/

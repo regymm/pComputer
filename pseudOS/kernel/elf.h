@@ -128,13 +128,13 @@ typedef struct
 typedef struct
 {
 	unsigned int addr;
-	char name[256];
+	char name[128];
 } DynLinkEntry;
 
 typedef struct
 {
 	int size;
-	DynLinkEntry tbl[4096];
+	DynLinkEntry tbl[2048];
 } DynLinkTable;
 
 DynLinkTable dynlinktbl;

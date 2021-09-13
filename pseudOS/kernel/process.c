@@ -50,12 +50,12 @@ void kproc_get_ticks()
 			printk("kproc_get_ticks: I'm still running!\r\n");
 			/*sendrec_syscall(0, 0, 0);*/
 		}
-		sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
+		//TODO/*sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
 		/*send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
 		int src = msg.source;
 		/*printk("kproc_get_ticks: call from proc %d\r\n", src);*/
 		msg.integer = ticks;
-		sendrec_syscall(IPC_SEND, msg.source, &msg);
+		//TODO/*sendrec_syscall(IPC_SEND, msg.source, &msg);*/
 		/*send_recv(IPC_SEND, src, &msg);*/
 
 		/*switch (msg.type) {*/
@@ -85,8 +85,9 @@ void proc1()
 		printk("proc a: %x\r\n", &msg);
 		/*msg.type = SYSCALL_GET_TICKS;*/
 		/*msg.source = */
-		sendrec_syscall(IPC_BOTH, KPROC_PID_GET_TICKS, &msg);
-		printk("proc1: getticks: %x\r\n", msg.integer);
+
+		/*sendrec_syscall(IPC_BOTH, KPROC_PID_GET_TICKS, &msg);*/
+		/*printk("proc1: getticks: %x\r\n", msg.integer);*/
 	}
 }
 void proc2()
@@ -253,8 +254,9 @@ int _msg_receive(Process* current, int src, Message* msg);
 // proc: caller proc
 // is a wrapper of real _msg_send and _msg_receive
 // this is called by kernel ISR after receiving ecall from processes
-int sendrec(int function, int src_dest, Message* msg, Process* proc)
+int sendrec(int function, int src_dest, Message* msg)
 {
+	Process* proc = procmanager.pid2proc(procmanager.proc_running);
 	/*printk("sendrec\r\n");*/
 	int caller = proc->pid;
 	msg->source = caller;
@@ -263,7 +265,8 @@ int sendrec(int function, int src_dest, Message* msg, Process* proc)
 		return  _msg_send(proc, src_dest, msg);
 	if (function == IPC_RECEIVE)
 		return  _msg_receive(proc, src_dest, msg);
-	panic("Invalid sendrec function!");
+	printk("SENDREC: ignored function: %d\r\n", function);
+	/*panic("Invalid sendrec function!");*/
 	return -1;
 }
 

@@ -62,12 +62,15 @@ typedef struct {
 } __attribute((packed)) StackFrame;
 
 typedef struct {
+	int type; // type is dumb, to be removed
+	int function;
 	int source;
-	int type;
-	union {
-		int integer;
-		void* pointer;
-	} ;
+	int param[8]; // param[1] for first parameter, etc. 
+	//int type;
+	//union {
+		//int integer;
+		//void* pointer;
+	//} ;
 } Message;
 
 typedef struct ProcessStruct{
@@ -117,7 +120,8 @@ typedef struct ProcManagerStruct{
 
 void ProcManagerInit();
 
-int sendrec(int function, int src_dest, Message* msg, Process* proc);
+//int sendrec(int function, int src_dest, Message* msg, Process* proc);
+int sendrec(int function, int src_dest, Message* msg);
 
 // TODO: a unified syscall for all functions, with sendrec the
 // most basic one

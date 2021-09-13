@@ -12,6 +12,7 @@
 #include "global.h"
 #include "stdio.h"
 #include "misc.h"
+#include "syscall.h"
 
 extern volatile unsigned int ticks;
 
@@ -58,18 +59,21 @@ static void isr_external_i_handler()
 			break;
 	}
 }
-static void isr_ecall_e_handler()
-{
-	/*printk("ecall handler\r\n");*/
-	int* regs_save_addr = REGS_SAVE_ADDR;
-	int ecall_function = regs_save_addr[0];
-	int ecall_src_dest = regs_save_addr[1];
-	Message* ecall_msg = (Message *)regs_save_addr[2];
-	/*printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);*/
-	sendrec(ecall_function, ecall_src_dest, ecall_msg, procmanager.pid2proc(procmanager.proc_running));
-	/*printk("ecall handler return\r\n");*/
-	procmanager.schedule();
-}
+/*static void isr_ecall_e_handler()*/
+/*{*/
+	/*[>printk("ecall handler\r\n");<]*/
+	/*int* regs_save_addr = REGS_SAVE_ADDR;*/
+	/*[>int ecall_src_dest = regs_save_addr[6]; // a6<]*/
+	/*int ecall_src_dest = regs_save_addr[6]; // a6*/
+	/*int ecall_function = regs_save_addr[7]; // a7*/
+	/*[>Message* ecall_msg = (Message *)regs_save_addr[2];<]*/
+	/*[>printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);<]*/
+	/*printk("\r\necall: %s regs: %d %d %d %d %d %d %d \r\n", regs_save_addr[6] == SYSCALL_PSEUDOS_SEND ? "SEND" : regs_save_addr[6] == SYSCALL_PSEUDOS_RECV ? "RECV" : "UNKNOWN", regs_save_addr[0], regs_save_addr[1], regs_save_addr[2], regs_save_addr[3], regs_save_addr[4], regs_save_addr[5], regs_save_addr[7]);*/
+	/*[>printk("ecall does nothing now\r\n");<]*/
+	/*[>sendrec(ecall_function, ecall_src_dest, ecall_msg, procmanager.pid2proc(procmanager.proc_running));<]*/
+	/*[>printk("ecall handler return\r\n");<]*/
+	/*procmanager.schedule();*/
+/*}*/
 
 // called by isr_asm, main ISR
 // when this is called context is already on REGS_SAVE_ADDR
@@ -100,7 +104,7 @@ void interrupt_service_routine()
 			break;
 		case 0x0000000b:
 			/*printk("ISR: ecall\r\n");*/
-			isr_ecall_e_handler();
+			syscall_handler();
 			break;
 	}
 
