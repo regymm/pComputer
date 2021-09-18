@@ -9,6 +9,7 @@
 #include "../kernel/syscall.h"
 #include "../kernel/global.h"
 #include "../kernel/misc.h"
+#include "../mmio_drivers/basic.h"
 
 void* fs_kproc_entry = fs_proc;
 
@@ -34,6 +35,12 @@ ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)
 	return xfrcnt;
 }
 
+ssize_t fs_readv(int fd, const struct iovec *iov, int iovcnt)
+{
+	int xfrcnt = 0;
+	return xfrcnt;
+}
+
 int fs_ioctl()
 {
 	return -1;
@@ -52,6 +59,9 @@ void fs_proc()
 			case SYS_writev:
 				retval = fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);
 				break;
+			case SYS_readv:
+				retval = fs_readv();
+				break;
 			case SYS_ioctl:
 				retval = fs_ioctl();
 				break;
@@ -60,6 +70,23 @@ void fs_proc()
 				retval = -1;
 				break;
 		}
+		// new strategy: let TTY/SDCard procs(each hw dev has 1 proc) do real work
+		// fs send them request, and reply to user proc only after 
+		// confirmation response from TTY/SD is received
+		// before which user proc blocks
+		//
+		// send them request is done by not IPC but direct enqueue
+		// with deadlock/race condition control
+		//  *now may just be turning off interrupt
+		// because we need FS proc handle IPCs from user procs all
+		// the time, say, UART output should still be availiable if
+		// SD card dies. 
+		//
+		// if enqueue fails them we have more IOs than pseudos could
+		// handle -- just return 0(bytes xfered) immediately, hopefully
+		// musl will keep requesting again and again until TTY/SD proc
+		// have some spare queue positions
+		//
 		/*msg.function = IPC_SEND;*/
 		// can be sure this will be quickly consumed by user proc?
 		// can not!

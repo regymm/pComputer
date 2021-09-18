@@ -2,10 +2,15 @@
 #define PSEUDOS_SYSCALL_H
 #include "unistd.h"
 
+void syscall_handler();
+
+// msg.type TODO: make this true
 #define SYSCALL_PSEUDOS_SEND 74
 #define SYSCALL_PSEUDOS_RECV 75
 
-void syscall_handler();
+// msg.function
+#define OS_sendrec 65535
+#define OS_fs_resume 65534
 
 #define SYS_io_setup 0
 #define SYS_io_destroy 1
@@ -283,14 +288,5 @@ void syscall_handler();
 #define SYS_pkey_mprotect 288
 #define SYS_pkey_alloc 289
 #define SYS_pkey_free 290
-
-#define SYS_sendrec 65535
-
-struct iovec {
-    void  *iov_base;    /* Starting address */
-    size_t iov_len;     /* Number of bytes to transfer */
-};
-
-ssize_t kernel_writev(int fd, const struct iovec *iov, int iovcnt);
 
 #endif

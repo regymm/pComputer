@@ -22,16 +22,16 @@
 #define NULL ((void *) 0)
 #endif
 
-// syscall IDs
-// TODO: syscall actually have to be same as linux
-#define SYSCALL_GET_TICKS 735
-#define SYSCALL_WRITE 75
-#define SYSCALL_READ 74
-
 // PIDs of kernel procs handling syscall requests
 #define KPROC_PID_TICKS 4
-#define KPROC_PID_TTY_HARDWARE 5
-#define KPROC_PID_FS 6
+#define KPROC_PID_FS 5
+#define KPROC_PID_MM 6
+#define KPROC_PID_TTY0 7
+#define KPROC_PID_TTY1 8
+#define KPROC_PID_TTY2 9
+#define KPROC_PID_SD0 10
+#define KPROC_PID_UD0 11
+#define KPROC_PID_ETH0 12
 
 #define LIBCSO_LOAD_ADDR 0x20700000
 

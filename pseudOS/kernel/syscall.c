@@ -3,7 +3,7 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2021.08.29
- * Last Modified Date: 2021.09.05
+ * Last Modified Date: 2021.09.18
  */
 #include "syscall.h"
 #include "global.h"
@@ -21,7 +21,6 @@
 // 2021.8.29
 // do have a SYS_sendrec call for "user-controlled" IPC though,
 // where user specify SEND or RECV and is only one ecall
-	// this is on user stack? need check
 void syscall_handler()
 {
 	/*printk("ecall handler\r\n");*/
@@ -60,6 +59,7 @@ void syscall_handler()
 			/*printk("Ignore ictrl\r\n");*/
 			/*break;*/
 		case SYS_writev:
+		case SYS_readv:
 			sendrec(ecall_send_rec, KPROC_PID_FS, msg);
 			/*if (ecall_send_rec == SYSCALL_PSEUDOS_RECV)*/
 				/*// crappy*/
@@ -69,6 +69,7 @@ void syscall_handler()
 			break;
 		default:
 			// should kill process or so in this case actually
+			// at least don't let the proc hang forever
 			printk("Unknown/Unsupported syscall: %d\r\n", ecall_function);
 			break;
 	}
