@@ -1,8 +1,12 @@
 ## pComputer
 
-A simple "computer" from scratch(PCB + RTL + ASM + C + OS), including RISC-V CPU and simple microkernel MMU-less OS, running on various FPGA dev boards. 
+A simple "computer" from scratch(PCB + RTL + ASM + C + OS), including RISC-V CPU(pCPU) and simple microkernel MMU-less OS(pseudOS), running on various FPGA dev boards. 
 
 ### Gallery
+
+**2021.09.13** Basic dynamic linking with musl libc worked. 
+
+![](./doc/src/gallery-2021-0913.jpg)
 
 **2021.05.01** Basic IPC working, code based on the orange's book by Yuan Yu
 
@@ -41,20 +45,22 @@ A simple "computer" from scratch(PCB + RTL + ASM + C + OS), including RISC-V CPU
 **Boards**
 
 - [x] xc7z010 PL @ SqueakyBoard [ref](https://github.com/ustcpetergu/SqueakyBoard)
-- [ ] xc7z020 PL @ PYNQ-Z1 w/ PMOD module [ref](https://reference.digilentinc.com/programmable-logic/pynq-z1/start)
-- [ ] xc7k325t @ Memblaze PBlaze 3 w/ extension board  [ref](https://www.tweaktown.com/reviews/6797/memblaze-pblaze3l-1-2tb-enterprise-pcie-ssd-review/index.html)
+- [x] xc7z020 PL @ PYNQ-Z1 w/ PMOD module [ref](https://reference.digilentinc.com/programmable-logic/pynq-z1/start)
+- [x] xc7k325t @ Memblaze PBlaze 3 w/ extension board  [ref](https://www.tweaktown.com/reviews/6797/memblaze-pblaze3l-1-2tb-enterprise-pcie-ssd-review/index.html)
 - [x] xc6slx16 @ Nameless LED controller module, UART only, SDRAM TODO
 - [ ] ep2c35 @ Cisco HWIC-3G-CDMA router module [ref](https://github.com/tomverbeure/cisco-hwic-3g-cdma), plan to buy
-- [ ] some lfe5u or ice40 w/ free software toolchain
+- [ ] Xilinx 7-series w/ free software toolchain(w/o Vivado)
+- [ ] lfe5u or ice40 w/ free software toolchain
 - [ ] K210 or some other hardcore RISCV
 
-**Processor**
+#### pCPU
 
 - [x] Multiple-cycle RISC-V RV32IM @ 62.5MHz
 - [x] M-mode CSR (partial but enough)
 - [x] Interrupt (timer, external, software)
 - [x] Exception (ecall, break, partial invalid instruction)
 - [ ] Supervisor/User privilege level support (not planned)
+- [ ] Basic/Custom memory protection
 - [ ] Sv32 MMU (not planned)
 - [ ] GDB debug over openocd JTAG
 
@@ -75,27 +81,27 @@ Peripherals
 - [x] HDMI character terminal
 - [x] HDMI frame buffer graphics, 320x240 8-bit color
 - [x] CH375 USB disk
-- [ ] W5500 ethernet module
+- [x] W5500 ethernet module
 - [ ] Ethernet module w/ RGMII
 - [ ] ESP8266 Wifi module
 - [ ] Timer
 
 Memory
 
-- [x] ESP-PSRAM64H as main memory, QPI mode @ 62.5M
+- [x] ESP-PSRAM64H as main memory, QPI mode @ 62.5M, burst R/W
 - [x] Cache, direct mapping configurable 32KB
 
 OS/Software
 
 - [x] Run RISC-V assembly
-- [x] Enough commands to run cross-compiled C code
+- [x] Run cross-compiled C code
 - [x] Use newlib for baremetal application
-- [x] Run pseudos
+- [x] Run pseudOS
 - [x] Port MicroPython
 - [x] Run CoreMark
 - [ ] Port some RTOS
 
-**pseudos**
+### pseudOS
 
 - [x] Boot from SD card (raw)
 - [ ] Boot from SD card (FAT32)
@@ -103,9 +109,10 @@ OS/Software
 - [x] Multitasking w/o MMU
 - [x] Microkernel framework, IPC send/receive (partial)
 - [x] Load simple ELF process from SD card
+- [x] Dynamic linking with musl libc.so
 - [ ] Syscall interface (doing)
 - [ ] Memory manager
-- [ ] Filesystem, block device layer
+- [ ] Filesystem, block/char device layer
 - [ ] (v)fork, exec
 - [ ] Shell
 - [ ] Text editor

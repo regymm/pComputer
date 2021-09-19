@@ -11,6 +11,7 @@
 #define FS_IO_OP_READ 1
 #define FS_IO_OP_WRITE 2
 typedef struct ioquest {
+	int pid; // PID of user proc who called
 	int op; // read or write
 	int count; // max xfer limit
 	char* buf; // read to or write from
@@ -25,6 +26,7 @@ typedef struct ioqueue {
 }IOQueue;
 
 // need to be in critical zone, don't need me remind
+// return 0 if success -- better check because near crit
 int ioenqueue(IOQueue* q, IOQuest* elem);
 int iodequeue(IOQueue* q, IOQuest* elem);
 int ioqueue_init(IOQueue* q);

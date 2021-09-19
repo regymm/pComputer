@@ -60,6 +60,7 @@ static void isr_external_i_handler()
 	}
 }
 /*static void isr_ecall_e_handler()*/
+// VOID
 /*{*/
 	/*[>printk("ecall handler\r\n");<]*/
 	/*int* regs_save_addr = REGS_SAVE_ADDR;*/
@@ -115,11 +116,11 @@ void interrupt_service_routine()
 	/*fflush(stdin);*/
 }
 
-void cli()
+inline void cli()
 {
 	csrw_mstatus(0x00000000);
 }
-void sti()
+inline void sti()
 {
 	csrw_mstatus(0x00000088);
 }

@@ -37,13 +37,13 @@ void syscall_handler()
 	int param_5 = regs_save_addr[4]; // parameters
 
 	/*printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);*/
-	printk("\r\nsyscall: %s regs: %d %d %d %d %d %d \r\n", regs_save_addr[6] == SYSCALL_PSEUDOS_SEND ? "SEND" : regs_save_addr[6] == SYSCALL_PSEUDOS_RECV ? "RECV" : "UNKNOWN", ecall_function, param_1, param_2, param_3, param_4, param_5);
+	printk("\r\nsyscall: %s regs: %d %d %d %d %d %d \r\n", regs_save_addr[6] == IPC_SEND ? "SEND" : regs_save_addr[6] == IPC_RECEIVE ? "RECV" : "UNKNOWN", ecall_function, param_1, param_2, param_3, param_4, param_5);
 	/*printk("ecall does nothing now\r\n");*/
 	/*sendrec(ecall_function, ecall_src_dest, ecall_msg, procmanager.pid2proc(procmanager.proc_running));*/
 	/*printk("ecall handler return\r\n");*/
 
 	// msg ptr is also passed via syscall regs
-	msg->type = ecall_send_rec == SYSCALL_PSEUDOS_RECV ? IPC_RECEIVE : IPC_SEND;
+	msg->type = ecall_send_rec;
 	msg->function = ecall_function;
 	msg->source = procmanager.proc_running;
 	msg->param[1] = param_1;

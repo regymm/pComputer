@@ -28,6 +28,7 @@ extern int csrr_mcause();
 void cli(); // disable interrupt
 void sti(); // enable interrupt
 
+// not sure IRQ is reliable at this moment
 #define IRQ_DEV_UART 2
 #define IRQ_DEV_GPIO 3
 #define IRQ_DEV_PS2 4

@@ -18,9 +18,8 @@
 #define PROC_STATE_READY 0b100000
 #define PROC_STATE_UNDEF 0b111111
 
-// TODO: merge with syscall
-#define IPC_SEND 34
-#define IPC_RECEIVE 37
+#define IPC_SEND 74 // should be same as musl
+#define IPC_RECEIVE 75 // should be same as musl
 #define IPC_BOTH 340
 #define IPC_TARGET_ANY (-363)
 #define IPC_TARGET_NONE (-364)

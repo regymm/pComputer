@@ -17,6 +17,17 @@ void fs_init()
 {
 }
 
+	// enqueue, then non-blockingly send
+
+void fs_resume_userproc(Message* msg)
+{
+	Message msg_send;
+	msg_send.function = OS_justamsg;
+	msg_send.source = KPROC_PID_FS;
+	msg_send.param[0] = 0;
+	sendrec(IPC_SEND, msg->param[0], &msg_send);
+}
+
 ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)
 {
 	if (fd != 1) {
@@ -46,6 +57,23 @@ int fs_ioctl()
 	return -1;
 }
 
+// new strategy:
+// let TTY/SDCard procs(each hw dev has 1 proc) do real work
+// fs send them request, and reply to user proc only after 
+// confirmation response from TTY/SD is received
+// before which user proc blocks
+//
+// send them request is done by not IPC but direct enqueue
+// with deadlock/race condition control
+//  *now may just be turning off interrupt
+// because we need FS proc handle IPCs from user procs all
+// the time, say, UART output should still be availiable if
+// SD card dies. 
+//
+// if enqueue fails them we have more IOs than pseudos could
+// handle -- just return 0(bytes xfered) immediately, hopefully
+// musl will keep requesting again and again until TTY/SD proc
+// have some spare queue positions
 void fs_proc()
 {
 	Message msg_send;
@@ -54,46 +82,32 @@ void fs_proc()
 	int sender_pid;
 	while(1) {
 		sendrec(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
-		sender_pid = msg.source;
+		/*sender_pid = msg.source;*/
 		switch (msg.function) {
+			case OS_fs_resume:
+				fs_resume_userproc(&msg);
+				break;
 			case SYS_writev:
-				retval = fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);
+				/*fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);*/
+				fs_writev(&msg);
 				break;
 			case SYS_readv:
-				retval = fs_readv();
+				retval = fs_readv(&msg);
 				break;
 			case SYS_ioctl:
-				retval = fs_ioctl();
+				retval = fs_ioctl(&msg);
 				break;
 			default:
 				printk("FS: unknown syscall function: %d\r\n", msg.function);
-				retval = -1;
 				break;
 		}
-		// new strategy: let TTY/SDCard procs(each hw dev has 1 proc) do real work
-		// fs send them request, and reply to user proc only after 
-		// confirmation response from TTY/SD is received
-		// before which user proc blocks
-		//
-		// send them request is done by not IPC but direct enqueue
-		// with deadlock/race condition control
-		//  *now may just be turning off interrupt
-		// because we need FS proc handle IPCs from user procs all
-		// the time, say, UART output should still be availiable if
-		// SD card dies. 
-		//
-		// if enqueue fails them we have more IOs than pseudos could
-		// handle -- just return 0(bytes xfered) immediately, hopefully
-		// musl will keep requesting again and again until TTY/SD proc
-		// have some spare queue positions
-		//
 		/*msg.function = IPC_SEND;*/
 		// can be sure this will be quickly consumed by user proc?
 		// can not!
-		msg_send.type = IPC_SEND; // again, living period problem
-		msg_send.source = KPROC_PID_FS;
-		msg_send.param[1] = retval;
-		sendrec(IPC_SEND, sender_pid, &msg_send);
+		/*msg_send.type = IPC_SEND; // again, living period problem*/
+		/*msg_send.source = KPROC_PID_FS;*/
+		/*msg_send.param[1] = retval;*/
+		/*sendrec(IPC_SEND, sender_pid, &msg_send);*/
 		
 	}
 

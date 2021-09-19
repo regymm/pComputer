@@ -5,12 +5,13 @@
 void syscall_handler();
 
 // msg.type TODO: make this true
-#define SYSCALL_PSEUDOS_SEND 74
-#define SYSCALL_PSEUDOS_RECV 75
+//#define SYSCALL_IPC_SEND 74
+//#define SYSCALL_IPC_RECV 75
 
 // msg.function
 #define OS_sendrec 65535
 #define OS_fs_resume 65534
+#define OS_justamsg 65533
 
 #define SYS_io_setup 0
 #define SYS_io_destroy 1
