@@ -106,7 +106,7 @@ void fs_proc_main()
 	for(i = 0; i < 200000; i++);
 	Message msg; // recv, being copied to and will not change
 	while(1) {
-		sendrec(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
+		daemon_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
 		printk("FS recv from %d, function %d\r\n", msg.source, msg.function);
 		/*sender_pid = msg.source;*/
 		switch (msg.function) {

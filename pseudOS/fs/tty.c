@@ -29,7 +29,7 @@ void proc_tty(int id)
 		Message msg; // both receive dummy and send
 		if (ioqueue_isempty(&q))
 			// this act only as wakeup
-			sendrec(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
+			daemon_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
 		else {
 			int reply = 0;
 			int retval = -1;
