@@ -3,9 +3,9 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2021.02.24
- * Last Modified Date: 2021.03.04
+ * Last Modified Date: 2021.09.21
  */
-// global variables required for kernel
+// global *variables* required for kernel
 #ifndef PSEUDOS_GLOBAL_H
 #define PSEUDOS_GLOBAL_H
 
@@ -46,6 +46,7 @@ extern volatile unsigned int ticks;
 extern SDCard sd0;
 extern Blk sdblk0;
 
+extern Uart uart0;
 extern Chr uarttty0;
 extern Chr hdmitty0;
 

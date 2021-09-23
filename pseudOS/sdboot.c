@@ -6,21 +6,25 @@
  * Last Modified Date: 2021.05.01
  */
 #include "fs/fs.h"
+#include "fs/tty.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "stdint.h"
+#include "string.h"
 #include "kernel/global.h"
 #include "kernel/process.h"
 #include "kernel/isr.h"
 #include "kernel/misc.h"
+#include "kernel/elf.h"
 #include "mmio_drivers/basic.h"
 #include "mmio_drivers/CH375.h"
-#include "mmio_drivers/sdcard.h"
-#include "mmio_drivers/sdcard_blk.h"
 #include "mmio_drivers/interrupt_unit.h"
 #include "mmio_drivers/timer.h"
 #include "mmio_drivers/w5500.h"
-#include "kernel/elf.h"
+#include "mmio_drivers/sdcard.h"
+#include "mmio_drivers/sdcard_blk.h"
+#include "mmio_drivers/uart.h"
+#include "mmio_drivers/uart_chr.h"
 #define false 0
 #define true 1
 
@@ -57,7 +61,13 @@ void sdcard_init()
 	unsigned int param = 0;
 	sdblk0.ioctl(&sdblk0, 0, &param);
 	sdblk0.load(&sdblk0);
+}
 
+void tty_init()
+{
+	printk("TTY init ...\r\n");
+	get_uart_0(&uart0);
+	get_uart_chr(&uarttty0, &uart0);
 }
 
 // address, size in 32-bit word, address
@@ -153,6 +163,21 @@ void load_libcso()
 void prepare_processes()
 {
 	ProcManagerInit();
+	ProcManager* pm = &procmanager;
+	Process* pt = pm->proc_table;
+	// register FS proc
+	pt[KPROC_PID_FS].pid = KPROC_PID_FS;
+	strcpy(pt[KPROC_PID_FS].name, "KPROC_FS");
+	pt[KPROC_PID_FS].pc = fs_proc_main;
+	pt[KPROC_PID_FS].regs.sp = 0x20100ffc;
+	pt[KPROC_PID_FS].state = PROC_STATE_READY;
+	// register TTY0 proc
+	pt[KPROC_PID_TTY0].pid = KPROC_PID_TTY0;
+	strcpy(pt[KPROC_PID_TTY0].name, "KPROC_TTY0");
+	pt[KPROC_PID_TTY0].pc = proc_tty;
+	pt[KPROC_PID_TTY0].regs.sp = 0x20104ffc;
+	pt[KPROC_PID_TTY0].regs.a0 = 0; // pass paremeters
+	pt[KPROC_PID_TTY0].state = PROC_STATE_READY;
 }
 
 
@@ -165,6 +190,7 @@ void hardware_init()
 	video_x = 0;
 	video_y = 0;
 	sdcard_init();
+	tty_init();
 	while(!w5500_isready());
 }
 
@@ -251,7 +277,7 @@ void hdmi_test()
 	video_base[0] = 0x03e01c1f;
 	video_base[10000] = 0x03e01c1f;
 	int base_color_arr[] = {0x00, 0x03, 0xe0, 0x1c, 0x1f, 0xe3, 0xfc, 0xff};
-	printf("%u\r\n", timer_ctrl[0]);
+	/*printf("%u\r\n", timer_ctrl[0]);*/
 	/*while(1)*/
 	for(i = 0; i < 240; i++) {
 		for(j = 0; j < 80; j++) {
@@ -268,7 +294,7 @@ void hdmi_test()
 			int clr = (i+j)%2 ? 0x1c : 0xe3;
 		}
 	}
-	printf("%u\r\n", timer_ctrl[0]);
+	/*printf("%u\r\n", timer_ctrl[0]);*/
 	/*while(1);*/
 }
 
@@ -282,6 +308,7 @@ void hardware_test()
 	printk("Const test %llu\r\n", 12348765LLU);
 	hdmi_test();
 	w5500_test();
+
 	/*printk("CH375b USB: \r\n");*/
 	/*usb_test();*/
 	/*usb_hid_test();*/
@@ -289,7 +316,7 @@ void hardware_test()
 
 void memory_test_halt()
 {
-	uart_putstr("Memory test failed!!");
+	uart_putstr("Memory test failed!!\r\n");
 	while(1);
 }
 void memory_test()
@@ -310,7 +337,7 @@ void memory_test()
 			memory_test();
 		}
 	}
-	uart_putstr("Memory test pass");
+	uart_putstr("Memory test passed\r\n");
 }
 
 // jumped from assembly to here
@@ -319,14 +346,14 @@ void sd_c_start() // the current "kernel"
 	uart_putstr("[sdcard]sd_c_start\r\n");
 	memory_test();
 	/*printk("Current tick %llu\r\n", get_timer_ticks());*/
-	printk("%d\r\n", ticks);
+	/*printk("%d\r\n", ticks);*/
 	hardware_init();
 	hardware_test();
 	cpp_test();
 	float_test();
 	/*software_renderer();*/
 	
-	printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);
+	/*printf("Printf test %d, %c, %x\r\n", 26, 'b', 0xabcd);*/
 
 	int i;
 	for(i = 0; i < 2; i++) {
@@ -336,15 +363,15 @@ void sd_c_start() // the current "kernel"
 	}
 	printk("\r\n\r\n");
 
-	unsigned short a = 1;
-	printk("%d\r\n", a);
-	printk("%d\r\n", (short)a);
-	unsigned int b = 1;
-	printk("%d\r\n", b);
-	printk("%d\r\n", (int)b);
-	short c = 1;
-	printk("%d\r\n", c);
-	printk("%d\r\n", (unsigned short)c);
+	/*unsigned short a = 1;*/
+	/*printk("%d\r\n", a);*/
+	/*printk("%d\r\n", (short)a);*/
+	/*unsigned int b = 1;*/
+	/*printk("%d\r\n", b);*/
+	/*printk("%d\r\n", (int)b);*/
+	/*short c = 1;*/
+	/*printk("%d\r\n", c);*/
+	/*printk("%d\r\n", (unsigned short)c);*/
 
 	/*printk("Current tick %llu\r\n", get_timer_ticks());*/
 	

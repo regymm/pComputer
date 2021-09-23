@@ -13,62 +13,62 @@
 #include "ipc.h"
 #include "isr.h"
 
-void kproc_tty_hardware()
-{
-	Message msg;
-	int sender;
-	char* buf;
-	int len;
-	int type;
-	while(1) {
-		sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
-		sender = msg.source;
-		buf = msg.pointer;
-		len = msg.integer;
-		type = msg.type;
-		if (type == SYSCALL_WRITE) {
+/*void kproc_tty_hardware()*/
+/*{*/
+	/*Message msg;*/
+	/*int sender;*/
+	/*char* buf;*/
+	/*int len;*/
+	/*int type;*/
+	/*while(1) {*/
+		/*sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
+		/*sender = msg.source;*/
+		/*buf = msg.pointer;*/
+		/*len = msg.integer;*/
+		/*type = msg.type;*/
+		/*if (type == SYSCALL_WRITE) {*/
 
-		} else if (type == SYSCALL_READ) {
-			msg.integer = -1;
-			printk("read not supported!\r\n");
-			sendrec_syscall(IPC_SEND, sender, &msg);
-		} else
-			panic("kproc_tty_hardware: unknown syscall type %d\r\n", type);
-		/*sendrec_syscall(IPC_SEND, msg.source, &msg);*/
-	}
-}
+		/*} else if (type == SYSCALL_READ) {*/
+			/*msg.integer = -1;*/
+			/*printk("read not supported!\r\n");*/
+			/*sendrec_syscall(IPC_SEND, sender, &msg);*/
+		/*} else*/
+			/*panic("kproc_tty_hardware: unknown syscall type %d\r\n", type);*/
+		/*[>sendrec_syscall(IPC_SEND, msg.source, &msg);<]*/
+	/*}*/
+/*}*/
 
-// a kernel-side process, handling requests from user procs
-void kproc_get_ticks()
-{
-	/*cli();*/
-	Message msg;
-	int count = 0;
-	while (1) {
-		count++;
-		if (count % 10000 == 0) {
-			printk("kproc_get_ticks: I'm still running!\r\n");
-			/*sendrec_syscall(0, 0, 0);*/
-		}
-		//TODO/*sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
-		/*send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);*/
-		int src = msg.source;
-		/*printk("kproc_get_ticks: call from proc %d\r\n", src);*/
-		msg.integer = ticks;
-		//TODO/*sendrec_syscall(IPC_SEND, msg.source, &msg);*/
-		/*send_recv(IPC_SEND, src, &msg);*/
-
-		/*switch (msg.type) {*/
-			/*case SYSCALL_GET_TICKS:*/
-				/*msg.integer = ticks;*/
-				/*send_recv(IPC_SEND, src, &msg);*/
-				/*break;*/
-			/*default:*/
-				/*panic("ksyscall: Unknown message type!\r\n");*/
-				/*break;*/
+/*// a kernel-side process, handling requests from user procs*/
+/*void kproc_get_ticks()*/
+/*{*/
+	/*[>cli();<]*/
+	/*Message msg;*/
+	/*int count = 0;*/
+	/*while (1) {*/
+		/*count++;*/
+		/*if (count % 10000 == 0) {*/
+			/*printk("kproc_get_ticks: I'm still running!\r\n");*/
+			/*[>sendrec_syscall(0, 0, 0);<]*/
 		/*}*/
-	}
-}
+		/*//TODO[>sendrec_syscall(IPC_RECEIVE, IPC_TARGET_ANY, &msg);<]*/
+		/*[>send_recv(IPC_RECEIVE, IPC_TARGET_ANY, &msg);<]*/
+		/*int src = msg.source;*/
+		/*[>printk("kproc_get_ticks: call from proc %d\r\n", src);<]*/
+		/*msg.integer = ticks;*/
+		/*//TODO[>sendrec_syscall(IPC_SEND, msg.source, &msg);<]*/
+		/*[>send_recv(IPC_SEND, src, &msg);<]*/
+
+		/*[>switch (msg.type) {<]*/
+			/*[>case SYSCALL_GET_TICKS:<]*/
+				/*[>msg.integer = ticks;<]*/
+				/*[>send_recv(IPC_SEND, src, &msg);<]*/
+				/*[>break;<]*/
+			/*[>default:<]*/
+				/*[>panic("ksyscall: Unknown message type!\r\n");<]*/
+				/*[>break;<]*/
+		/*[>}<]*/
+	/*}*/
+/*}*/
 
 void proc1()
 {
@@ -245,7 +245,7 @@ short _getavailpid()
 	return -1;
 }
 
-int _msg_send(Process* current, int dest, Message* msg);
+int _msg_send(Process* current, int dest, Message* msg, int nonblocking);
 int _msg_receive(Process* current, int src, Message* msg);
 
 // function: SEND or RECEIVE
@@ -262,7 +262,7 @@ int sendrec(int function, int src_dest, Message* msg)
 	msg->source = caller;
 	assert(msg->source != src_dest);
 	if (function == IPC_SEND)
-		return  _msg_send(proc, src_dest, msg);
+		return  _msg_send(proc, src_dest, msg, 0);
 	if (function == IPC_RECEIVE)
 		return  _msg_receive(proc, src_dest, msg);
 	printk("SENDREC: ignored function: %d\r\n", function);
@@ -270,8 +270,25 @@ int sendrec(int function, int src_dest, Message* msg)
 	return -1;
 }
 
+// TODO: rec support if really need
+int sendrec_nonblock(int function, int src_dest, Message* msg)
+{
+	Process* proc = procmanager.pid2proc(procmanager.proc_running);
+	/*printk("sendrec\r\n");*/
+	int caller = proc->pid;
+	msg->source = caller;
+	assert(msg->source != src_dest);
+	if (function == IPC_SEND)
+		return  _msg_send(proc, src_dest, msg, 1);
+	/*if (function == IPC_RECEIVE)*/
+		/*return  _msg_receive(proc, src_dest, msg);*/
+	printk("SENDREC_NONBLOCK: ignored function: %d\r\n", function);
+	/*panic("Invalid sendrec function!");*/
+	return -1;
+}
+
 // these should also finish immediately
-int _msg_send(Process* current, int dest, Message* msg)
+int _msg_send(Process* current, int dest, Message* msg, int nonblocking)
 {
 	/*printk("_msg_send %d to %d\r\n", current->pid, dest);*/
 	Process* p_send = current;
@@ -296,36 +313,41 @@ int _msg_send(Process* current, int dest, Message* msg)
 		/*procmanager.unblock(p_dest);*/
 
 		// TODO: asserts
-
 	}
-	// p_dest is not waiting from p_send, so block sender
+
+	// if nonblocking send then already fail(skip)
 	else {
-		/*printk("_msg_send: block sender %d\r\n", p_send->pid);*/
-		p_send->state |= PROC_STATE_SENDING;
-		assert(p_send->state == PROC_STATE_SENDING);
-		p_send->p_sendto = dest;
-		p_send->p_msg = msg;
+		if (nonblocking == 1) return -1;
 
-		// enqueue into p_dest's queue
-		if (p_dest->queue_sending) {
-			Process* p = p_dest->queue_sending;
-			while (p_dest->queue_sending_next)
-				p = p->queue_sending_next;
-			p->queue_sending_next = p_send;
-		}
+		// p_dest is not waiting from p_send, so block sender
 		else {
-			p_dest->queue_sending = p_send;
+			/*printk("_msg_send: block sender %d\r\n", p_send->pid);*/
+			p_send->state |= PROC_STATE_SENDING;
+			assert(p_send->state == PROC_STATE_SENDING);
+			p_send->p_sendto = dest;
+			p_send->p_msg = msg;
+
+			// enqueue into p_dest's queue
+			if (p_dest->queue_sending) {
+				Process* p = p_dest->queue_sending;
+				while (p_dest->queue_sending_next)
+					p = p->queue_sending_next;
+				p->queue_sending_next = p_send;
+			}
+			else {
+				p_dest->queue_sending = p_send;
+			}
+
+			/*procmanager.block(p_send);*/
+
+			// TODO: assert
+			assert(p_send->state == PROC_STATE_SENDING);
+			assert(p_send->p_msg != 0);
+			assert(p_send->p_recvfrom == IPC_TARGET_NONE);
+			assert(p_send->p_sendto == dest);
+
+
 		}
-
-		/*procmanager.block(p_send);*/
-
-		// TODO: assert
-		assert(p_send->state == PROC_STATE_SENDING);
-		assert(p_send->p_msg != 0);
-		assert(p_send->p_recvfrom == IPC_TARGET_NONE);
-		assert(p_send->p_sendto == dest);
-
-
 	}
 
 	return 0;
@@ -467,7 +489,7 @@ void ProcManagerInit()
 	}
 
 	pm->proc_max = PROC_NUM_MAX;
-	pm->proc_number = 4;
+	pm->proc_number = 3; // no use
 	pm->proc_running = 1;
 
 	pm->schedule = _proc_schedule;
@@ -491,8 +513,8 @@ void ProcManagerInit()
 	pt[3].pc = proc3;
 	pt[3].regs.sp = 0x2010dffc;
 	pt[3].state = PROC_STATE_READY;
-	pt[4].pid = 4;
-	pt[4].pc = kproc_get_ticks;
-	pt[4].regs.sp = 0x2010cffc;
-	pt[4].state = PROC_STATE_READY;
+	/*pt[4].pid = 4;*/
+	/*pt[4].pc = kproc_get_ticks;*/
+	/*pt[4].regs.sp = 0x2010cffc;*/
+	/*pt[4].state = PROC_STATE_READY;*/
 }

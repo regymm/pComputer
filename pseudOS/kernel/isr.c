@@ -28,7 +28,7 @@ static void isr_timer_i_handler()
 	}
 
 }
-void isr_irq_uart_handler()
+void isr_irq_uart0_handler()
 {
 	char c = *uart_rx_data;
 	printk("UART IRQ: %c\r\n", c);
@@ -45,8 +45,8 @@ static void isr_external_i_handler()
 {
 	int irq_dev = interrupt_ctrl[1];
 	switch (irq_dev) {
-		case IRQ_DEV_UART:
-			isr_irq_uart_handler();
+		case IRQ_DEV_UART0:
+			isr_irq_uart0_handler();
 			break;
 		case IRQ_DEV_GPIO:
 			isr_irq_gpio_handler();

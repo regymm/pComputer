@@ -29,9 +29,13 @@ void cli(); // disable interrupt
 void sti(); // enable interrupt
 
 // not sure IRQ is reliable at this moment
-#define IRQ_DEV_UART 2
-#define IRQ_DEV_GPIO 3
-#define IRQ_DEV_PS2 4
+// for things like SDCard, polling is enought. 
+// but input devices must be IRQ driven
+#define IRQ_DEV_UART0 2
+#define IRQ_DEV_UART1 3
+#define IRQ_DEV_UART2 4
+#define IRQ_DEV_GPIO 5
+#define IRQ_DEV_PS2 6
 
 // main interrupt service routine
 void interrupt_service_routine();

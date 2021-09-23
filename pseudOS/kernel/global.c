@@ -11,3 +11,7 @@
 
 ProcManager procmanager;
 volatile unsigned int ticks = 0x0;
+SDCard sd0;
+Blk sdblk0; 
+Uart uart0;
+Chr uarttty0;

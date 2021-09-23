@@ -3,31 +3,56 @@
  * License           : GPL-3.0-or-later
  * Author            : Peter Gu <github.com/ustcpetergu>
  * Date              : 2021.02.17
- * Last Modified Date: 2021.09.05
+ * Last Modified Date: 2021.09.21
  */
 #include "fs.h"
+#include "tty.h"
 #include "../kernel/syscall.h"
 #include "../kernel/global.h"
 #include "../kernel/misc.h"
+#include "../kernel/isr.h"
 #include "../mmio_drivers/basic.h"
 
-void* fs_kproc_entry = fs_proc;
+void* fs_kproc_entry = fs_proc_main;
 
 void fs_init()
 {
 }
 
-	// enqueue, then non-blockingly send
 
 void fs_resume_userproc(Message* msg)
 {
 	Message msg_send;
 	msg_send.function = OS_justamsg;
-	msg_send.source = KPROC_PID_FS;
-	msg_send.param[0] = 0;
-	sendrec(IPC_SEND, msg->param[0], &msg_send);
+	msg_send.param[0] = msg->param[0];
+	// send, userproc, msg with return value
+	sendrec(IPC_SEND, msg->param[1], &msg_send);
 }
 
+// enqueue, then non-blockingly send
+void fs_request_by_fd(Message* msg)
+{
+	if (msg->param[1] <= 2) {
+		// find TTY by user proc pid
+		// now we have only TTY0
+		/*msg->source;*/
+		IOQueue* q = ttyproc_queue[0];
+		IOQuest* elem = msg;
+		// no enqueue from other places, so should be safe
+		while (!ioqueue_isfull(q));
+		cli();
+		if (!ioenqueue(q, elem))
+			panic("FS: enqueue to TTY failed!\r\n");
+		sti();
+		return;
+	}
+	// find target filesystem by fd
+}
+
+void fs_request_by_path(Message* msg)
+{}
+
+				/*fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);*/
 ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)
 {
 	if (fd != 1) {
@@ -46,19 +71,8 @@ ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)
 	return xfrcnt;
 }
 
-ssize_t fs_readv(int fd, const struct iovec *iov, int iovcnt)
-{
-	int xfrcnt = 0;
-	return xfrcnt;
-}
-
-int fs_ioctl()
-{
-	return -1;
-}
-
 // new strategy:
-// let TTY/SDCard procs(each hw dev has 1 proc) do real work
+// let TTY/FS procs(each FS or TTY has 1 proc) do real work
 // fs send them request, and reply to user proc only after 
 // confirmation response from TTY/SD is received
 // before which user proc blocks
@@ -74,28 +88,42 @@ int fs_ioctl()
 // handle -- just return 0(bytes xfered) immediately, hopefully
 // musl will keep requesting again and again until TTY/SD proc
 // have some spare queue positions
-void fs_proc()
+//
+// FS/TTY proc:
+// each per FS or TTY
+// (an SDCard HW can have multiple FS procs related)
+// check IO request queue, handle these by accessing
+// hardware, need hardware resource control and deadlock
+// prevention
+// they can work for a long time before reply, no worries
+//
+// fs_proc_main aka dispatcher, infer FS/TTY proc to enqueue
+// by the fd or path in syscall Msg
+void fs_proc_main()
 {
-	Message msg_send;
+	printk("FS: daemon started\r\n");
+	int i;
+	for(i = 0; i < 200000; i++);
 	Message msg; // recv, being copied to and will not change
-	int retval;
-	int sender_pid;
 	while(1) {
 		sendrec(IPC_RECEIVE, IPC_TARGET_ANY, &msg);
+		printk("FS recv from %d, function %d\r\n", msg.source, msg.function);
 		/*sender_pid = msg.source;*/
 		switch (msg.function) {
+			// syscall -- fd
+			case SYS_ioctl:
+			case SYS_readv:
+			case SYS_writev:
+				fs_request_by_fd(&msg);
+				break;
+			// syscall -- path
+			case SYS_openat:
+			case SYS_close:
+				fs_request_by_path(&msg);
+				break;
+			// finished request
 			case OS_fs_resume:
 				fs_resume_userproc(&msg);
-				break;
-			case SYS_writev:
-				/*fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);*/
-				fs_writev(&msg);
-				break;
-			case SYS_readv:
-				retval = fs_readv(&msg);
-				break;
-			case SYS_ioctl:
-				retval = fs_ioctl(&msg);
 				break;
 			default:
 				printk("FS: unknown syscall function: %d\r\n", msg.function);

@@ -18,7 +18,7 @@ struct iovec {
 
 extern void* fs_kproc_entry;
 void fs_init();
-void fs_proc();
+void fs_proc_main();
 
 //typedef struct {
     //unsigned char first_byte;

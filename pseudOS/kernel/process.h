@@ -62,7 +62,6 @@ typedef struct {
 } __attribute((packed)) StackFrame;
 
 typedef struct {
-	int type; // type is dumb, to be removed
 	int function;
 	int source;
 	int param[8]; // param[1] for first parameter, etc. 
@@ -121,7 +120,9 @@ typedef struct ProcManagerStruct{
 void ProcManagerInit();
 
 //int sendrec(int function, int src_dest, Message* msg, Process* proc);
+// intended to be called in system processes
 int sendrec(int function, int src_dest, Message* msg);
+int sendrec_nonblock(int function, int src_dest, Message* msg);
 
 // TODO: a unified syscall for all functions, with sendrec the
 // most basic one

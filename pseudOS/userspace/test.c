@@ -23,9 +23,16 @@ int main()
 		j++;
 		for(i = 0; i < 50000; i++);
 		uart_putstr("user_proc\r\n");
-		printf("printf test %08x", &i);
+
+		printf("printf test %08x\n", &i);
+		printf("printf test %08x\n", &j);
 		fflush(stdout);
-		int a = 10;
+
+		uart_putstr("scanf test\r\n");
+		int in;
+		scanf("%d", &in);
+		printf("input is %d\r\n", in);
+		fflush(stdout);
 		/*int b = sqrt(a);*/
 		/*printf("%d", b);*/
 		/*return 0;*/

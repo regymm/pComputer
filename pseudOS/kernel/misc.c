@@ -18,6 +18,7 @@ void halt()
 
 void printk(const char* fmt, ...)
 {
+	/*printf("[%6d]", ticks);*/
 	va_list args;
 	va_start(args, fmt);
 	vprintf(fmt, args);

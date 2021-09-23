@@ -45,11 +45,10 @@ cpp/cpp_test.o: cpp/cpp_test.cpp
 	$(CPP) $(CPPFLAGS) -c -g $^ -o $@
 
 sdboot.elf: sdboot.S sdboot.c \
-	mmio_drivers/basic.c mmio_drivers/interrupt_unit.c mmio_drivers/ps2.c mmio_drivers/sdcard.c mmio_drivers/sdcard_blk.c \
-	mmio_drivers/timer.c mmio_drivers/CH375.c mmio_drivers/w5500.c\
+	mmio_drivers/*.c \
 	newlib/crt0.S newlib/syscall.c \
-	fs/fs.c \
-	kernel/global.c kernel/process.c kernel/isr.c kernel/misc.c kernel/elf.c kernel/syscall.c\
+	fs/*.c \
+	kernel/*.c \
 	cpp/cpp_test.o 
 	$(CC) $(CC_L_F) -fPIC -g -lc -lgcc $^ -o $@ -fPIE -pie -T linker_sdboot.ld  -lm -lc -lgcc
 

@@ -1,8 +1,8 @@
 #include "basic.h"
 #include "uart_chr.h"
 
-extern Uart uart0;
-extern Chr uartchr0;
+/*extern Uart uart0;*/
+/*extern Chr uartchr0;*/
 
 int get_uart_chr(Chr* uartchr, Uart* u)
 {

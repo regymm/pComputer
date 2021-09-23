@@ -7,15 +7,17 @@
  */
 #ifndef PSEUDOS_IOQUEUE_H
 #define PSEUDOS_IOQUEUE_H
+#include "../kernel/process.h"
 
 #define FS_IO_OP_READ 1
 #define FS_IO_OP_WRITE 2
-typedef struct ioquest {
-	int pid; // PID of user proc who called
-	int op; // read or write
-	int count; // max xfer limit
-	char* buf; // read to or write from
-}IOQuest;
+typedef Message IOQuest;
+//typedef struct ioquest {
+	//int pid; // PID of user proc who called
+	//int op; // read or write
+	//int count; // max xfer limit
+	//char* buf; // read to or write from
+//}IOQuest;
 
 #define FS_IOQUEUE_LEN 10
 typedef struct ioqueue {
