@@ -177,6 +177,7 @@ void prepare_processes()
 	pt[KPROC_PID_TTY0].pc = proc_tty;
 	pt[KPROC_PID_TTY0].regs.sp = 0x20104ffc;
 	pt[KPROC_PID_TTY0].regs.a0 = 0; // pass paremeters
+	pt[KPROC_PID_TTY0].regs.a1 = (int)&uarttty0;
 	pt[KPROC_PID_TTY0].state = PROC_STATE_READY;
 }
 

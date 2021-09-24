@@ -78,11 +78,11 @@ void proc1()
 	cli();
 	printk("proc1 begin ...\r\n");
 	sti();
-	Message msg;
+	/*Message msg;*/
 	while (1) {
 		for (i = 0; i < 80000; i++);
 		printk("A");
-		printk("proc a: %x\r\n", &msg);
+		/*printk("proc a: %x\r\n", &msg);*/
 		/*msg.type = SYSCALL_GET_TICKS;*/
 		/*msg.source = */
 

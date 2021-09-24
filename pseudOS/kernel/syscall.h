@@ -1,7 +1,9 @@
 #ifndef PSEUDOS_SYSCALL_H
 #define PSEUDOS_SYSCALL_H
 #include "unistd.h"
+#include "process.h"
 
+void daemon_syscall(int, int, Message*);
 void syscall_handler();
 
 // msg.type TODO: make this true
@@ -12,6 +14,7 @@ void syscall_handler();
 #define OS_sendrec 65535
 #define OS_fs_resume 65534
 #define OS_justamsg 65533
+#define OS_send_nonblk 65532
 
 #define SYS_io_setup 0
 #define SYS_io_destroy 1

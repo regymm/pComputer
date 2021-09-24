@@ -29,24 +29,36 @@ void fs_resume_userproc(Message* msg)
 	sendrec(IPC_SEND, msg->param[1], &msg_send);
 }
 
+void fs_notify_target(int pid)
+{
+	printk("FS: notify target\r\n");
+	Message msg_send;
+	msg_send.function = OS_send_nonblk;
+	daemon_syscall(IPC_SEND, pid, &msg_send);
+}
+
 // enqueue, then non-blockingly send
 void fs_request_by_fd(Message* msg)
 {
-	if (msg->param[1] <= 2) {
+	printk("FS: request by fd\r\n");
+	if (msg->param[0] <= 2) {
 		// find TTY by user proc pid
 		// now we have only TTY0
 		/*msg->source;*/
 		IOQueue* q = ttyproc_queue[0];
 		IOQuest* elem = msg;
 		// no enqueue from other places, so should be safe
-		while (!ioqueue_isfull(q));
+		while (ioqueue_isfull(q));
 		cli();
-		if (!ioenqueue(q, elem))
+		printk("FS: fd: crit enqueue\r\n");
+		if (ioenqueue(q, elem) != 0)
 			panic("FS: enqueue to TTY failed!\r\n");
 		sti();
+		fs_notify_target(KPROC_PID_TTY0);
 		return;
 	}
 	// find target filesystem by fd
+	panic("FS: unsuppored FD!\r\n");
 }
 
 void fs_request_by_path(Message* msg)

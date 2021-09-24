@@ -51,7 +51,7 @@ void syscall_handler()
 	/*int param_5 = regs_save_addr[4]; // parameters*/
 
 	/*printk("ecall: %d %d %x \r\n", ecall_function, ecall_src_dest, ecall_msg);*/
-	printk("\r\nsyscall: %s regs: %d %d %d %d %d %d \r\n", sendorrecv == IPC_SEND ? "SEND" : sendorrecv == IPC_RECEIVE ? "RECV" : "UNKNOWN", msg->function, msg->param[0], msg->param[1], msg->param[2], msg->param[3], msg->param[4]);
+	/*printk("\r\n(%2d)syscall: %s regs: %d %d %d %d %d %d \r\n", procmanager.proc_running, sendorrecv == IPC_SEND ? "SEND" : sendorrecv == IPC_RECEIVE ? "RECV" : "UNKNOWN", msg->function, msg->param[0], msg->param[1], msg->param[2], msg->param[3], msg->param[4]);*/
 	/*printk("ecall does nothing now\r\n");*/
 	/*sendrec(ecall_function, ecall_src_dest, ecall_msg, procmanager.pid2proc(procmanager.proc_running));*/
 	/*printk("ecall handler return\r\n");*/
@@ -99,8 +99,14 @@ void syscall_handler()
 		}
 
 	int status = -1;
-	if (src_dest != -1)
-		status = sendrec(sendorrecv, src_dest, msg);
+	if (src_dest != -1) {
+		if (msg->function != OS_send_nonblk)
+			status = sendrec(sendorrecv, src_dest, msg);
+		else {
+			/*printk("syscall: nonblocking send\r\n");*/
+			status = sendrec_nonblock(sendorrecv, src_dest, msg);
+		}
+	}
 	if (status != 0)
 		printk("syscall: warn: sendrec failed or not run\r\n");
 	procmanager.schedule();

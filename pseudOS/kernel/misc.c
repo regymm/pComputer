@@ -15,15 +15,17 @@ void halt()
 {
 	while (1);
 }
-
+#define PRINTK_EN
 void printk(const char* fmt, ...)
 {
+#ifdef PRINTK_EN
 	/*printf("[%6d]", ticks);*/
 	va_list args;
 	va_start(args, fmt);
 	vprintf(fmt, args);
 	va_end(args);
 	fflush(stdout);
+#endif
 }
 
 void panic0(const char* str)

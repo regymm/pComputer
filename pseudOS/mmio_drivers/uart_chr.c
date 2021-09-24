@@ -43,7 +43,7 @@ int uart_chr_write(Chr* self, int size, char* str)
 	while(! *u->tx_done);
 	for (i = 0; i < size; i++) {
 		*u->tx = str[i];
-		while(! u->tx_done);
+		while(! *u->tx_done);
 	}
 	return size;
 }

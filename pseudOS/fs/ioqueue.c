@@ -13,7 +13,7 @@ int ioqueue_init(IOQueue* q)
 	q->size = 0;
 	q->head = 0;
 	q->tail = 0;
-	memset(q->list, FS_IOQUEUE_LEN, sizeof(IOQuest));
+	memset(q->list, 0, FS_IOQUEUE_LEN * sizeof(IOQuest));
 	return 0;
 }
 
@@ -38,7 +38,8 @@ int ioenqueue(IOQueue* q, IOQuest* elem)
 int iodequeue(IOQueue *q, IOQuest *elem)
 {
 	if (ioqueue_isempty(q)) return -1;
-	memset(q->list + q->head, 1, sizeof(IOQuest));
+	*elem = q->list[q->head];
+	memset(q->list + q->head, 0, 1 * sizeof(IOQuest));
 	q->head = (q->head + 1) % FS_IOQUEUE_LEN;
 	return 0;
 }
