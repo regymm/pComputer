@@ -7,6 +7,7 @@
  */
 #include "fs.h"
 #include "tty.h"
+#include "fss.h"
 #include "../kernel/syscall.h"
 #include "../kernel/global.h"
 #include "../kernel/misc.h"
@@ -26,7 +27,8 @@ void fs_resume_userproc(Message* msg)
 	msg_send.function = OS_justamsg;
 	msg_send.param[0] = msg->param[0];
 	// send, userproc, msg with return value
-	sendrec(IPC_SEND, msg->param[1], &msg_send);
+	/*sendrec(IPC_SEND, msg->param[1], &msg_send);*/
+	daemon_syscall(IPC_SEND, msg->param[1], &msg_send);
 }
 
 void fs_notify_target(int pid)
@@ -64,24 +66,24 @@ void fs_request_by_fd(Message* msg)
 void fs_request_by_path(Message* msg)
 {}
 
-				/*fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);*/
-ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)
-{
-	if (fd != 1) {
-		printk("writev: only stdout supported!\r\n");
-		return 0;
-	}
-	int i, j;
-	int xfrcnt = 0;
-	for (i = 0; i < iovcnt; i++) {
-		const struct iovec *iovec2xfr = iov + i;
-		printk("**%d\r\n", iovec2xfr->iov_len);
-		for (j = 0; j < iovec2xfr->iov_len; j++)
-			uart_putchar(*((char*)iovec2xfr->iov_base + j));
-		xfrcnt += iovec2xfr->iov_len;
-	}
-	return xfrcnt;
-}
+				/*[>fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);<]*/
+/*ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)*/
+/*{*/
+	/*if (fd != 1) {*/
+		/*printk("writev: only stdout supported!\r\n");*/
+		/*return 0;*/
+	/*}*/
+	/*int i, j;*/
+	/*int xfrcnt = 0;*/
+	/*for (i = 0; i < iovcnt; i++) {*/
+		/*const struct iovec *iovec2xfr = iov + i;*/
+		/*printk("**%d\r\n", iovec2xfr->iov_len);*/
+		/*for (j = 0; j < iovec2xfr->iov_len; j++)*/
+			/*uart_putchar(*((char*)iovec2xfr->iov_base + j));*/
+		/*xfrcnt += iovec2xfr->iov_len;*/
+	/*}*/
+	/*return xfrcnt;*/
+/*}*/
 
 // new strategy:
 // let TTY/FS procs(each FS or TTY has 1 proc) do real work
