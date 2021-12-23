@@ -15,14 +15,12 @@
 IOQueue* ttyproc_queue[10];
 
 // our beloved TTY
-// TODO: use a chr dev instead of hard coded uart0
 void proc_tty(int id, Chr* ttydev)
 {
 	printk("TTY%d: daemon started\r\n", id);
 	// should have some way to let FS know if TTY proc is ready
 	IOQueue q;
 	ioqueue_init(&q);
-	// TODO: how to know it's the first?
 	ttyproc_queue[id] = &q;
 	printk("TTY%d: queue inited\r\n", id);
 

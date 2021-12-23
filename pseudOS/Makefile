@@ -1,5 +1,5 @@
 #RISCV	=	/opt/riscv32ima/bin/riscv32-unknown-linux-gnu-
-RISCVDIR=	/opt/riscv32i
+#RISCVDIR=	/opt/riscv32i
 RISCV	=	riscv32-unknown-elf-
 AS		=	$(RISCV)as
 ASFLAGS	=	-march=rv32im -mabi=ilp32
