@@ -1,6 +1,7 @@
 #ifndef PSEUDOS_BLK_H
 #define PSEUDOS_BLK_H
 
+#include "stdlib.h"
 // a hardware block device should provide these
 // functions to be used by pseudos block device layer
 // - obtain, release
@@ -29,5 +30,8 @@ typedef struct Blk{
 	int (* isdirty)(struct Blk* self);
 	void* obj;
 } Blk;
+
+// this is convinient to use
+int blk_seek_and_read(Blk* blk, unsigned long seek, unsigned long bytes, char* buf);
 
 #endif

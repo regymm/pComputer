@@ -90,17 +90,28 @@ int FAT32_Read(FSDrv* self, char* file, uint32_t seek, uint32_t size, uint8_t* b
 		int record_cnt = 0;
 		do {
 			blk_seek_and_read(self->blk, 0x200 * (fat32->cluster_begin_lba + (fat_entry - 2) * fat32->sectors_per_cluster) + record_cnt * sizeof(record), sizeof(record), (char*)&record);
+			/*printf("%.11s (%04x%04x)", record.shortname, record.file_cluster_high, record.file_cluster_low);*/
 			record_cnt++;
 			int is_valid_file = 1;
 			if (record.shortname[0] == '\x00' || record.shortname[0] == '\xe5' || record.attrib_d || (record.attrib_r & record.attrib_h & record.attrib_s & record.attrib_v)) {
-
-				printf("SKIP");
+				/*printf("SKIP\n");*/
 				is_valid_file = 0;
-				/*continue;*/
 			}
-			if (is_valid_file) printf("FILE %.8s%.3s\n", record.shortname, record.shortname+8);
-			if (is_valid_file && strncmp(record.shortname, name, 8) == 0 && \
-					strncmp(record.shortname+8, ext, 3) == 0) {
+			/*if (is_valid_file) printf("FILE %.8s%.3s\n", record.shortname, record.shortname+8);*/
+
+			char rec_name[15];
+			char rec_ext[15];
+			strncpy(rec_name, record.shortname, 8);
+			strncpy(rec_ext, record.shortname+8, 3);
+			i = 7; while (i >= 0 && rec_name[i] == ' ') rec_name[i--] = '\0';
+			i = 3; while (i >= 0 && rec_ext[i] == ' ') rec_ext[i--] = '\0';
+			rec_name[8] = '\0';
+			rec_ext[3] = '\0';
+			if (is_valid_file) printf("FAT32_Read: file %s(.)%s\n", rec_name, rec_ext);
+
+			if (is_valid_file &&  \
+					strcmp(rec_name, name) == 0 && \
+					strcmp(rec_ext, ext) == 0) {
 				printk("FAT32_Read: file found\r\n");
 				// found file
 				uint32_t file_cluster = (record.file_cluster_high << 16) + record.file_cluster_low;
@@ -112,20 +123,26 @@ int FAT32_Read(FSDrv* self, char* file, uint32_t seek, uint32_t size, uint8_t* b
 				uint32_t fat_entry_next = 0;
 				while (fat_entry < 0x0fffffff) {
 					printk("FAT32_Read: fat_entry %08x\r\n", fat_entry);
-					blk_seek_and_read(self->blk, 0x200 * (fat32->fat_begin_lba + fat_entry * (32/8)), sizeof(uint32_t), (char*)&fat_entry_next);
-					if (fat_entry_next != fat_entry + 1) {
-						printk("FAT32_Read: non-continuous file no supported!\r\n");
+					blk_seek_and_read(self->blk, 0x200 * fat32->fat_begin_lba + fat_entry * (32/8), sizeof(uint32_t), (char*)&fat_entry_next);
+					printk("FAT32_Read: fat_entry_next %08x\r\n", fat_entry_next);
+					if (fat_entry_next < 0x0fffffff && fat_entry_next != fat_entry + 1) {
+						printk("FAT32_Read: non-continuous file no supported(%08x, %08x)!\r\n", fat_entry, fat_entry_next);
 						return -1;
 					}
 					fat_entry = fat_entry_next;
 				}
 				// read continous from file to buffer
 				// need to handle this instead of error
-				if (file_size > seek + size) {
-					printk("FAT32_Read: read out of file size!\r\n");
-					return -1;
-				}
+				/*if (file_size > seek + size) {*/
+					/*printk("FAT32_Read: warning: read out of file size!\r\n");*/
+					/*blk_seek_and_read(self->blk, 0x200 * (fat32->cluster_begin_lba + fat32->sectors_per_cluster * (file_cluster - 2)) + seek, file_size - seek, (char*)buf);*/
+					/*return file_size;*/
+				/*}*/
 				printk("FAT32_Read: begin to read file\r\n");
+				if (file_size < seek + size) {
+					printk("FAT32_Read: read out of file size!\r\n");
+					size = file_size - seek;
+				}
 				blk_seek_and_read(self->blk, 0x200 * (fat32->cluster_begin_lba + fat32->sectors_per_cluster * (file_cluster - 2)) + seek, size, (char*)buf);
 				return size;
 

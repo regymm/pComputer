@@ -100,7 +100,10 @@ int main(int argc, char* argv[])
 	fsdrv.init(&fsdrv);
 
 	uint8_t file[100000];
-	fsdrv.read(&fsdrv, "/UENV.TXT", 0, 0x188, file);
+	fsdrv.read(&fsdrv, "/UENV.TXT", 0x20, 0x1880, file);
+	for (int i = 0; i < 0x1880; i++) {
+		printf("%c", file[i]);
+	}
 
 
 	return 0;
