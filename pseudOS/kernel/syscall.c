@@ -32,6 +32,10 @@ void daemon_syscall(int a0_sendorrec, int a1_src_dest, Message* a2_msg)
 // where user specify SEND or RECV and is only one ecall
 void syscall_handler()
 {
+	// manual pc + 4
+	int oldpc = csrr_mepc();
+	csrw_mepc(oldpc + 4);
+
 	/*printk("ecall handler\r\n");*/
 
 	int* regs_save_addr = REGS_SAVE_ADDR;

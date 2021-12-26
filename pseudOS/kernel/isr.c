@@ -101,6 +101,7 @@ void interrupt_service_routine()
 			panic("ISR: illegal instruction encountered!\r\n");
 			break;
 		case 0x00000003:
+			// TODO: need pc+4 if future support
 			panic("ISR: breakpoint not supported!\r\n");
 			break;
 		case 0x0000000b:
