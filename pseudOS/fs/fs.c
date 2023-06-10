@@ -1,9 +1,9 @@
 /**
  * File              : fs.c
  * License           : GPL-3.0-or-later
- * Author            : Peter Gu <github.com/ustcpetergu>
+ * Author            : Peter Gu <github.com/regymm>
  * Date              : 2021.02.17
- * Last Modified Date: 2021.09.21
+ * Last Modified Date: 2022.01.01
  */
 #include "fs.h"
 #include "tty.h"
@@ -13,6 +13,7 @@
 #include "../kernel/misc.h"
 #include "../kernel/isr.h"
 #include "../mmio_drivers/basic.h"
+#include "errno.h"
 
 void* fs_kproc_entry = fs_proc_main;
 
@@ -31,6 +32,7 @@ void fs_resume_userproc(Message* msg)
 	daemon_syscall(IPC_SEND, msg->param[1], &msg_send);
 }
 
+// to awake waiting daemons, this finished instantly
 void fs_notify_target(int pid)
 {
 	printk("FS: notify target\r\n");
@@ -43,6 +45,21 @@ void fs_notify_target(int pid)
 void fs_request_by_fd(Message* msg)
 {
 	printk("FS: request by fd\r\n");
+	// close on stdin/out/err UB!
+	if (msg->function == SYS_close) {
+		KFILE* kf;
+		kf = &procmanager.proc_table[msg->source].fdmap[msg->param[0]];
+		int valid = kf->fd != -1;
+		if (valid) {
+			kf->fd = -1;
+		}
+		Message tmpmsg;
+		tmpmsg.param[0] = valid ? 0 : EBADF;
+		tmpmsg.param[1] = msg->source;
+		fs_resume_userproc(&tmpmsg);
+		return;
+	}
+	// readv and writev
 	if (msg->param[0] <= 2) {
 		// find TTY by user proc pid
 		// now we have only TTY0
@@ -63,8 +80,29 @@ void fs_request_by_fd(Message* msg)
 	panic("FS: unsuppored FD!\r\n");
 }
 
+int get_free_fd(int pid)
+{
+	KFILE* fdmap = procmanager.proc_table[pid].fdmap;
+	int i;
+	for (i = 3; i < PROC_FD_MAX; i++) {
+		if (fdmap[i].fd == -1) return i;
+	}
+	printk("get_free_fd: no more free FD for proc %d!\r\n", pid);
+	return -1;
+}
+
 void fs_request_by_path(Message* msg)
-{}
+{
+	// now only openat
+	// should we do pid<->fd table update here?
+	printk("FS: request by path\r\n");
+	int fsstarget = KPROC_PID_FSS0;
+	int fd = get_free_fd(msg->source);
+	// parse path for filesystem(find corrosponding FSS)
+	// TODO: we don't have mount table now!
+
+	fs_notify_target(fsstarget);
+}
 
 				/*[>fs_writev(msg.param[1], (const struct iovec *)msg.param[2], msg.param[3]);<]*/
 /*ssize_t fs_writev(int fd, const struct iovec *iov, int iovcnt)*/

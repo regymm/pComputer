@@ -1,4 +1,13 @@
+# File              : sdboot.S
+# License           : GPL-3.0-or-later
+# Author            : Peter Gu <github.com/regymm>
+# Date              : 20xx.x
+# Last Modified Date: 2022.01.01
+
 .section .text.boot
+
+.equ REGS_SAVE_ADDR, 0x10000000
+.equ KERNEL_STACK, 0x200ffffc
 
 # C functions
 .globl sd_c_start
@@ -26,8 +35,6 @@
 
 .globl sd_test_asm
 
-.equ REGS_SAVE_ADDR, 0x10000000
-
 # entry point
 sd_start:
 	la a0, 0x92000000
@@ -38,7 +45,7 @@ sd_start:
 	sw a1, 36(a0)
 
 	# kernel stack at 1MB
-	la sp, 0x200ffffc
+	la sp, KERNEL_STACK
 	j sd_c_start
 	# never here
 	j end

@@ -51,10 +51,10 @@ void sdcard_init()
 	get_sdcard_0(&sd0);
 	get_sd_blk(&sdblk0, &sd0);
 	int i;
-	for (i = 0; i < 100000; i++)
+	for (i = 0; i < 30000; i++)
 		if (sdblk0.isready(&sdblk0))
 			break;
-	if (i == 100000) {
+	if (i == 30000) {
 		printk("SDCard init failed!\r\n");
 		return;
 	}
@@ -192,7 +192,7 @@ void hardware_init()
 	video_y = 0;
 	sdcard_init();
 	tty_init();
-	while(!w5500_isready());
+	/*while(!w5500_isready());*/
 }
 
 /*void get_timer_ticks2(uint64_t* tic)*/
@@ -268,6 +268,122 @@ void software_renderer()
 	/*sftrdr_main();*/
 }
 
+//(a, b) to (c, d)
+void lcd_fillcube(int a, int b, int c, int d, int color)
+{
+	int i, j;
+	for(i = b; i < d; i++) {
+		for(j = a/4; j < c/4; j++) {
+			video_base[i*120+j] = color;
+		}
+	}
+}
+
+/*#define BAD_FRAME 1602*/
+/*#define BAD_ARR (BAD_FRAME*400)*/
+/*extern short int bad_xy[2*BAD_ARR];*/
+/*[>extern short int bad_y[BAD_ARR];<]*/
+/*void badapple()*/
+/*{*/
+	/*int i, j = 0xff, k;*/
+	/*int f;*/
+	/*while(1) {*/
+	/*uart_getchar();*/
+	/*for(f = 0; f < 400; f++) {*/
+		/*int start = f*BAD_FRAME;*/
+		/*int end = (f+1)*BAD_FRAME;*/
+		/*for (i = start; i < end; i++ ) {*/
+			/*if (i % 30 == 0) j++;*/
+			/*// write pixel (x, y)*/
+			/*short int x = bad_xy[2*i];*/
+			/*short int y = bad_xy[2*i + 1];*/
+			/*int idx = y * 120 + x/4;*/
+			/*int shift = 8*(x%4);*/
+			/*int old = video_base[idx] & ~(0xff << shift);*/
+			/*int new = (j % 0x100)<< shift;*/
+			/*video_base[idx] = old + new;*/
+		/*}*/
+		/*for (k = 0; k < 40000; k++) {*/
+			/*video_base[0] = 0;*/
+		/*}*/
+		/*for (i = start; i < end; i++ ) {*/
+			/*// clear pixel (x, y)*/
+			/*short int x = bad_xy[2*i];*/
+			/*short int y = bad_xy[2*i + 1];*/
+			/*int idx = y * 120 + x/4;*/
+			/*int shift = 8*(x%4);*/
+			/*int old = video_base[idx] & ~(0xff << shift);*/
+			/*int new = (0x00)<< shift;*/
+			/*video_base[idx] = old + new;*/
+		/*}*/
+
+	/*}}*/
+			/*[>if (i % (2*BAD_FRAME) == 0) {<]*/
+				/*[>for()<]*/
+				/*[>for (k = 0; k < 100; k++);<]*/
+				/*[>for(j = 0; j < 38400; j++) video_base[j] = 0x0;<]*/
+			/*[>}<]*/
+			/*[>[>for (k = 0; k < 10; k++);<]<]*/
+/*}*/
+
+void lcd_test()
+{
+	int i = 0;
+	int k = 0x0100;
+	int j;
+	for(j = 0; j < 38399; j++) video_base[j] = 0x0;
+	video_base[4177920] = 0x0;
+	/*video_base[19218] = 0x03e01c1f;*/
+	/*video_base[0] = 0x03e01c1f;*/
+	/*video_base[1] = 0x03e01c1f;*/
+	/*for(i = 0; i < 240; i++) video_base[i] = 0x03e01c1f;*/
+	/*while(1);*/
+	int base_color_arr[] = {0x00, 0x03, 0xe0, 0x1c, 0x1f, 0xe3, 0xfc, 0xff};
+	/*printf("%u\r\n", timer_ctrl[0]);*/
+	/*while(1)*/
+	for(i = 0; i < 320; i++) {
+		for(j = 0; j < 120; j++) {
+			int base_color_idx = i / (320/8);
+			int clr = (j < 60 ? base_color_arr[base_color_idx] : i*2+j*4);
+			/*int clr = (j < 40 ? base_color_arr[base_color_idx] : i%2 ? 0xff : 0xff);*/
+			clr = clr % 0x100;
+			video_base[i*120+j] = clr + (clr<<8) + (clr<<16) + (clr<<24);
+			/*video_base[i*80+j] = clr + (0) + (clr<<16) + (0);*/
+			/*for (k = 0; k < 10; k++);*/
+		}
+	}
+	for(j = 0; j < 38400; j++) video_base[j] = 0x0;
+	/*badapple();*/
+	i = 0;
+	j = 1;
+	while(1) {
+		lcd_fillcube(i, i, i+60, i+1, 0x0);
+		lcd_fillcube(i, i, i+1, i+60, 0x0);
+		i = i + 1;
+		if (i == 200) i = 0;
+
+		lcd_fillcube(i, i, i+60, i+60, j + (j<<8) + (j<<16));
+		j = j + 1;
+		/*for (k = 0; k < 50000; k++);*/
+
+	}
+	/*while (1) {*/
+		/*video_base[4177920] = 0x0;*/
+		/*video_base[4177920] = 0x1;*/
+		/*video_base[4177920] = 0x2;*/
+		/*video_base[4177920] = 0x3;*/
+		/*video_base[4177920] = 0x4;*/
+		/*uart_getchar();*/
+	/*}*/
+	/*for(i = 0; i < 320; i++) {*/
+		/*for(j = 0; j < 120; j++) {*/
+			/*int clr = (i+j)%2 ? 0x1c : 0xe3;*/
+		/*}*/
+	/*}*/
+	printf("%u\r\n", timer_ctrl[0]);
+	while(1);
+}
+
 void hdmi_test()
 {
 	int i = 0;
@@ -308,7 +424,8 @@ void hardware_test()
 	printk("Current tick %llu\r\n", test_ticks);
 	printk("Const test %llu\r\n", 12348765LLU);
 	hdmi_test();
-	w5500_test();
+	/*lcd_test();*/
+	/*w5500_test();*/
 
 	/*printk("CH375b USB: \r\n");*/
 	/*usb_test();*/

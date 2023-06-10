@@ -109,24 +109,25 @@ void proc3()
 	}
 }
 
-int sendrec_syscall(int function, int src_dest, Message* msg)
-{
-	if (function == IPC_BOTH) {
-		int ret = syscall_asm(IPC_SEND, src_dest, msg);
-		if (ret == 0)
-			ret = syscall_asm(IPC_RECEIVE, src_dest, msg);
-		else printk("sendrec_syscall: BOTH: send fail!\r\n");
-		return ret;
-	}
-	if (function == IPC_SEND)
-		return syscall_asm(IPC_SEND, src_dest, msg);
-	if (function == IPC_RECEIVE) {
-		memset(msg, 0, sizeof(Message));
-		return syscall_asm(IPC_RECEIVE, src_dest, msg);
-	}
-	panic("sendrec_syscall: unknown function!");
-	return -1;
-}
+// should remove this, now unused
+/*int sendrec_syscall(int function, int src_dest, Message* msg)*/
+/*{*/
+	/*if (function == IPC_BOTH) {*/
+		/*int ret = syscall_asm(IPC_SEND, src_dest, msg);*/
+		/*if (ret == 0)*/
+			/*ret = syscall_asm(IPC_RECEIVE, src_dest, msg);*/
+		/*else printk("sendrec_syscall: BOTH: send fail!\r\n");*/
+		/*return ret;*/
+	/*}*/
+	/*if (function == IPC_SEND)*/
+		/*return syscall_asm(IPC_SEND, src_dest, msg);*/
+	/*if (function == IPC_RECEIVE) {*/
+		/*memset(msg, 0, sizeof(Message));*/
+		/*return syscall_asm(IPC_RECEIVE, src_dest, msg);*/
+	/*}*/
+	/*panic("sendrec_syscall: unknown function!");*/
+	/*return -1;*/
+/*}*/
 
 // save/load stack frame in memory to/from Process* regs
 void _stackframe_save(volatile StackFrame* stack, Process* proc)
@@ -475,7 +476,7 @@ void ProcManagerInit()
 {
 	ProcManager* pm = &procmanager;
 	Process* pt = procmanager.proc_table;
-	int i;
+	int i, j;
 	for (i = 0; i < PROC_NUM_MAX; i++) {
 		pm->proc_table[i].pid = -1;
 		pm->proc_table[i].name[0] = '\0';
@@ -486,6 +487,9 @@ void ProcManagerInit()
 		pm->proc_table[i].p_sendto = IPC_TARGET_NONE;
 		pm->proc_table[i].queue_sending = NULL;
 		pm->proc_table[i].queue_sending_next = NULL;
+		for (j = 0; j < PROC_FD_MAX; j++) {
+			pm->proc_table[i].fdmap[j].fd = -1;
+		}
 	}
 
 	pm->proc_max = PROC_NUM_MAX;

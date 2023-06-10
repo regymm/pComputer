@@ -8,8 +8,8 @@ LD 		=	$(RISCV)ld
 LDFLAGS	=	-m elf32lriscv
 CC		=	$(RISCV)gcc
 CPP		=	$(RISCV)g++
-CC_L_F	=	-march=rv32i -mabi=ilp32 -nostdlib -mstrict-align -O0 -static
-CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -O0 -static
+CC_L_F	=	-march=rv32i -mabi=ilp32 -nostdlib -mstrict-align -O2 -static
+CFLAGS	=	-march=rv32im -mabi=ilp32 -mstrict-align -O2 -static
 CPPFLAGS=	$(CFLAGS) -nostdlib
 OBJCOPY	=	$(RISCV)objcopy
 READELF	=	$(RISCV)readelf
@@ -44,7 +44,7 @@ boot/uartbl/uartbl.elf: boot/uartbl/uartbl.o boot/uartbl/uartbl.c_o mmio_drivers
 cpp/cpp_test.o: cpp/cpp_test.cpp
 	$(CPP) $(CPPFLAGS) -c -g $^ -o $@
 
-sdboot.elf: sdboot.S sdboot.c \
+sdboot.elf: sdboot.S sdboot.c\
 	mmio_drivers/*.c \
 	newlib/crt0.S newlib/syscall.c \
 	fs/*.c \

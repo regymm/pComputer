@@ -10,7 +10,7 @@
 #include "misc.h"
 #include "../mmio_drivers/basic.h"
 
-// syscall to be used by OS daemons
+// syscall to be used by OS daemons, just as those used in user proc(libc)
 void daemon_syscall(int a0_sendorrec, int a1_src_dest, Message* a2_msg)
 {
 	register long a0 __asm__("a0") = a0_sendorrec;

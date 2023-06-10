@@ -1,14 +1,16 @@
 /**
  * File              : process.h
  * License           : GPL-3.0-or-later
- * Author            : Peter Gu <github.com/ustcpetergu>
+ * Author            : Peter Gu <github.com/regymm>
  * Date              : 2021.02.24
- * Last Modified Date: 2021.03.28
+ * Last Modified Date: 2022.01.01
  */
 #ifndef PSEUDOS_PROCESS_H
 #define PSEUDOS_PROCESS_H
 
-#define PROC_NUM_MAX 256
+#define PROC_NUM_MAX 64
+
+#define PROC_FD_MAX 16
 
 //#define PROC_STATE_READY 0b000000
 #define PROC_STATE_RUNNING 0b000000
@@ -72,6 +74,13 @@ typedef struct {
 	//} ;
 } Message;
 
+typedef struct {
+	int fd;
+	char name[64];
+	unsigned long seek;
+	unsigned long size; // used for SEEK_END
+} KFILE;
+
 typedef struct ProcessStruct{
 	short pid; // minus no such process
 	char name[16];
@@ -86,6 +95,14 @@ typedef struct ProcessStruct{
 	Message* p_msg;
 	struct ProcessStruct* queue_sending; // a linked list of procs sending to this proc
 	struct ProcessStruct* queue_sending_next;
+
+	// FD opened files
+	// Is this a linked list? or hash map?
+	// path is only requested once but required by FSS every time
+	// so FD to path should be good
+	// 0, 1, 2 unused
+	// TODO: now this takes too much memory
+	KFILE fdmap[PROC_FD_MAX];
 
 	//unsigned int stacksize;
 	//unsigned int ticks;
