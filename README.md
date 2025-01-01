@@ -2,6 +2,8 @@
 
 A simple "computer" from scratch(PCB + RTL + ASM + C + OS), including RISC-V CPU(pCPU) and simple microkernel MMU-less OS(pseudOS), running on various FPGA dev boards. 
 
+Especially, there's a simple [dynamic linker for PIE ELF](pseudOS/kernel/elf.c). Relocations and library calls are patched when loading the executable. Flat binary toolchains are scarce, and it's nice if we can use standard ELF on No-MMU systems. 
+
 ### Gallery
 
 **2021.09.13** Basic dynamic linking with musl libc worked. 
